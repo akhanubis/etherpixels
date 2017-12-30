@@ -48,14 +48,9 @@ contract usingCanvasBoundaries {
 		max_bound = int(b);
     }
 	
-	function checkTwoCoordinates(int _c1, int _c2) internal {
+	function checkCoordinates(int _c1, int _c2) internal {
 		updateBoundaries();
 	    CurrentBoundary(min_bound, max_bound);
 		require(_c1 >= min_bound && _c1 <= max_bound && _c2 >= min_bound && _c2 <= max_bound);
-	}
-	
-	function checkFourCoordinates(int _c1, int _c2, int _c3, int _c4) internal {
-		checkTwoCoordinates(_c1, _c2);
-		require(_c3 >= min_bound && _c3 <= max_bound && _c4 >= min_bound && _c4 <= max_bound);
 	}
 }
