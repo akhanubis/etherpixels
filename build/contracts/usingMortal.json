@@ -28,7 +28,7 @@
       "absolutePath": "/D/dev/canvas/contracts/UsingMortal.sol",
       "exportedSymbols": {
         "usingMortal": [
-          388
+          598
         ]
       }
     },
@@ -42,7 +42,7 @@
             ".18"
           ]
         },
-        "id": 361,
+        "id": 571,
         "name": "PragmaDirective",
         "src": "0:24:2"
       },
@@ -58,17 +58,17 @@
           "documentation": null,
           "fullyImplemented": true,
           "linearizedBaseContracts": [
-            388
+            598
           ],
           "name": "usingMortal",
-          "scope": 389
+          "scope": 599
         },
         "children": [
           {
             "attributes": {
               "constant": false,
               "name": "owner",
-              "scope": 388,
+              "scope": 598,
               "stateVariable": true,
               "storageLocation": "default",
               "type": "address",
@@ -81,12 +81,12 @@
                   "name": "address",
                   "type": "address"
                 },
-                "id": 362,
+                "id": 572,
                 "name": "ElementaryTypeName",
                 "src": "56:7:2"
               }
             ],
-            "id": 363,
+            "id": 573,
             "name": "VariableDeclaration",
             "src": "56:13:2"
           },
@@ -100,7 +100,7 @@
               ],
               "name": "usingMortal",
               "payable": false,
-              "scope": 388,
+              "scope": 598,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "internal"
@@ -113,7 +113,7 @@
                   ]
                 },
                 "children": [],
-                "id": 364,
+                "id": 574,
                 "name": "ParameterList",
                 "src": "96:2:2"
               },
@@ -124,7 +124,7 @@
                   ]
                 },
                 "children": [],
-                "id": 365,
+                "id": 575,
                 "name": "ParameterList",
                 "src": "108:0:2"
               },
@@ -149,11 +149,11 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 363,
+                              "referencedDeclaration": 573,
                               "type": "address",
                               "value": "owner"
                             },
-                            "id": 366,
+                            "id": 576,
                             "name": "Identifier",
                             "src": "110:5:2"
                           },
@@ -175,36 +175,36 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 400,
+                                  "referencedDeclaration": 610,
                                   "type": "msg",
                                   "value": "msg"
                                 },
-                                "id": 367,
+                                "id": 577,
                                 "name": "Identifier",
                                 "src": "118:3:2"
                               }
                             ],
-                            "id": 368,
+                            "id": 578,
                             "name": "MemberAccess",
                             "src": "118:10:2"
                           }
                         ],
-                        "id": 369,
+                        "id": 579,
                         "name": "Assignment",
                         "src": "110:18:2"
                       }
                     ],
-                    "id": 370,
+                    "id": 580,
                     "name": "ExpressionStatement",
                     "src": "110:18:2"
                   }
                 ],
-                "id": 371,
+                "id": 581,
                 "name": "Block",
                 "src": "108:23:2"
               }
             ],
-            "id": 372,
+            "id": 582,
             "name": "FunctionDefinition",
             "src": "76:55:2"
           },
@@ -218,7 +218,7 @@
               ],
               "name": "Kill",
               "payable": false,
-              "scope": 388,
+              "scope": 598,
               "stateMutability": "nonpayable",
               "superFunction": null,
               "visibility": "public"
@@ -231,7 +231,7 @@
                   ]
                 },
                 "children": [],
-                "id": 373,
+                "id": 583,
                 "name": "ParameterList",
                 "src": "150:2:2"
               },
@@ -242,7 +242,7 @@
                   ]
                 },
                 "children": [],
-                "id": 374,
+                "id": 584,
                 "name": "ParameterList",
                 "src": "160:0:2"
               },
@@ -276,11 +276,11 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 403,
+                              "referencedDeclaration": 613,
                               "type": "function (bool) pure",
                               "value": "require"
                             },
-                            "id": 375,
+                            "id": 585,
                             "name": "Identifier",
                             "src": "172:7:2"
                           },
@@ -317,16 +317,16 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 400,
+                                      "referencedDeclaration": 610,
                                       "type": "msg",
                                       "value": "msg"
                                     },
-                                    "id": 376,
+                                    "id": 586,
                                     "name": "Identifier",
                                     "src": "180:3:2"
                                   }
                                 ],
-                                "id": 377,
+                                "id": 587,
                                 "name": "MemberAccess",
                                 "src": "180:10:2"
                               },
@@ -336,26 +336,26 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 363,
+                                  "referencedDeclaration": 573,
                                   "type": "address",
                                   "value": "owner"
                                 },
-                                "id": 378,
+                                "id": 588,
                                 "name": "Identifier",
                                 "src": "194:5:2"
                               }
                             ],
-                            "id": 379,
+                            "id": 589,
                             "name": "BinaryOperation",
                             "src": "180:19:2"
                           }
                         ],
-                        "id": 380,
+                        "id": 590,
                         "name": "FunctionCall",
                         "src": "172:28:2"
                       }
                     ],
-                    "id": 381,
+                    "id": 591,
                     "name": "ExpressionStatement",
                     "src": "172:28:2"
                   },
@@ -387,11 +387,11 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 406,
+                              "referencedDeclaration": 616,
                               "type": "function (address)",
                               "value": "selfdestruct"
                             },
-                            "id": 382,
+                            "id": 592,
                             "name": "Identifier",
                             "src": "211:12:2"
                           },
@@ -401,41 +401,41 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 363,
+                              "referencedDeclaration": 573,
                               "type": "address",
                               "value": "owner"
                             },
-                            "id": 383,
+                            "id": 593,
                             "name": "Identifier",
                             "src": "224:5:2"
                           }
                         ],
-                        "id": 384,
+                        "id": 594,
                         "name": "FunctionCall",
                         "src": "211:19:2"
                       }
                     ],
-                    "id": 385,
+                    "id": 595,
                     "name": "ExpressionStatement",
                     "src": "211:19:2"
                   }
                 ],
-                "id": 386,
+                "id": 596,
                 "name": "Block",
                 "src": "160:78:2"
               }
             ],
-            "id": 387,
+            "id": 597,
             "name": "FunctionDefinition",
             "src": "137:101:2"
           }
         ],
-        "id": 388,
+        "id": 598,
         "name": "ContractDefinition",
         "src": "28:213:2"
       }
     ],
-    "id": 389,
+    "id": 599,
     "name": "SourceUnit",
     "src": "0:241:2"
   },
@@ -445,5 +445,5 @@
   },
   "networks": {},
   "schemaVersion": "1.0.1",
-  "updatedAt": "2017-12-30T18:50:06.267Z"
+  "updatedAt": "2017-12-30T22:51:20.107Z"
 }

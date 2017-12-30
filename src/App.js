@@ -54,19 +54,24 @@ class App extends Component {
     // Get accounts.
     this.state.web3.eth.getAccounts((error, accounts) => {
       canvasContract.deployed().then((instance) => {
+		  
         contractInstance = instance
 
-		var event = contractInstance.CurrentBoundary((error, result) => {
-			alert(error);
+		contractInstance.allEvents().watch((error, result) => {
+			alert(arguments)
+			console.log(arguments)
+			alert(error)
 		  if (!error)
 			console.log(result)
 		this.setState({ limit: result.c[0] })
 		})
-		
+		//alert("HOLA")
 		//this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
 		
         // Stores a given value, 5 by default.
-        return contractInstance.Paint("0", "0", [0xffffff, 0xff0000, 0x00ff00, 0x0000ff, 0x000000], this.state.web3.fromAscii('pablo'), { from: accounts[0], value: "10000000", gas: "2000000" })
+		setInterval(()=> {
+        contractInstance.Paint("0", "0", ['0xffffff', '0xff0000', '0x00ff00', '0x0000ff', '0x000000', '0x0f0f0f', '0xf0f0f0'], this.state.web3.fromAscii('pablo'), { from: accounts[0], value: "3000000000", gas: "2000000" })
+		}, 10000)
       })
     })
   }

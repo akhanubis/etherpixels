@@ -5,14 +5,18 @@ contract usingCanvasBoundaries {
     uint public last_threshold; //TODO private
     uint public last_threshold_size; //TODO private
     uint public last_canvas_size_index; //TODO private
-    uint public genesis_block;  //TODO private
-    
+    uint public genesis_block;  //TODO private	
+	int public min_bound;
+	int public max_bound;
+	
     struct Boundary {
         uint threshold;
         uint blocks_per_pixel;
     }
     
     Boundary[] public boundaries_thresholds; //TODO private
+	
+	event CurrentBoundary(int current_min, int current_max);
     
     function usingCanvasBoundaries() internal {
         last_canvas_size_index = 0;
@@ -23,8 +27,8 @@ contract usingCanvasBoundaries {
             boundaries_thresholds.push(Boundary(thresholds[e], blocks_per_pixel[e]));
     }
     
-    function boundary() internal returns(uint) {
-        uint blocks_passed = block.number - genesis_block;
+	function computeBoundary() internal returns(uint) {
+		uint blocks_passed = block.number - genesis_block;
         for(uint i = last_canvas_size_index; i < boundaries_thresholds.length; i++) {
             Boundary storage b = boundaries_thresholds[i];
             if (b.threshold >= blocks_passed) {
@@ -36,5 +40,22 @@ contract usingCanvasBoundaries {
         }
         last_canvas_size_index = boundaries_thresholds.length;
         return max_canvas_half_size;
+	}
+	
+    function updateBoundaries() internal returns(uint) {
+		uint b = computeBoundary();
+		min_bound = int(-b);
+		max_bound = int(b);
     }
+	
+	function checkTwoCoordinates(int _c1, int _c2) internal {
+		updateBoundaries();
+	    CurrentBoundary(min_bound, max_bound);
+		require(_c1 >= min_bound && _c1 <= max_bound && _c2 >= min_bound && _c2 <= max_bound);
+	}
+	
+	function checkFourCoordinates(int _c1, int _c2, int _c3, int _c4) internal {
+		checkTwoCoordinates(_c1, _c2);
+		require(_c3 >= min_bound && _c3 <= max_bound && _c4 >= min_bound && _c4 <= max_bound);
+	}
 }
