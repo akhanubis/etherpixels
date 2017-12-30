@@ -58,9 +58,7 @@ class App extends Component {
         contractInstance = instance
 
 		contractInstance.allEvents().watch((error, result) => {
-			alert(arguments)
 			console.log(arguments)
-			alert(error)
 		  if (!error)
 			console.log(result)
 		this.setState({ limit: result.c[0] })
