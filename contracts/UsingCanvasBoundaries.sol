@@ -16,7 +16,7 @@ contract usingCanvasBoundaries {
     
     Boundary[] public boundaries_thresholds; //TODO private
 	
-	event CurrentBoundary(int current_min, int current_max);
+	event CurrentBoundaries(int current_min, int current_max);
     
     function usingCanvasBoundaries() internal {
         last_canvas_size_index = 0;
@@ -50,7 +50,7 @@ contract usingCanvasBoundaries {
 	
 	function checkCoordinates(int _c1, int _c2) internal {
 		updateBoundaries();
-	    CurrentBoundary(min_bound, max_bound);
+	    CurrentBoundaries(min_bound, max_bound);
 		require(_c1 >= min_bound && _c1 <= max_bound && _c2 >= min_bound && _c2 <= max_bound);
 	}
 }
