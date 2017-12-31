@@ -1,63 +1,15 @@
 import React, { Component } from 'react'
-import Konva from 'konva'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
-import { Stage, Layer, Rect, Text } from "react-konva";
+import { Stage, Layer } from "react-konva";
 import { SketchPicker } from 'react-color';
+import PixelData from './PixelData.js'
+import Pixel from './Pixel.js'
 
 import './css/oswald.css'
 import './css/open-sans.css'
 import './css/pure-min.css'
 import './App.css'
-
-class Pixel {
-  constructor(x, y, color_bytes, signature_bytes, owner) {
-    this.x = x
-    this.y = y
-    this.colors = [`#${ color_bytes.substr(2, 6) }`]//TODO: unpack de 32 bytes a array de hex
-    this.signature = 'anu estuvo aqui' //TODO: unpack de signature
-    this.owner = owner
-  }
-}
-
-class ColoredRect extends React.Component {
-  constructor(props) {
-    super(props)
-    this.pixel_size = 40
-    this.x_offset = props.canvas_size_x / 2
-    this.y_offset = props.canvas_size_y / 2
-    this.state = {
-      x: props.canvas_size_x / 2 + this.pixel_size * props.pixel.x,
-      y: props.canvas_size_y / 2 + this.pixel_size * props.pixel.y,
-      color_index: 0,
-      pixel: props.pixel
-    }
-  }
-  
-  handleClick = () => {
-    this.setState(prev_state => {
-      return { color_index: (prev_state.color_index + 1) % this.props.pixel.colors.length }
-    })
-  }
-  
-  current_color() {
-    return this.props.pixel.colors[this.state.color_index]
-  }
-  
-  render() {
-    return (
-      <Rect
-        x={this.state.x}
-        y={this.state.y}
-        width={this.pixel_size}
-        height={this.pixel_size}
-        fill={this.current_color()}
-        shadowBlur={5}
-        onClick={this.handleClick}
-      />
-    )
-  }
-}
 
 class App extends Component {
   constructor(props) {
@@ -121,7 +73,7 @@ class App extends Component {
           if (error)
             console.error(error)
           else {
-            var new_pixel = new Pixel(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner)
+            var new_pixel = new PixelData(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner)
             this.setState(prev_state => {
               const new_pixels = [...prev_state.pixels]
               var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
@@ -200,8 +152,8 @@ class App extends Component {
     else
       retarget_info = ''
     
-    let rects = this.state.pixels.map(p => {
-      return <ColoredRect pixel={p} canvas_size_x={window.innerWidth} canvas_size_y={window.innerHeight}/>
+    let pixels = this.state.pixels.map(p => {
+      return <Pixel pixel={p} canvas_size_x={window.innerWidth} canvas_size_y={window.innerHeight}/>
     })
     return (
       <div className="App">
@@ -228,7 +180,7 @@ class App extends Component {
             </div>
             <Stage width={window.innerWidth} height={window.innerHeight}>
               <Layer>
-                {rects}
+                {pixels}
               </Layer>
             </Stage>
           </div>
