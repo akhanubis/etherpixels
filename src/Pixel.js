@@ -40,4 +40,4 @@ class Pixel extends React.Component {
   }
 }
 
-module.exports = Pixel;
+export default Pixel

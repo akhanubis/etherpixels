@@ -1,10 +1,14 @@
 import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
-import { Stage, Layer } from "react-konva";
-import { SketchPicker } from 'react-color';
-import PixelData from './PixelData.js'
-import Pixel from './Pixel.js'
+import { SketchPicker } from 'react-color'
+import {Helmet} from "react-helmet"
+import { Col } from 'react-bootstrap';
+import PixelData from './PixelData'
+import Pixel from './Pixel'
+import CoordPicker from './CoordPicker'
+import CanvasContainer from './CanvasContainer'
+import ColorUtils from './utils/ColorUtils'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -20,12 +24,16 @@ class App extends Component {
       web3: null,
       contract_instance: null,
       account: null,
-      min: 0,
-      max: 0,
+      //min: 0,
+      //max: 0,
+      min: -15,
+      max: 30,
       thresholds: [],
       genesis_block: null,
       current_block: null,
-      current_color: '#0000ff'
+      current_color: { r: 255, g: 255, b: 255, a: 255 },
+      x: 0,
+      y: 0
     }
   }
 
@@ -128,8 +136,7 @@ class App extends Component {
   
   paint(e) {
 	  e.preventDefault()
-    var hex_color = `0x${ this.state.current_color.r.toString(16) }${ this.state.current_color.g.toString(16) }${ this.state.current_color.b.toString(16) }` //TODO: rgbtohex function
-	  this.state.contract_instance.Paint(Math.floor((Math.random() * 20) -10).toString(), Math.floor((Math.random() * 20) - 10).toString(), hex_color, this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
+    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbToHex(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
   }
   
   thresholds_fetched() {
@@ -139,7 +146,18 @@ class App extends Component {
   handleColorChangeComplete(new_color) {
     this.setState({ current_color: new_color.rgb })
   }
-
+  
+  new_coordinate(e, new_coord) {
+    e.preventDefault()
+    this.setState(new_coord)
+  }
+  
+  new_x(e) { this.new_coordinate(e, { x: e.target.value }) }
+    
+  new_y(e) { this.new_coordinate(e, { y: e.target.value }) }
+    
+  
+  
   render() {
     let retarget_info = null
     if (this.thresholds_fetched()) {
@@ -152,37 +170,41 @@ class App extends Component {
     else
       retarget_info = ''
     
-    let pixels = this.state.pixels.map(p => {
-      return <Pixel pixel={p} canvas_size_x={window.innerWidth} canvas_size_y={window.innerHeight}/>
-    })
     return (
       <div className="App">
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>Pavlito clabo un clabito</title>
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
+        </Helmet>
         <nav className="navbar pure-menu pure-menu-horizontal">
             <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
         </nav>
 
-        <main className="container">
+        <main className="container-fluid">
           <div className="pure-g">
-            <div className="pure-u-1-1">
-              <h1>Good to Go!</h1>
-              <p>Your Truffle Box is installed and ready.</p>
-              <SketchPicker
-                color={ this.state.current_color }
-                onChangeComplete={ this.handleColorChangeComplete.bind(this) }
-              />
-              <button onClick={this.paint.bind(this)}>
-                Paint
-              </button>
-              <h2>Smart Contract Example</h2>
-              <p>El minimo es: {this.state.min}</p>
-              <p>El maximo es: {this.state.max}</p>
-              {retarget_info}
-            </div>
-            <Stage width={window.innerWidth} height={window.innerHeight}>
-              <Layer>
-                {pixels}
-              </Layer>
-            </Stage>
+            <Col md={4}>
+              <div className="pure-u-1-1">
+                <h1>Good to Go!</h1>
+                <p>Your Truffle Box is installed and ready.</p>
+                <SketchPicker
+                  color={ this.state.current_color }
+                  onChangeComplete={ this.handleColorChangeComplete.bind(this) }
+                />
+                <button onClick={this.paint.bind(this)}>
+                  Paint
+                </button>
+                <CoordPicker value={this.state.x} min={this.state.min} max={this.state.max} label='X' onChange={this.new_x.bind(this)} />
+                <CoordPicker value={this.state.y} min={this.state.min} max={this.state.max} label='Y' onChange={this.new_y.bind(this)} />
+                <h2>Smart Contract Example</h2>
+                <p>El minimo es: {this.state.min}</p>
+                <p>El maximo es: {this.state.max}</p>
+                {retarget_info}
+              </div>
+            </Col>
+            <Col md={8}>
+              <CanvasContainer pixels={this.state.pixels} />
+            </Col>
           </div>
         </main>
       </div>

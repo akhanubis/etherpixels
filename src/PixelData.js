@@ -8,4 +8,4 @@ class PixelData {
   }
 }
 
-module.exports = PixelData;
+export default PixelData
