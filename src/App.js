@@ -16,9 +16,7 @@ class App extends Component {
       web3: null,
 	  min: 0,
 	  max: 0,
-	  b_thresholds: [],
-	  thresholds_length: 0,
-	  thresholds_fetched: 0,
+	  thresholds: [],
 	  genesis_block: null
     }
   }
@@ -68,19 +66,16 @@ class App extends Component {
 		  }
 		})
 		
-		contractInstance.genesis_block.call().then(g_block => this.setState({ genesis_block: g_block.toNumber() }))
-		contractInstance.ThresholdsLength.call().then(thresholds_length => {
-			this.setState({ thresholds_length: thresholds_length.toNumber() })
-			for(var i = 0; i < this.state.thresholds_length; i++) {
-				//closure lol
-				(i => {
-				  contractInstance.boundaries_thresholds.call(i).then(t_data => {
-					const newArray = [...this.state.b_thresholds]
-					newArray[i] = { threshold: t_data[0].toNumber(), blocks_per_retarget: t_data[1].toNumber() }
-					this.setState({ b_thresholds: newArray, thresholds_fetched: this.state.thresholds_fetched+1 })
-				  })
-				})(i)
-			}
+		contractInstance.ThresholdsData.call().then(thresholds_data => {
+			var t_length = thresholds_data[0].length
+			var ts = []
+			for(var i = 0; i < t_length; i++)
+				ts.push( { threshold: thresholds_data[0][i].toNumber(), blocks_per_retarget: thresholds_data[1][i].toNumber() })
+			this.setState({
+				genesis_block: thresholds_data[2].toNumber(),
+				thresholds_length: t_length,
+				thresholds: ts
+			})
 		})
 		//this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
 		
@@ -93,18 +88,18 @@ class App extends Component {
   
   prox_retarget(c_instance) {
 	var current_block_since_genesis = this.state.web3.eth.blockNumber - this.state.genesis_block
-	var current_threshold = this.state.b_thresholds.findIndex(e => e.threshold > current_block_since_genesis)
+	var current_threshold = this.state.thresholds.findIndex(e => e.threshold > current_block_since_genesis)
 	if (current_threshold === -1)
 	  return 'inf'
 	else {
-	  var prev_threshold = current_threshold ? this.state.b_thresholds[current_threshold - 1] : 0
-	  var blocks_per_retarget = this.state.b_thresholds[current_threshold].blocks_per_retarget
+	  var prev_threshold = current_threshold ? this.state.thresholds[current_threshold - 1] : 0
+	  var blocks_per_retarget = this.state.thresholds[current_threshold].blocks_per_retarget
 	  return blocks_per_retarget - ((current_block_since_genesis - prev_threshold) % blocks_per_retarget)
     }
   }
   
   thresholds_fetched() {
-	return this.state.thresholds_fetched && this.state.thresholds_fetched === this.state.thresholds_length
+	return this.state.thresholds.length
   }
 
   render() {

@@ -5,42 +5,33 @@ contract usingCanvasBoundaries {
     uint public last_threshold; //TODO private
     uint public last_threshold_size; //TODO private
     uint public last_canvas_size_index; //TODO private
-    uint public genesis_block;  //TODO private	
+    uint private genesis_block;  //TODO private	
 	int public min_bound;
 	int public max_bound;
-	
-    struct Boundary {
-        uint threshold;
-        uint blocks_per_retarget;
-    }
     
-    Boundary[29] public boundaries_thresholds; //TODO private
+    uint24[29] public thresholds; //TODO private
+	uint16[29] public blocks_per_retarget; //TODO private
 	
 	event CurrentBoundaries(int current_min, int current_max);
     
     function usingCanvasBoundaries() internal {
         last_canvas_size_index = 0;
         genesis_block = block.number;
-        uint24[29] memory thresholds = [262784,492734,692834,867968,1021954,1157062,1274592,1377786,1467986,1546834,1615834,1676034,1729074,1774770,1814730,1849668,1879908,1906368,1929006,1950606,1967406,1983746,1998994,2012338,2022714,2034818,2041880,2059730,2084024];
-        uint16[29] memory blocks_per_retarget = [256,300,348,404,476,556,644,756,880,1024,1200,1400,1632,1904,2220,2588,3024,3528,4116,4800,5600,6536,7624,8896,10376,12104,14124,17850,24294];
-        for (uint i = 0; i < thresholds.length; i++) {
-			boundaries_thresholds[i].threshold = thresholds[i];
-			boundaries_thresholds[i].blocks_per_retarget = blocks_per_retarget[i];
-		}
+        thresholds = [262784,492734,692834,867968,1021954,1157062,1274592,1377786,1467986,1546834,1615834,1676034,1729074,1774770,1814730,1849668,1879908,1906368,1929006,1950606,1967406,1983746,1998994,2012338,2022714,2034818,2041880,2059730,2084024];
+        blocks_per_retarget = [256,300,348,404,476,556,644,756,880,1024,1200,1400,1632,1904,2220,2588,3024,3528,4116,4800,5600,6536,7624,8896,10376,12104,14124,17850,24294];
     }
     
 	function computeBoundary() internal returns(uint) {
 		uint blocks_passed = block.number - genesis_block;
-        for(uint i = last_canvas_size_index; i < boundaries_thresholds.length; i++) {
-            Boundary storage b = boundaries_thresholds[i];
-            if (b.threshold >= blocks_passed) {
+        for(uint i = last_canvas_size_index; i < thresholds.length; i++) {
+            if (thresholds[i] >= blocks_passed) {
                 last_canvas_size_index = i;
-                return last_threshold_size + (blocks_passed - last_threshold) / b.blocks_per_retarget;
+                return last_threshold_size + (blocks_passed - last_threshold) / blocks_per_retarget[i];
             }
-            last_threshold = b.threshold;
-            last_threshold_size += (b.threshold - last_threshold) / b.blocks_per_retarget;
+            last_threshold = thresholds[i];
+            last_threshold_size += (thresholds[i] - last_threshold) / blocks_per_retarget[i];
         }
-        last_canvas_size_index = boundaries_thresholds.length;
+        last_canvas_size_index = thresholds.length;
         return max_canvas_half_size;
 	}
 	
@@ -57,6 +48,10 @@ contract usingCanvasBoundaries {
 	}
 	
 	function ThresholdsLength() public view returns(uint count) {
-		return boundaries_thresholds.length;
+		return thresholds.length;
+	}
+	
+	function ThresholdsData() public view returns(uint24[29] thrs, uint16[29] bprs, uint) {
+		return (thresholds, blocks_per_retarget, genesis_block);
 	}
 }
