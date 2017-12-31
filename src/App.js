@@ -18,7 +18,8 @@ class App extends Component {
 	  max: 0,
 	  b_thresholds: [],
 	  thresholds_length: 0,
-	  thresholds_fetched: 0
+	  thresholds_fetched: 0,
+	  genesis_block: null
     }
   }
 
@@ -67,6 +68,7 @@ class App extends Component {
 		  }
 		})
 		
+		contractInstance.genesis_block.call().then(g_block => this.setState({ genesis_block: g_block.toNumber() }))
 		contractInstance.ThresholdsLength.call().then(thresholds_length => {
 			this.setState({ thresholds_length: thresholds_length.toNumber() })
 			for(var i = 0; i < this.state.thresholds_length; i++) {
@@ -74,7 +76,7 @@ class App extends Component {
 				(i => {
 				  contractInstance.boundaries_thresholds.call(i).then(t_data => {
 					const newArray = [...this.state.b_thresholds]
-					newArray[i] = { threshold: t_data[0].toNumber(), blocks_per_size: t_data[1].toNumber() }
+					newArray[i] = { threshold: t_data[0].toNumber(), blocks_per_retarget: t_data[1].toNumber() }
 					this.setState({ b_thresholds: newArray, thresholds_fetched: this.state.thresholds_fetched+1 })
 				  })
 				})(i)
@@ -90,14 +92,14 @@ class App extends Component {
   }
   
   prox_retarget(c_instance) {
-	  console.log(this.state.b_thresholds)
-	var current_block = this.state.web3.eth.blockNumber
-	var current_threshold = this.state.b_thresholds.findIndex(e => e.threshold > current_block)
+	var current_block_since_genesis = this.state.web3.eth.blockNumber - this.state.genesis_block
+	var current_threshold = this.state.b_thresholds.findIndex(e => e.threshold > current_block_since_genesis)
 	if (current_threshold === -1)
 	  return 'inf'
 	else {
 	  var prev_threshold = current_threshold ? this.state.b_thresholds[current_threshold - 1] : 0
-	  return current_block - prev_threshold % this.state.b_thresholds[current_threshold].blocks_per_size
+	  var blocks_per_retarget = this.state.b_thresholds[current_threshold].blocks_per_retarget
+	  return blocks_per_retarget - ((current_block_since_genesis - prev_threshold) % blocks_per_retarget)
     }
   }
   
@@ -109,6 +111,7 @@ class App extends Component {
 	let retarget_info = null
 	if (this.thresholds_fetched()) {
       retarget_info = ([
+		<p>Genesis block: {this.state.genesis_block}</p>,
 		<p>Blocknumber: {this.state.web3.eth.blockNumber}</p>,
 		<p>Prox retarget en X bloques: {this.prox_retarget(this.state.contractInstance)}</p>
 		])
@@ -127,7 +130,6 @@ class App extends Component {
               <h2>Smart Contract Example</h2>
               <p>El minimo es: {this.state.min}</p>
 			  <p>El maximo es: {this.state.max}</p>
-				  {(this.state.web3)? this.state.web3.eth.blockNumber : ''}
 			  {retarget_info}
             </div>
           </div>
