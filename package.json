@@ -52,6 +52,7 @@
     "dotenv": "^2.0.0",
     "konva": "^1.7.6",
     "react": "^15.6.2",
+    "react-color": "^2.13.8",
     "react-dom": "^15.6.2",
     "react-konva": "^1.1.6"
   },

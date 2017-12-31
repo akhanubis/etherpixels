@@ -3,41 +3,52 @@ import Konva from 'konva'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { Stage, Layer, Rect, Text } from "react-konva";
+import { SketchPicker } from 'react-color';
 
 import './css/oswald.css'
 import './css/open-sans.css'
 import './css/pure-min.css'
 import './App.css'
 
+class Pixel {
+  constructor(x, y, color_bytes, signature_bytes, owner) {
+    this.x = x
+    this.y = y
+    this.colors = [`#${ color_bytes.substr(2, 6) }`]//TODO: unpack de 32 bytes a array de hex
+    this.signature = 'anu estuvo aqui' //TODO: unpack de signature
+    this.owner = owner
+  }
+}
+
 class ColoredRect extends React.Component {
   constructor(props) {
     super(props)
     this.pixel_size = 40
+    this.x_offset = props.canvas_size_x / 2
+    this.y_offset = props.canvas_size_y / 2
     this.state = {
+      x: props.canvas_size_x / 2 + this.pixel_size * props.pixel.x,
+      y: props.canvas_size_y / 2 + this.pixel_size * props.pixel.y,
       color_index: 0,
-      colors: [Konva.Util.getRandomColor(), Konva.Util.getRandomColor(), Konva.Util.getRandomColor(), Konva.Util.getRandomColor(), Konva.Util.getRandomColor(), Konva.Util.getRandomColor(), Konva.Util.getRandomColor()],
-      x: props.pixel.x,
-      y: props.pixel.y,
-      x_offset: props.canvas_size_x / 2,
-      y_offset: props.canvas_size_y / 2,
+      pixel: props.pixel
     }
   }
   
   handleClick = () => {
-    this.setState((prev_state) => {
-      return { color_index: (prev_state.color_index + 1) % prev_state.colors.length }
+    this.setState(prev_state => {
+      return { color_index: (prev_state.color_index + 1) % this.props.pixel.colors.length }
     })
   }
   
   current_color() {
-    return this.state.colors[this.state.color_index]
+    return this.props.pixel.colors[this.state.color_index]
   }
   
   render() {
     return (
       <Rect
-        x={this.state.x_offset + this.pixel_size * this.state.x}
-        y={this.state.y_offset + this.pixel_size * this.state.y}
+        x={this.state.x}
+        y={this.state.y}
         width={this.pixel_size}
         height={this.pixel_size}
         fill={this.current_color()}
@@ -53,17 +64,7 @@ class App extends Component {
     super(props)
 
     this.state = {
-      pixels: [
-        { x: 0, y: 0 },
-        { x: 0, y: -1 },
-        { x: 0, y: 1 },
-        { x: 1, y: 0 },
-        { x: 1, y: 1 },
-        { x: 1, y: -1 },
-        { x: -1, y: 0 },
-        { x: -1, y: 1 },
-        { x: -1, y: -1 }
-      ],
+      pixels: [],
       web3: null,
       contract_instance: null,
       account: null,
@@ -71,7 +72,8 @@ class App extends Component {
       max: 0,
       thresholds: [],
       genesis_block: null,
-      current_block: null
+      current_block: null,
+      current_color: '#0000ff'
     }
   }
 
@@ -114,6 +116,23 @@ class App extends Component {
           else
             this.setState({ min: result.args['current_min'].toNumber(), max: result.args['current_max'].toNumber() })	
         })
+        
+        instance.PixelPainted().watch((error, result) => {
+          if (error)
+            console.error(error)
+          else {
+            var new_pixel = new Pixel(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner)
+            this.setState(prev_state => {
+              const new_pixels = [...prev_state.pixels]
+              var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
+              if (existing_index === -1)
+                new_pixels.push(new_pixel)
+              else
+                new_pixels[existing_index] = new_pixel
+              return { pixels: new_pixels }
+            })
+          }
+        })
 		
         instance.ThresholdsData.call().then(thresholds_data => {
           var t_length = thresholds_data[0].length
@@ -144,23 +163,29 @@ class App extends Component {
   }
   
   prox_retarget(c_instance) {
-	var current_block_since_genesis = this.state.current_block - this.state.genesis_block
-	var current_threshold = this.state.thresholds.findIndex(e => e.threshold > current_block_since_genesis)
-	if (current_threshold === -1)
-	  return 'inf'
-	else {
-	  var prev_threshold = current_threshold ? this.state.thresholds[current_threshold - 1] : 0
-	  var blocks_per_retarget = this.state.thresholds[current_threshold].blocks_per_retarget
-	  return blocks_per_retarget - ((current_block_since_genesis - prev_threshold) % blocks_per_retarget)
+    var current_block_since_genesis = this.state.current_block - this.state.genesis_block
+    var current_threshold = this.state.thresholds.findIndex(e => e.threshold > current_block_since_genesis)
+    if (current_threshold === -1)
+      return 'inf'
+    else {
+      var prev_threshold = current_threshold ? this.state.thresholds[current_threshold - 1] : 0
+      var blocks_per_retarget = this.state.thresholds[current_threshold].blocks_per_retarget
+      return blocks_per_retarget - ((current_block_since_genesis - prev_threshold) % blocks_per_retarget)
     }
   }
   
   paint(e) {
 	  e.preventDefault()
-	  this.state.contract_instance.Paint("0", "0", ['0xffffff', '0xff0000', '0x00ff00', '0x0000ff', '0x000000', '0x0f0f0f', '0xf0f0f0'], this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
+    var hex_color = `0x${ this.state.current_color.r.toString(16) }${ this.state.current_color.g.toString(16) }${ this.state.current_color.b.toString(16) }` //TODO: rgbtohex function
+	  this.state.contract_instance.Paint(Math.floor((Math.random() * 20) -10).toString(), Math.floor((Math.random() * 20) - 10).toString(), hex_color, this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
   }
+  
   thresholds_fetched() {
-	return this.state.thresholds.length
+    return this.state.thresholds.length
+  }
+  
+  handleColorChangeComplete(new_color) {
+    this.setState({ current_color: new_color.rgb })
   }
 
   render() {
@@ -175,7 +200,7 @@ class App extends Component {
     else
       retarget_info = ''
     
-    let rects = this.state.pixels.map((p) => {
+    let rects = this.state.pixels.map(p => {
       return <ColoredRect pixel={p} canvas_size_x={window.innerWidth} canvas_size_y={window.innerHeight}/>
     })
     return (
@@ -189,6 +214,10 @@ class App extends Component {
             <div className="pure-u-1-1">
               <h1>Good to Go!</h1>
               <p>Your Truffle Box is installed and ready.</p>
+              <SketchPicker
+                color={ this.state.current_color }
+                onChangeComplete={ this.handleColorChangeComplete.bind(this) }
+              />
               <button onClick={this.paint.bind(this)}>
                 Paint
               </button>
