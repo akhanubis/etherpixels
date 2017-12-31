@@ -53,4 +53,8 @@ contract usingCanvasBoundaries {
 	    CurrentBoundaries(min_bound, max_bound);
 		require(_c1 >= min_bound && _c1 <= max_bound && _c2 >= min_bound && _c2 <= max_bound);
 	}
+	
+	function ThresholdsLength() public constant returns(uint count) {
+		return boundaries_thresholds.length;
+	}
 }
