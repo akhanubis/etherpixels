@@ -27,7 +27,7 @@ class CanvasContainer extends React.Component {
       return <Pixel pixel={p} canvas_size_x={this.state.width} canvas_size_y={this.state.height}/>
     })
     return (
-      <div style={{width: '1000px', height: '800px', display: 'block'}} ref={(input) => { this.canvasContainer = input }}>
+      <div style={{border: 'solid 1px black', width: '1000px', height: '800px', display: 'block'}} ref={(input) => { this.canvasContainer = input }}>
         <Stage width={this.state.width} height={this.state.height}>
           <Layer>                
             {pixels}

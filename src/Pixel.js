@@ -4,12 +4,10 @@ import { Rect } from "react-konva";
 class Pixel extends React.Component {
   constructor(props) {
     super(props)
-    this.pixel_size = 40
-    this.x_offset = props.canvas_size_x / 2
-    this.y_offset = props.canvas_size_y / 2
+    this.pixel_size = 30
     this.state = {
-      x: props.canvas_size_x / 2 + this.pixel_size * props.pixel.x,
-      y: props.canvas_size_y / 2 + this.pixel_size * props.pixel.y,
+      x: (props.canvas_size_x - this.pixel_size) / 2 + this.pixel_size * props.pixel.x,
+      y: (props.canvas_size_y - this.pixel_size) / 2 + this.pixel_size * props.pixel.y,
       color_index: 0,
       pixel: props.pixel
     }

@@ -1,4 +1,6 @@
 var ColorUtils = (() => {
+  var emptyColor = ['#000000']
+  
   var _intToPaddedHex = (int) => {
     return ('00' + int.toString(16)).slice(-2)
   }
@@ -35,7 +37,8 @@ var ColorUtils = (() => {
   
   return {
     rgbArrayToBytes32: rgbArrayToBytes32,
-    bytes32ToHexArray: bytes32ToHexArray
+    bytes32ToHexArray: bytes32ToHexArray,
+    emptyColor: emptyColor
   }
 })()
 

@@ -25,7 +25,7 @@ class App extends Component {
       account: null,
       //min: 0,
       //max: 0,
-      min: -15,
+      min: -20,
       max: 30,
       thresholds: [],
       genesis_block: null,
@@ -108,6 +108,20 @@ class App extends Component {
         //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
 		
         this.setState({ contract_instance: instance, account: accounts[0] })
+        
+        //TODO: sacar y hacer esta logica en el evento de boundaries
+        this.setState(prev_state => {
+          const new_pixels = [...prev_state.pixels]
+          for(var x = this.state.min; x <= this.state.max; x++) {
+            for(var y = this.state.min; y <= this.state.max; y++) {
+              var new_pixel = new PixelData(x, y, null, '', '')
+              var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
+              if (existing_index === -1)
+                new_pixels.push(new_pixel)
+            }
+          }
+          return { pixels: new_pixels }
+        })
       })
       
       this.state.web3.eth.filter("latest").watch((error, block_hash) => {
