@@ -5,7 +5,6 @@ import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
 import { Col } from 'react-bootstrap';
 import PixelData from './PixelData'
-import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
 import CanvasContainer from './CanvasContainer'
 import ColorUtils from './utils/ColorUtils'
@@ -136,7 +135,7 @@ class App extends Component {
   
   paint(e) {
 	  e.preventDefault()
-    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbToHex(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
+    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbArrayToBytes32([this.state.current_color]), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
   }
   
   thresholds_fetched() {

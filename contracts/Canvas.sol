@@ -7,7 +7,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
 	int constant public chunk_size_squared = 400;
 	
 	struct Pixel {
-        bytes32 color;
+        bytes32 color; // 0..1: number of frames, 2..32: 3 bytes per frame
         bytes32 signature;
         uint floor_price;
         address owner;
