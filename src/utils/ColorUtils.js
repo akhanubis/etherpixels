@@ -9,7 +9,6 @@ var ColorUtils = (() => {
     return `${ _intToPaddedHex(rgb.r) }${ _intToPaddedHex(rgb.g) }${ _intToPaddedHex(rgb.b) }`
   }
   
-  
   //unused
   var _hexToRgb = (hex) => {
     return {
@@ -18,6 +17,10 @@ var ColorUtils = (() => {
       b: parseInt(hex.substr(4, 2), 16),
       a: 255
     }
+  }
+  
+  var _randomChannel = () => {
+    return Math.floor(Math.random() * 256)
   }
   
   var rgbArrayToBytes32 = (rgbs) => {
@@ -35,10 +38,20 @@ var ColorUtils = (() => {
     return colors
   }
   
+  var randomColor = () => {
+    return {
+      r: _randomChannel(),
+      g: _randomChannel(),
+      b: _randomChannel(),
+      a: 255
+    }
+  }
+  
   return {
     rgbArrayToBytes32: rgbArrayToBytes32,
     bytes32ToHexArray: bytes32ToHexArray,
-    emptyColor: emptyColor
+    emptyColor: emptyColor,
+    randomColor: randomColor
   }
 })()
 

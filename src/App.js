@@ -6,6 +6,7 @@ import {Helmet} from "react-helmet"
 import { Col } from 'react-bootstrap';
 import PixelData from './PixelData'
 import CoordPicker from './CoordPicker'
+import Timer from './Timer'
 import CanvasContainer from './CanvasContainer'
 import ColorUtils from './utils/ColorUtils'
 
@@ -53,6 +54,24 @@ class App extends Component {
       console.log('Error finding web3.')
     })
   }
+  
+  /*
+  componentDidMount() {
+    //TODO: sacar y hacer esta logica en el evento de boundaries
+    this.setState(prev_state => {
+      const new_pixels = [...prev_state.pixels]
+      for(var x = this.state.min; x <= this.state.max; x++) {
+        for(var y = this.state.min; y <= this.state.max; y++) {
+          var new_pixel = new PixelData(x, y, null, '', '', this.colorTimer)
+          var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
+          if (existing_index === -1)
+            new_pixels.push(new_pixel)
+        }
+      }
+      return { pixels: new_pixels }
+    })
+  }
+  */
 
   instantiateContract() {
     /*
@@ -80,7 +99,7 @@ class App extends Component {
           if (error)
             console.error(error)
           else {
-            var new_pixel = new PixelData(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner)
+            var new_pixel = new PixelData(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner, this.colorTimer)
             this.setState(prev_state => {
               const new_pixels = [...prev_state.pixels]
               var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
@@ -108,20 +127,6 @@ class App extends Component {
         //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
 		
         this.setState({ contract_instance: instance, account: accounts[0] })
-        
-        //TODO: sacar y hacer esta logica en el evento de boundaries
-        this.setState(prev_state => {
-          const new_pixels = [...prev_state.pixels]
-          for(var x = this.state.min; x <= this.state.max; x++) {
-            for(var y = this.state.min; y <= this.state.max; y++) {
-              var new_pixel = new PixelData(x, y, null, '', '')
-              var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
-              if (existing_index === -1)
-                new_pixels.push(new_pixel)
-            }
-          }
-          return { pixels: new_pixels }
-        })
       })
       
       this.state.web3.eth.filter("latest").watch((error, block_hash) => {
@@ -149,7 +154,7 @@ class App extends Component {
   
   paint(e) {
 	  e.preventDefault()
-    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbArrayToBytes32([this.state.current_color]), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
+    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbArrayToBytes32([this.state.current_color, ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor()]), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
   }
   
   thresholds_fetched() {
@@ -195,6 +200,7 @@ class App extends Component {
         </nav>
 
         <main className="container-fluid">
+          <Timer ref={(e) => { this.colorTimer = e }} />
           <div className="pure-g">
             <Col md={4}>
               <div className="pure-u-1-1">
