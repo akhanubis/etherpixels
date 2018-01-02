@@ -124,6 +124,24 @@ class App extends Component {
           })
         })
         
+        // MUY TEMPORAL, agarrar todo en una sola call o en una batch call o hacer una funcion que devuelva todo o w/e
+        for(var x = this.state.min; x <= this.state.max; x++) {
+          for(var y = this.state.min; y <= this.state.max; y++) {
+            ((_x, _y) => {
+              instance.pixels.call(_x, _y).then(result => {
+                if (parseInt(result[3], 16)) { // not null address
+                  var new_pixel = new PixelData(_x, _y, result[0], result[1], result[2], this.colorTimer)
+                  this.setState(prev_state => {
+                    const new_pixels = [...prev_state.pixels]
+                    new_pixels.push(new_pixel)
+                    return { pixels: new_pixels }
+                  })
+                }
+              })
+            })(x, y)
+          }
+        }
+       
         //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
 		
         this.setState({ contract_instance: instance, account: accounts[0] })

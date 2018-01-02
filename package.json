@@ -56,7 +56,8 @@
     "react-color": "^2.13.8",
     "react-dom": "^15.6.2",
     "react-helmet": "^5.2.0",
-    "react-konva": "^1.1.6"
+    "react-konva": "^1.1.6",
+    "truffle-hdwallet-provider": "0.0.3"
   },
   "scripts": {
     "start": "node scripts/start.js",
