@@ -8,7 +8,6 @@ import { Col } from 'react-bootstrap';
 import PixelData from './PixelData'
 import CoordPicker from './CoordPicker'
 import Timer from './Timer'
-import CanvasContainer from './CanvasContainer'
 import ColorUtils from './utils/ColorUtils'
 
 import './css/oswald.css'
@@ -41,6 +40,7 @@ class App extends Component {
       y: 0,
       z: 0
     }
+    this.processed_txs = []
   }
 
   componentWillMount() {
@@ -63,6 +63,7 @@ class App extends Component {
 
   fetch_pixel_buffer() {
     var img = new Image()
+    this.last_cache_block = 0 //TODO
     img.src = '4097_4097.png'
     var canvas = this.canvas
     this.canvas_context = canvas.getContext('2d')
@@ -85,7 +86,6 @@ class App extends Component {
       img.style.display = 'none'
       var buffer = this.canvas_context.getImageData(image_top.x, image_top.y, this.state.image_size.x, this.state.image_size.y).data
       this.setState({ pixel_buffer: buffer })
-      console.log(this.state.pixel_buffer)
       this.start_watching()
     }
   }
@@ -97,25 +97,50 @@ class App extends Component {
     }
   }
   
-  start_watching() {
-    this.contract_instance.PixelSold().watch((error, result) => {
-      if (error)
-        console.error(error)
-      else {
-        var new_pixel = new PixelData(result.args)
-        this.update_buffer(new_pixel)
-      }
-    })
+  new_tx(tx_hash) {
+    var new_tx = !this.processed_txs.includes(tx_hash)
+    if (new_tx)
+      this.processed_txs.push(tx_hash)
+    return new_tx
   }
   
-  update_buffer(new_pixel) {
-    console.log(new_pixel.image_data)
-    var img_top = this.image_top_position()
-    this.canvas_context.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
+  pixel_sold_handler(error, result) {
+    if (error)
+      console.error(error)
+    else
+      if (result.transactionHash) // event, not log
+        result = [result]
+      this.process_pixel_solds(result)
+  }
+  
+  start_watching() {
+    var pixel_sold_event = this.contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
+    pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
+    pixel_sold_event.get(this.pixel_sold_handler.bind(this))
+  }
+  
+  process_pixel_solds(log) {
+    var new_pixels = log.reduce((pixel_data, l) => {
+      if (this.new_tx(l.transactionHash))
+        pixel_data.push(new PixelData(l.args))
+      return pixel_data
+    }, [])
+    if (new_pixels.length)
+      this.update_buffer(new_pixels)
+  }
+  
+  update_buffer(new_pixels) {
+    for(var i = 0; i < new_pixels.length; i++) {
+      var new_pixel = new_pixels[i]
+      var img_top = this.image_top_position()
+      this.canvas_context.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
+    }
     this.update_zoom()
   }
   
   update_zoom(e) {
+    if (!(e || this.state.current_zoom))
+      return
     if (e)
       this.setState({ current_zoom: { x: e.layerX, y: e.layerY } })
     this.zoom_canvas_context.drawImage(this.canvas,
@@ -157,7 +182,6 @@ class App extends Component {
             y: contract_canvas_size[1].toNumber(),
             z: contract_canvas_size[2].toNumber()
           }})
-          console.log(this.state.image_size)
           this.fetch_pixel_buffer()
         })
           

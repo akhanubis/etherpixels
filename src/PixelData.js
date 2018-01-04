@@ -13,9 +13,7 @@ class PixelData {
   }
   
   build_image_data() {
-    console.log(this.color)
     var pixel_array = new Uint8ClampedArray(ColorUtils.bytes3ToIntArray(this.color))
-    console.log(pixel_array)
     this.image_data = new ImageData(pixel_array, 1, 1)
   }
 }
