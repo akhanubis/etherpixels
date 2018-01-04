@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 import React, { Component } from 'react'
 
 class Timer extends React.Component {
@@ -14,7 +15,7 @@ class Timer extends React.Component {
     this.event_ref.dispatchEvent(this.tick_event)
   }
   
-  componentDidMount() {
+  start() {
     this.interval = setInterval(this.tick.bind(this), 1000)
   }
   

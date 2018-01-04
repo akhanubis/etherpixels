@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
@@ -13,6 +14,7 @@ import ColorUtils from './utils/ColorUtils'
 import './css/oswald.css'
 import './css/open-sans.css'
 import './css/pure-min.css'
+import './truffle.css'
 import './App.css'
 
 class App extends Component {
@@ -20,10 +22,13 @@ class App extends Component {
     super(props)
 
     this.state = {
-      pixels: [],
+      pixel_buffer: null,
+      canvas_size: {
+        x: 5000,
+        y: 5000
+      },
+      image_size: {},
       web3: null,
-      contract_instance: null,
-      account: null,
       //min: 0,
       //max: 0,
       min: -20,
@@ -33,7 +38,8 @@ class App extends Component {
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
       x: 0,
-      y: 0
+      y: 0,
+      z: 0
     }
   }
 
@@ -54,25 +60,72 @@ class App extends Component {
       console.log('Error finding web3.')
     })
   }
+
+  fetch_pixel_buffer() {
+    var img = new Image()
+    img.src = '4097_4097.png'
+    var canvas = this.canvas
+    this.canvas_context = canvas.getContext('2d')
+    this.canvas_context.imageSmoothingEnabled = false
+    this.canvas_context.mozImageSmoothingEnabled = false
+    this.canvas_context.webkitImageSmoothingEnabled = false
+    this.canvas_context.msImageSmoothingEnabled = false
+    this.zoom_canvas_context = this.zoom_canvas.getContext('2d')
+    this.zoom_canvas_context.imageSmoothingEnabled = false
+    this.zoom_canvas_context.mozImageSmoothingEnabled = false
+    this.zoom_canvas_context.webkitImageSmoothingEnabled = false
+    this.zoom_canvas_context.msImageSmoothingEnabled = false
+    this.canvas.addEventListener('mousemove', this.update_zoom.bind(this))
+    this.canvas_context.fillStyle = 'gray'
+    this.canvas_context.fillRect(0, 0, this.state.canvas_size.x, this.state.canvas_size.y)
+    
+    img.onload = () => {
+      var image_top = this.image_top_position()
+      this.canvas_context.drawImage(img, image_top.x, image_top.y)
+      img.style.display = 'none'
+      var buffer = this.canvas_context.getImageData(image_top.x, image_top.y, this.state.image_size.x, this.state.image_size.y).data
+      this.setState({ pixel_buffer: buffer })
+      console.log(this.state.pixel_buffer)
+      this.start_watching()
+    }
+  }
   
-  /*
-  componentDidMount() {
-    //TODO: sacar y hacer esta logica en el evento de boundaries
-    this.setState(prev_state => {
-      const new_pixels = [...prev_state.pixels]
-      for(var x = this.state.min; x <= this.state.max; x++) {
-        for(var y = this.state.min; y <= this.state.max; y++) {
-          var new_pixel = new PixelData(x, y, null, '', '', this.colorTimer)
-          var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
-          if (existing_index === -1)
-            new_pixels.push(new_pixel)
-        }
+  image_top_position() {
+    return {
+      x: Math.floor((this.state.canvas_size.x - this.state.image_size.x) / 2),
+      y: Math.floor((this.state.canvas_size.y - this.state.image_size.y) / 2)
+    }
+  }
+  
+  start_watching() {
+    this.contract_instance.PixelSold().watch((error, result) => {
+      if (error)
+        console.error(error)
+      else {
+        var new_pixel = new PixelData(result.args)
+        this.update_buffer(new_pixel)
       }
-      return { pixels: new_pixels }
     })
   }
-  */
-
+  
+  update_buffer(new_pixel) {
+    console.log(new_pixel.image_data)
+    var img_top = this.image_top_position()
+    this.canvas_context.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
+    this.update_zoom()
+  }
+  
+  update_zoom(e) {
+    if (e)
+      this.setState({ current_zoom: { x: e.layerX, y: e.layerY } })
+    this.zoom_canvas_context.drawImage(this.canvas,
+                      Math.abs(this.state.current_zoom.x - 5),
+                      Math.abs(this.state.current_zoom.y - 5),
+                      10, 10,
+                      0, 0,
+                      200, 200)
+  }
+  
   instantiateContract() {
     /*
      * SMART CONTRACT EXAMPLE
@@ -88,6 +141,9 @@ class App extends Component {
     // Get accounts.
     this.state.web3.eth.getAccounts((error, accounts) => {
       canvasContract.deployed().then((instance) => {
+        this.contract_instance = instance
+        this.account = accounts[0]
+        
         instance.CurrentBoundaries().watch((error, result) => {
           if (error)
             console.error(error)
@@ -95,22 +151,18 @@ class App extends Component {
             this.setState({ min: result.args['current_min'].toNumber(), max: result.args['current_max'].toNumber() })	
         })
         
-        instance.PixelPainted().watch((error, result) => {
-          if (error)
-            console.error(error)
-          else {
-            var new_pixel = new PixelData(result.args.x.toNumber(), result.args.y.toNumber(), result.args.new_color, result.args.new_signature, result.args.new_owner, this.colorTimer)
-            this.setState(prev_state => {
-              const new_pixels = [...prev_state.pixels]
-              var existing_index = prev_state.pixels.findIndex(p => { return p.x === new_pixel.x && p.y === new_pixel.y }) //TODO: crear indice bidimensional que referencie al index en el array unidim
-              if (existing_index === -1)
-                new_pixels.push(new_pixel)
-              else
-                new_pixels[existing_index] = new_pixel
-              return { pixels: new_pixels }
-            })
-          }
+        instance.CanvasSize.call().then(contract_canvas_size => {
+          this.setState({ image_size: {
+            x: contract_canvas_size[0].toNumber(),
+            y: contract_canvas_size[1].toNumber(),
+            z: contract_canvas_size[2].toNumber()
+          }})
+          console.log(this.state.image_size)
+          this.fetch_pixel_buffer()
         })
+          
+        /*
+        
 		
         instance.ThresholdsData.call().then(thresholds_data => {
           var t_length = thresholds_data[0].length
@@ -123,15 +175,18 @@ class App extends Component {
             thresholds: ts
           })
         })
+        */
+        
         
         // MUY TEMPORAL, agarrar todo en una sola call o en una batch call o hacer una funcion que devuelva todo o w/e
+        /*
         setInterval(() => {
           for(var x = this.state.min; x <= this.state.max; x++) {
             for(var y = this.state.min; y <= this.state.max; y++) {
               ((_x, _y) => {
-                instance.pixels.call(_x, _y).then(result => {
+                instance.pixels.call(_x, _y, 0).then(result => {
                   if (parseInt(result[3], 16)) { // not null address
-                    var new_pixel = new PixelData(_x, _y, result[0], result[1], result[2], this.colorTimer)
+                    var new_pixel = new PixelData(_x, _y, result[0], result[1], result[2])
                     this.setState(prev_state => {
                       const new_pixels = [...prev_state.pixels]
                       new_pixels.push(new_pixel)
@@ -143,10 +198,9 @@ class App extends Component {
             }
           }
         }, 30000)
+        */
        
         //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
-		
-        this.setState({ contract_instance: instance, account: accounts[0] })
       })
       
       this.state.web3.eth.filter("latest").watch((error, block_hash) => {
@@ -173,8 +227,8 @@ class App extends Component {
   }
   
   paint(e) {
-	  e.preventDefault()
-    this.state.contract_instance.Paint(this.state.x, this.state.y, ColorUtils.rgbArrayToBytes32([this.state.current_color, ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor(), ColorUtils.randomColor()]), this.state.web3.fromAscii('pablo'), { from: this.state.account, value: "3000000000", gas: "2000000" })
+    e.preventDefault()
+    this.contract_instance.Paint(this.state.x, this.state.y, this.state.z, ColorUtils.rgbToBytes3(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
   }
   
   thresholds_fetched() {
@@ -207,7 +261,6 @@ class App extends Component {
     }
     else
       retarget_info = ''
-    
     return (
       <div className="App">
         <Helmet>
@@ -242,7 +295,12 @@ class App extends Component {
               </div>
             </Col>
             <Col md={8}>
-              <CanvasContainer pixels={this.state.pixels} />
+              <div className='canvas-container-container'>
+                <canvas className='zoom-canvas' width={200} height={200} ref={(c) => {this.zoom_canvas = c}}></canvas>
+                <div className='canvas-container'>
+                  <canvas className='canvas' width={this.state.canvas_size.x} height={this.state.canvas_size.y} ref={(c) => {this.canvas = c}}></canvas>  
+                </div>
+              </div>
             </Col>
           </div>
         </main>
