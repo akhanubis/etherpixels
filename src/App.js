@@ -50,7 +50,8 @@ class App extends Component {
     getWeb3
     .then(results => {
       this.setState({
-        web3: results.web3
+        web3: results.web3,
+        infura: results.infura
       })
 
       // Instantiate contract once web3 provided.
@@ -114,7 +115,7 @@ class App extends Component {
   }
   
   start_watching() {
-    var pixel_sold_event = this.contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
+    var pixel_sold_event = this.infura_contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
     pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
     pixel_sold_event.get(this.pixel_sold_handler.bind(this))
   }
@@ -162,6 +163,28 @@ class App extends Component {
     const contract = require('truffle-contract')
     const canvasContract = contract(CanvasContract)
     canvasContract.setProvider(this.state.web3.currentProvider)
+    
+    var canvasContract2 = contract(CanvasContract)
+    canvasContract2.setProvider(this.state.infura.currentProvider)
+    canvasContract2.deployed().then((instance) => {
+      this.infura_contract_instance = instance
+      
+      instance.CurrentBoundaries().watch((error, result) => {
+        if (error)
+          console.error(error)
+        else
+          this.setState({ min: result.args['current_min'].toNumber(), max: result.args['current_max'].toNumber() })	
+      })
+        
+      instance.CanvasSize.call().then(contract_canvas_size => {
+        this.setState({ image_size: {
+          x: contract_canvas_size[0].toNumber(),
+          y: contract_canvas_size[1].toNumber(),
+          z: contract_canvas_size[2].toNumber()
+        }})
+        this.fetch_pixel_buffer()
+      })
+    })
 
     // Get accounts.
     this.state.web3.eth.getAccounts((error, accounts) => {
@@ -169,21 +192,7 @@ class App extends Component {
         this.contract_instance = instance
         this.account = accounts[0]
         
-        instance.CurrentBoundaries().watch((error, result) => {
-          if (error)
-            console.error(error)
-          else
-            this.setState({ min: result.args['current_min'].toNumber(), max: result.args['current_max'].toNumber() })	
-        })
         
-        instance.CanvasSize.call().then(contract_canvas_size => {
-          this.setState({ image_size: {
-            x: contract_canvas_size[0].toNumber(),
-            y: contract_canvas_size[1].toNumber(),
-            z: contract_canvas_size[2].toNumber()
-          }})
-          this.fetch_pixel_buffer()
-        })
           
         /*
         
@@ -202,27 +211,7 @@ class App extends Component {
         */
         
         
-        // MUY TEMPORAL, agarrar todo en una sola call o en una batch call o hacer una funcion que devuelva todo o w/e
-        /*
-        setInterval(() => {
-          for(var x = this.state.min; x <= this.state.max; x++) {
-            for(var y = this.state.min; y <= this.state.max; y++) {
-              ((_x, _y) => {
-                instance.pixels.call(_x, _y, 0).then(result => {
-                  if (parseInt(result[3], 16)) { // not null address
-                    var new_pixel = new PixelData(_x, _y, result[0], result[1], result[2])
-                    this.setState(prev_state => {
-                      const new_pixels = [...prev_state.pixels]
-                      new_pixels.push(new_pixel)
-                      return { pixels: new_pixels }
-                    })
-                  }
-                })
-              })(x, y)
-            }
-          }
-        }, 30000)
-        */
+        
        
         //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
       })
@@ -290,6 +279,7 @@ class App extends Component {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Pavlito clabo un clabito</title>
+          <script src='ZeroClientProvider.js' type='text/javascript'></script>
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <nav className="navbar pure-menu pure-menu-horizontal">

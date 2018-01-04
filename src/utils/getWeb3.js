@@ -7,12 +7,23 @@ let getWeb3 = new Promise(function(resolve, reject) {
     var web3 = window.web3
 
     // Checking if Web3 has been injected by the browser (Mist/MetaMask)
-    if (false) /*(typeof web3 !== 'undefined')*/ { //TODO ARREGLAR ESTO CUANDO METAMASK ARREGLE LOS EVENTOS
+    if (typeof web3 !== 'undefined') { //TODO ARREGLAR ESTO CUANDO METAMASK ARREGLE LOS EVENTOS
       // Use Mist/MetaMask's provider.
       web3 = new Web3(web3.currentProvider)
+      var infura = new Web3(window.ZeroClientProvider({
+              static: {
+                eth_syncing: false,
+                web3_clientVersion: 'ZeroClientProvider',
+              },
+              pollingInterval: 99999999, // not interested in polling for new blocks
+              rpcUrl: 'https://ropsten.infura.io/koPGObK3IvOlTaqovf2G',
+              // account mgmt
+              getAccounts: (cb) => cb(null, [])
+            }))
 
       results = {
-        web3: web3
+        web3: web3,
+        infura: infura
       }
 
       console.log('Injected web3 detected.');
