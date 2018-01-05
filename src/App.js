@@ -7,8 +7,8 @@ import {Helmet} from "react-helmet"
 import { Col } from 'react-bootstrap';
 import PixelData from './PixelData'
 import CoordPicker from './CoordPicker'
-import Timer from './Timer'
 import ColorUtils from './utils/ColorUtils'
+import Canvas from './Canvas'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -21,7 +21,6 @@ class App extends Component {
     super(props)
 
     this.state = {
-      pixel_buffer: null,
       canvas_viewport_size: {
         width: 800,
         height: 800
@@ -74,35 +73,16 @@ class App extends Component {
     })
   }
 
-  fetch_pixel_buffer() {
+  load_canvases() {
     var img = new Image()
     this.last_cache_block = 0 //TODO
     img.src = '2049_2049.png'
-    var canvas = this.canvas
-    this.canvas_context = canvas.getContext('2d')
-    this.canvas_context.imageSmoothingEnabled = false
-    this.canvas_context.mozImageSmoothingEnabled = false
-    this.canvas_context.webkitImageSmoothingEnabled = false
-    this.canvas_context.msImageSmoothingEnabled = false
-    this.zoom_canvas_context = this.zoom_canvas.getContext('2d')
-    this.zoom_canvas_context.imageSmoothingEnabled = false
-    this.zoom_canvas_context.mozImageSmoothingEnabled = false
-    this.zoom_canvas_context.webkitImageSmoothingEnabled = false
-    this.zoom_canvas_context.msImageSmoothingEnabled = false
-    this.minimap_canvas_context = this.minimap_canvas.getContext('2d')
-    this.canvas.addEventListener('mousemove', this.update_zoom.bind(this))
-    this.canvas_context.fillStyle = 'gray'
-    this.canvas_context.fillRect(0, 0, this.state.canvas_size.x, this.state.canvas_size.y)
-    this.minimap_canvas.addEventListener('click', this.click_on_minimap.bind(this))
-    
     img.onload = () => {
       var image_top = this.image_top_position()
-      this.canvas_context.drawImage(img, image_top.x, image_top.y)
+      this.main_canvas.drawImage(img, image_top.x, image_top.y)
       img.style.display = 'none'
-      var buffer = this.canvas_context.getImageData(image_top.x, image_top.y, this.state.image_size.x, this.state.image_size.y).data
-      this.setState({ pixel_buffer: buffer })
       this.start_watching()
-      this.update_buffer([])
+      this.update_pixels([])
     }
   }
   
@@ -143,14 +123,14 @@ class App extends Component {
       return pixel_data
     }, [])
     if (new_pixels.length)
-      this.update_buffer(new_pixels)
+      this.update_pixels(new_pixels)
   }
   
-  update_buffer(new_pixels) {
+  update_pixels(new_pixels) {
+    var img_top = this.image_top_position()
     for(var i = 0; i < new_pixels.length; i++) {
       var new_pixel = new_pixels[i]
-      var img_top = this.image_top_position()
-      this.canvas_context.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
+      this.main_canvas.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
     }
     this.update_zoom()
     this.update_minimap()
@@ -161,7 +141,7 @@ class App extends Component {
       return
     if (e)
       this.setState({ current_zoom: { x: e.layerX, y: e.layerY } })
-    this.zoom_canvas_context.drawImage(this.canvas,
+    this.zoom_canvas.drawImage(this.main_canvas.canvas,
                       Math.abs(this.state.current_zoom.x - 5),
                       Math.abs(this.state.current_zoom.y - 5),
                       10, 10,
@@ -170,7 +150,7 @@ class App extends Component {
   }
   
   update_minimap() {
-    this.minimap_canvas_context.drawImage(this.canvas,
+    this.minimap_canvas.drawImage(this.main_canvas.canvas,
                       0, 0,
                       this.state.canvas_size.x, this.state.canvas_size.y,
                       0, 0,
@@ -178,6 +158,7 @@ class App extends Component {
   }
   
   click_on_minimap(e) {
+    if (e.button !== 0) return
     let percX = e.layerX / this.state.minimap_size.width
     let percY = e.layerY / this.state.minimap_size.height
     this.canvas_container.scrollTop = percY * this.state.canvas_size.y - 0.5 * this.state.canvas_viewport_size.height
@@ -214,7 +195,7 @@ class App extends Component {
           y: contract_canvas_size[1].toNumber(),
           z: contract_canvas_size[2].toNumber()
         }})
-        this.fetch_pixel_buffer()
+        this.load_canvases()
       })
     })
 
@@ -335,7 +316,6 @@ class App extends Component {
         </nav>
 
         <main className="container-fluid">
-          <Timer ref={(e) => { this.colorTimer = e }} />
           <div className="pure-g">
             <Col md={4}>
               <div className="pure-u-1-1">
@@ -358,10 +338,10 @@ class App extends Component {
             </Col>
             <Col md={8}>
               <div className='canvas-container-container' style={this.state.canvas_viewport_size}>
-                <canvas className='zoom-canvas' width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}}></canvas>
-                <canvas className='minimap-canvas' width={this.state.zoom_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}}></canvas>
+                <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
+                <Canvas className='minimap-canvas' on_mouse_click={this.click_on_minimap.bind(this)} aliasing={true} width={this.state.zoom_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
                 <div className='canvas-container' style={this.state.canvas_viewport_size} ref={(e) => {this.canvas_container = e}}>
-                  <canvas className='canvas' width={this.state.canvas_size.x} height={this.state.canvas_size.y} ref={(c) => {this.canvas = c}}></canvas>  
+                  <Canvas className='canvas' on_mouse_move={this.update_zoom.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.canvas_size.x} height={this.state.canvas_size.y} ref={(c) => {this.main_canvas = c}} />
                 </div>
               </div>
             </Col>

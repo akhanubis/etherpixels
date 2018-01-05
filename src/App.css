@@ -13,7 +13,6 @@
 .zoom-canvas {
   z-index: 9999;
   position: absolute;
-  background-color: red;
   border: solid 1px black;
   top: 0;
   left: 0;
@@ -22,7 +21,6 @@
 .minimap-canvas {
   z-index: 9999;
   position: absolute;
-  background-color: blue;
   border: solid 1px black;
   bottom: 0;
   right: 0;
