@@ -22,9 +22,21 @@ class App extends Component {
 
     this.state = {
       pixel_buffer: null,
+      canvas_viewport_size: {
+        width: 800,
+        height: 800
+      },
       canvas_size: {
-        x: 5000,
-        y: 5000
+        x: 2500,
+        y: 2500
+      },
+      minimap_size: {
+        width: 200,
+        height: 200
+      },
+      zoom_size: {
+        width: 200,
+        height: 200
       },
       image_size: {},
       web3: null,
@@ -40,7 +52,7 @@ class App extends Component {
       y: 0,
       z: 0
     }
-    this.processed_txs = []
+    this.processed_logs = []
   }
 
   componentWillMount() {
@@ -65,7 +77,7 @@ class App extends Component {
   fetch_pixel_buffer() {
     var img = new Image()
     this.last_cache_block = 0 //TODO
-    img.src = '4097_4097.png'
+    img.src = '2049_2049.png'
     var canvas = this.canvas
     this.canvas_context = canvas.getContext('2d')
     this.canvas_context.imageSmoothingEnabled = false
@@ -77,9 +89,11 @@ class App extends Component {
     this.zoom_canvas_context.mozImageSmoothingEnabled = false
     this.zoom_canvas_context.webkitImageSmoothingEnabled = false
     this.zoom_canvas_context.msImageSmoothingEnabled = false
+    this.minimap_canvas_context = this.minimap_canvas.getContext('2d')
     this.canvas.addEventListener('mousemove', this.update_zoom.bind(this))
     this.canvas_context.fillStyle = 'gray'
     this.canvas_context.fillRect(0, 0, this.state.canvas_size.x, this.state.canvas_size.y)
+    this.minimap_canvas.addEventListener('click', this.click_on_minimap.bind(this))
     
     img.onload = () => {
       var image_top = this.image_top_position()
@@ -88,6 +102,7 @@ class App extends Component {
       var buffer = this.canvas_context.getImageData(image_top.x, image_top.y, this.state.image_size.x, this.state.image_size.y).data
       this.setState({ pixel_buffer: buffer })
       this.start_watching()
+      this.update_buffer([])
     }
   }
   
@@ -98,11 +113,12 @@ class App extends Component {
     }
   }
   
-  new_tx(tx_hash) {
-    var new_tx = !this.processed_txs.includes(tx_hash)
-    if (new_tx)
-      this.processed_txs.push(tx_hash)
-    return new_tx
+  new_log(log_index, tx_hash) {
+    let log_id = `${tx_hash}-${log_index}`
+    let new_log = !this.processed_logs.includes(log_id)
+    if (new_log)
+      this.processed_logs.push(log_id)
+    return new_log
   }
   
   pixel_sold_handler(error, result) {
@@ -122,7 +138,7 @@ class App extends Component {
   
   process_pixel_solds(log) {
     var new_pixels = log.reduce((pixel_data, l) => {
-      if (this.new_tx(l.transactionHash))
+      if (this.new_log(l.logIndex, l.transactionHash))
         pixel_data.push(new PixelData(l.args))
       return pixel_data
     }, [])
@@ -137,6 +153,7 @@ class App extends Component {
       this.canvas_context.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
     }
     this.update_zoom()
+    this.update_minimap()
   }
   
   update_zoom(e) {
@@ -149,7 +166,22 @@ class App extends Component {
                       Math.abs(this.state.current_zoom.y - 5),
                       10, 10,
                       0, 0,
-                      200, 200)
+                      this.state.zoom_size.width, this.state.zoom_size.height)
+  }
+  
+  update_minimap() {
+    this.minimap_canvas_context.drawImage(this.canvas,
+                      0, 0,
+                      this.state.canvas_size.x, this.state.canvas_size.y,
+                      0, 0,
+                      this.state.minimap_size.width, this.state.minimap_size.height)
+  }
+  
+  click_on_minimap(e) {
+    let percX = e.layerX / this.state.minimap_size.width
+    let percY = e.layerY / this.state.minimap_size.height
+    this.canvas_container.scrollTop = percY * this.state.canvas_size.y - 0.5 * this.state.canvas_viewport_size.height
+    this.canvas_container.scrollLeft = percX * this.state.canvas_size.x - 0.5 * this.state.canvas_viewport_size.width
   }
   
   instantiateContract() {
@@ -241,7 +273,23 @@ class App extends Component {
   
   paint(e) {
     e.preventDefault()
-    this.contract_instance.Paint(this.state.x, this.state.y, this.state.z, ColorUtils.rgbToBytes3(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
+    
+    //this.contract_instance.Paint(this.state.x, this.state.y, this.state.z, ColorUtils.rgbToBytes3(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
+    
+    //this.contract_instance.BatchPaint(1, [this.state.x], [this.state.y], [this.state.z], [ColorUtils.rgbToBytes3(this.state.current_color)], [100000], this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
+    
+    var xx = parseInt(this.state.x)
+    var yy = parseInt(this.state.y)
+    var zz = parseInt(this.state.z)
+    let x = [xx, xx + 1, xx + 2, xx + 3, xx + 4, xx + 5, xx + 6, xx + 7, xx + 8, xx + 9, xx + 10]
+    let y = [yy, yy + 1, yy + 2, yy + 3, yy + 4, yy  + 5, yy + 6, yy + 7, yy + 8, yy + 9, yy + 10]
+    let z = [zz, zz, zz, zz, zz, zz, zz, zz, zz, zz, zz]
+    console.log(x)
+    console.log(y)
+    console.log(z)
+    let color = [ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor())]
+    let price = [100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
+    this.contract_instance.BatchPaint(10, x, y, z, color, price, this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "3000000" })
   }
   
   thresholds_fetched() {
@@ -309,9 +357,10 @@ class App extends Component {
               </div>
             </Col>
             <Col md={8}>
-              <div className='canvas-container-container'>
-                <canvas className='zoom-canvas' width={200} height={200} ref={(c) => {this.zoom_canvas = c}}></canvas>
-                <div className='canvas-container'>
+              <div className='canvas-container-container' style={this.state.canvas_viewport_size}>
+                <canvas className='zoom-canvas' width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}}></canvas>
+                <canvas className='minimap-canvas' width={this.state.zoom_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}}></canvas>
+                <div className='canvas-container' style={this.state.canvas_viewport_size} ref={(e) => {this.canvas_container = e}}>
                   <canvas className='canvas' width={this.state.canvas_size.x} height={this.state.canvas_size.y} ref={(c) => {this.canvas = c}}></canvas>  
                 </div>
               </div>

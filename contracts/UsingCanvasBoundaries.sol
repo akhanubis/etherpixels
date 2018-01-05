@@ -1,8 +1,8 @@
 pragma solidity ^0.4.18;
 
 contract usingCanvasBoundaries {
-  uint constant x_size = 4097;
-  uint constant y_size = 4097;
+  uint constant x_size = 2049;
+  uint constant y_size = 2049;
   uint constant z_size = 24;
   uint public constant half_max_canvas_size = 2048;
   uint public last_threshold; //TODO private

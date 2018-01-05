@@ -1,16 +1,12 @@
 .canvas-container {
   position: relative;
   border: none;
-  width: 1000px;
-  height: 900px;
   overflow: scroll
 }
 
 .canvas-container-container {
   position: relative;
   border: solid 1px black;
-  width: 1000px;
-  height: 900px;
   overflow: hidden
 }
 
@@ -19,8 +15,15 @@
   position: absolute;
   background-color: red;
   border: solid 1px black;
-  width: auto;
-  height: auto;
   top: 0;
   left: 0;
+}
+
+.minimap-canvas {
+  z-index: 9999;
+  position: absolute;
+  background-color: blue;
+  border: solid 1px black;
+  bottom: 0;
+  right: 0;
 }
