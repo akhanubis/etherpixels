@@ -21,23 +21,19 @@ class App extends Component {
     super(props)
 
     this.state = {
-      canvas_viewport_size: {
+      viewport_size: {
         width: 800,
         height: 800
       },
-      canvas_size: {
-        x: 2500,
-        y: 2500
-      },
       minimap_size: {
-        width: 200,
-        height: 200
+        width: 100,
+        height: 100
       },
       zoom_size: {
-        width: 200,
-        height: 200
+        width: 100,
+        height: 100
       },
-      image_size: {},
+      canvas_size: {},
       web3: null,
       //min: 0,
       //max: 0,
@@ -77,19 +73,72 @@ class App extends Component {
     var img = new Image()
     this.last_cache_block = 0 //TODO
     img.src = '2049_2049.png'
+    img.style.display = 'none'
     img.onload = () => {
-      var image_top = this.image_top_position()
-      this.main_canvas.drawImage(img, image_top.x, image_top.y)
-      img.style.display = 'none'
+      this.load_buffer_data(img)
+      this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
+      this.top_left_at = { x: 0.5, y: 0.5 }
+      this.redraw()
       this.start_watching()
       this.update_pixels([])
     }
   }
+
+  load_buffer_data(img) {
+    let canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+    this.pixel_buffer_ctx = canvas.getContext('2d')
+    this.pixel_buffer_ctx.drawImage(img, 0, 0)
+  }
+
+  redraw(){
+    let destination_top_left = this.destination_top_left()
+    let destination_size = this.destination_size()
+    this.main_canvas.clear()
+    this.main_canvas.drawImage(this.pixel_buffer_ctx.canvas,
+      0, 0,
+      this.state.canvas_size.width, this.state.canvas_size.height,
+      destination_top_left.x, destination_top_left.y,
+      destination_size.x, destination_size.y)
+    this.update_zoom()
+  }
   
-  image_top_position() {
+  whole_canvas_on_viewport_ratio() {
+    return this.state.viewport_size.width / this.state.canvas_size.width
+  }
+
+  destination_top_left() {
+    /*
+    top_left_at / wheel_zoom / result
+    0   1   => 400
+    0.5 1   => -624
+    1   1   => -1648
+    0   2   => 400
+    0.5 2   => -1648
+    1   2   => -3696
+    0   4   => 400
+    0.5 4   => -3696
+    1   4   => -7792
+    */
     return {
-      x: Math.floor((this.state.canvas_size.x - this.state.image_size.x) / 2),
-      y: Math.floor((this.state.canvas_size.y - this.state.image_size.y) / 2)
+      x: Math.floor((this.state.viewport_size.width * 0.5 - this.current_wheel_zoom * this.top_left_at.x * this.state.canvas_size.width)),
+      y: Math.floor((this.state.viewport_size.height * 0.5 - this.current_wheel_zoom * this.top_left_at.y * this.state.canvas_size.height))
+    }
+  }
+
+  destination_size() {
+    /*
+    wheel_zoom / result
+    1    => 2049
+    2    => 4098
+    0.5  => -112
+    0.39 => 0
+    0.25 => 144
+    */
+    return {
+      x: this.current_wheel_zoom * this.state.canvas_size.width,
+      y: this.current_wheel_zoom * this.state.canvas_size.height
     }
   }
   
@@ -127,13 +176,20 @@ class App extends Component {
   }
   
   update_pixels(new_pixels) {
+    /*
     var img_top = this.image_top_position()
     for(var i = 0; i < new_pixels.length; i++) {
       var new_pixel = new_pixels[i]
       this.main_canvas.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
     }
+    */
     this.update_zoom()
     this.update_minimap()
+  }
+
+  main_canvas_mouse_move(e) {
+    this.update_zoom(e)
+    this.drag_canvas(e)
   }
   
   update_zoom(e) {
@@ -149,22 +205,64 @@ class App extends Component {
                       this.state.zoom_size.width, this.state.zoom_size.height)
   }
   
+  drag_canvas(e) {
+    if (!e)
+      return
+    if (this.dragging_canvas)
+    {
+      let x = e.clientX
+      let y = e.clientY
+      this.drag_end = { x: x, y: y }
+      
+      this.top_left_at.x = this.top_left_at.x + (this.drag_end.x - this.drag_start.x) / (this.state.viewport_size.width * this.current_wheel_zoom)
+      this.top_left_at.y = this.top_left_at.y + (this.drag_end.y - this.drag_start.y) / (this.state.viewport_size.height * this.current_wheel_zoom)
+      this.redraw()
+      this.drag_start = this.drag_end
+    }
+  }
+
+  start_dragging(e) {
+    this.dragging_canvas = true
+    let x = e.clientX
+    let y = e.clientY
+    this.drag_start = { x: x, y: y }
+  }
+
+  stop_dragging(e) {
+    this.dragging_canvas = false
+    let x = e.clientX
+    let y = e.clientY
+    this.drag_end = { x: x, y: y }
+  }
+
   update_minimap() {
-    this.minimap_canvas.drawImage(this.main_canvas.canvas,
+    this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
-                      this.state.canvas_size.x, this.state.canvas_size.y,
+                      this.state.canvas_size.width, this.state.canvas_size.height,
                       0, 0,
                       this.state.minimap_size.width, this.state.minimap_size.height)
   }
   
   click_on_minimap(e) {
     if (e.button !== 0) return
-    let percX = e.layerX / this.state.minimap_size.width
-    let percY = e.layerY / this.state.minimap_size.height
-    this.canvas_container.scrollTop = percY * this.state.canvas_size.y - 0.5 * this.state.canvas_viewport_size.height
-    this.canvas_container.scrollLeft = percX * this.state.canvas_size.x - 0.5 * this.state.canvas_viewport_size.width
+    this.top_left_at = {
+      x: e.layerX / this.state.minimap_size.width,
+      y: e.layerY / this.state.minimap_size.height
+    }
+    this.redraw()
   }
   
+  wheel_zoom(e) {
+    e.preventDefault()
+    /* Check whether the wheel event is supported. */
+    if (e.type == "wheel") this.wheel_even_supported = true
+    else if (this.wheel_even_supported) return
+    /* Determine the direction of the scroll (< 0 → up, > 0 → down). */
+    var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
+    this.current_wheel_zoom = this.current_wheel_zoom * (delta > 0 ? 0.8 : 1.25)
+    this.redraw()
+  }
+
   instantiateContract() {
     /*
      * SMART CONTRACT EXAMPLE
@@ -190,9 +288,9 @@ class App extends Component {
       })
         
       instance.CanvasSize.call().then(contract_canvas_size => {
-        this.setState({ image_size: {
-          x: contract_canvas_size[0].toNumber(),
-          y: contract_canvas_size[1].toNumber(),
+        this.setState({ canvas_size: {
+          width: contract_canvas_size[0].toNumber(),
+          height: contract_canvas_size[1].toNumber(),
           z: contract_canvas_size[2].toNumber()
         }})
         this.load_canvases()
@@ -337,12 +435,10 @@ class App extends Component {
               </div>
             </Col>
             <Col md={8}>
-              <div className='canvas-container-container' style={this.state.canvas_viewport_size}>
+              <div className='canvas-container' style={this.state.viewport_size}>
                 <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                <Canvas className='minimap-canvas' on_mouse_click={this.click_on_minimap.bind(this)} aliasing={true} width={this.state.zoom_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
-                <div className='canvas-container' style={this.state.canvas_viewport_size} ref={(e) => {this.canvas_container = e}}>
-                  <Canvas className='canvas' on_mouse_move={this.update_zoom.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.canvas_size.x} height={this.state.canvas_size.y} ref={(c) => {this.main_canvas = c}} />
-                </div>
+                <Canvas className='minimap-canvas' on_mouse_click={this.click_on_minimap.bind(this)} aliasing={true} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
+                <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.stop_dragging.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
               </div>
             </Col>
           </div>
