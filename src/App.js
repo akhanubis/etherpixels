@@ -77,7 +77,7 @@ class App extends Component {
     img.onload = () => {
       this.load_buffer_data(img)
       this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
-      this.top_left_at = { x: 0.5, y: 0.5 }
+      this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
       this.redraw()
       this.start_watching()
       this.update_pixels([])
@@ -92,7 +92,7 @@ class App extends Component {
     this.pixel_buffer_ctx.drawImage(img, 0, 0)
   }
 
-  redraw(){
+  redraw(e){
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
     this.main_canvas.clear()
@@ -101,7 +101,7 @@ class App extends Component {
       this.state.canvas_size.width, this.state.canvas_size.height,
       destination_top_left.x, destination_top_left.y,
       destination_size.x, destination_size.y)
-    this.update_zoom()
+    this.update_zoom(e)
   }
   
   whole_canvas_on_viewport_ratio() {
@@ -109,21 +109,9 @@ class App extends Component {
   }
 
   destination_top_left() {
-    /*
-    top_left_at / wheel_zoom / result
-    0   1   => 400
-    0.5 1   => -624
-    1   1   => -1648
-    0   2   => 400
-    0.5 2   => -1648
-    1   2   => -3696
-    0   4   => 400
-    0.5 4   => -3696
-    1   4   => -7792
-    */
     return {
-      x: Math.floor((this.state.viewport_size.width * 0.5 - this.current_wheel_zoom * this.top_left_at.x * this.state.canvas_size.width)),
-      y: Math.floor((this.state.viewport_size.height * 0.5 - this.current_wheel_zoom * this.top_left_at.y * this.state.canvas_size.height))
+      x: this.state.viewport_size.width * 0.5 - this.point_at_center.x * this.current_wheel_zoom,
+      y: this.state.viewport_size.height * 0.5 - this.point_at_center.y * this.current_wheel_zoom
     }
   }
 
@@ -176,52 +164,42 @@ class App extends Component {
   }
   
   update_pixels(new_pixels) {
-    /*
-    var img_top = this.image_top_position()
     for(var i = 0; i < new_pixels.length; i++) {
       var new_pixel = new_pixels[i]
-      this.main_canvas.putImageData(new_pixel.image_data, img_top.x + new_pixel.x, img_top.y + new_pixel.y)
+      this.pixel_buffer_ctx.putImageData(new_pixel.image_data, new_pixel.x, new_pixel.y)
     }
-    */
-    this.update_zoom()
+    this.redraw()
     this.update_minimap()
-  }
-
-  main_canvas_mouse_move(e) {
-    this.update_zoom(e)
-    this.drag_canvas(e)
   }
   
   update_zoom(e) {
-    if (!(e || this.state.current_zoom))
+    if (!(e || this.current_zoom))
       return
     if (e)
-      this.setState({ current_zoom: { x: e.layerX, y: e.layerY } })
+      this.current_zoom = { x: e.layerX, y: e.layerY }
     this.zoom_canvas.drawImage(this.main_canvas.canvas,
-                      Math.abs(this.state.current_zoom.x - 5),
-                      Math.abs(this.state.current_zoom.y - 5),
+                      Math.abs(this.current_zoom.x - 5),
+                      Math.abs(this.current_zoom.y - 5),
                       10, 10,
                       0, 0,
                       this.state.zoom_size.width, this.state.zoom_size.height)
   }
   
-  drag_canvas(e) {
-    if (!e)
+  main_canvas_mouse_move(e) {
+    if (!(e && this.point_at_center))
       return
     if (this.dragging_canvas)
     {
-      let x = e.clientX
-      let y = e.clientY
-      this.drag_end = { x: x, y: y }
-      
-      this.top_left_at.x = this.top_left_at.x + (this.drag_end.x - this.drag_start.x) / (this.state.viewport_size.width * this.current_wheel_zoom)
-      this.top_left_at.y = this.top_left_at.y + (this.drag_end.y - this.drag_start.y) / (this.state.viewport_size.height * this.current_wheel_zoom)
-      this.redraw()
+      this.drag_end = { x: e.clientX, y: e.clientY }
+      this.point_at_center.x = this.point_at_center.x - (this.drag_end.x - this.drag_start.x) / this.current_wheel_zoom
+      this.point_at_center.y = this.point_at_center.y - (this.drag_end.y - this.drag_start.y) / this.current_wheel_zoom
       this.drag_start = this.drag_end
     }
+    this.redraw(e)
   }
 
   start_dragging(e) {
+    e.preventDefault()
     this.dragging_canvas = true
     let x = e.clientX
     let y = e.clientY
@@ -229,6 +207,7 @@ class App extends Component {
   }
 
   stop_dragging(e) {
+    e.preventDefault()
     this.dragging_canvas = false
     let x = e.clientX
     let y = e.clientY
@@ -245,9 +224,9 @@ class App extends Component {
   
   click_on_minimap(e) {
     if (e.button !== 0) return
-    this.top_left_at = {
-      x: e.layerX / this.state.minimap_size.width,
-      y: e.layerY / this.state.minimap_size.height
+    this.point_at_center = {
+      x: (e.layerX / this.state.minimap_size.width) * this.state.canvas_size.width,
+      y: (e.layerY / this.state.minimap_size.height) * this.state.canvas_size.height
     }
     this.redraw()
   }
