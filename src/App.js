@@ -222,15 +222,30 @@ class App extends Component {
                       this.state.minimap_size.width, this.state.minimap_size.height)
   }
   
-  click_on_minimap(e) {
-    if (e.button !== 0) return
+  update_from_minimap(e) {
     this.point_at_center = {
       x: (e.layerX / this.state.minimap_size.width) * this.state.canvas_size.width,
       y: (e.layerY / this.state.minimap_size.height) * this.state.canvas_size.height
     }
     this.redraw()
   }
+
+  hold_minimap(e) {
+    if (e.button === 0)
+      this.dragging_minimap = true
+  }
+
+  move_on_minimap(e) {
+    if (this.dragging_minimap)
+      this.update_from_minimap(e)
+  }
   
+  release_minimap(e) {
+    e.preventDefault()
+    this.dragging_minimap = false
+    this.update_from_minimap(e)
+  }
+
   wheel_zoom(e) {
     e.preventDefault()
     /* Check whether the wheel event is supported. */
@@ -416,7 +431,7 @@ class App extends Component {
             <Col md={8}>
               <div className='canvas-container' style={this.state.viewport_size}>
                 <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                <Canvas className='minimap-canvas' on_mouse_click={this.click_on_minimap.bind(this)} aliasing={true} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
+                <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={true} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
                 <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.stop_dragging.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
               </div>
             </Col>
