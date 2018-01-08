@@ -149,7 +149,6 @@ class App extends Component {
   
   start_watching() {
     var pixel_sold_event = this.infura_contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
-    pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
     pixel_sold_event.get(this.pixel_sold_handler.bind(this))
   }
   

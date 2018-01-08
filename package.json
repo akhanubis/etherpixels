@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "babel-preset-es2015": "^6.24.1",
+    "canvas": "^1.6.9",
     "dotenv": "^2.0.0",
     "react": "^15.6.2",
     "react-bootstrap": "^0.31.5",
@@ -64,7 +65,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "build_canvas_updater": "babel ./scripts/canvas_updater/canvas_updater_es6.js --out-file ./scripts/canvas_updater/build/canvas_updater.js",
+    "build_canvas_updater": "babel ./scripts/canvas_updater/canvas_updater_es6.js --out-file ./scripts/canvas_updater/build/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./scripts/canvas_updater/build/utils/ColorUtils.js",
     "start_canvas_updater_dev": "set NODE_ENV=development&&forever start scripts/canvas_updater/build/canvas_updater.js",
     "start_canvas_updater_prod": "set NODE_ENV=production&&forever start scripts/canvas_updater/build/canvas_updater.js"
   },
