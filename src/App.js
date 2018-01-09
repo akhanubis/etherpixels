@@ -5,8 +5,9 @@ import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
 import { Col } from 'react-bootstrap';
-import PixelData from './PixelData'
+import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
+import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
 import Canvas from './Canvas'
 
@@ -149,13 +150,14 @@ class App extends Component {
   
   start_watching() {
     var pixel_sold_event = this.infura_contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
+    pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
     pixel_sold_event.get(this.pixel_sold_handler.bind(this))
   }
   
   process_pixel_solds(log) {
     var new_pixels = log.reduce((pixel_data, l) => {
       if (this.new_log(l.logIndex, l.transactionHash))
-        pixel_data.push(new PixelData(l.args))
+        pixel_data.push(Pixel.from_contract(l.args))
       return pixel_data
     }, [])
     if (new_pixels.length)
@@ -185,32 +187,50 @@ class App extends Component {
   }
   
   main_canvas_mouse_move(e) {
-    if (!(e && this.point_at_center))
+    if (!this.point_at_center)
       return
+    let mouse_position = { x: e.layerX, y: e.layerY }
     if (this.dragging_canvas)
     {
-      this.drag_end = { x: e.clientX, y: e.clientY }
-      this.point_at_center.x = this.point_at_center.x - (this.drag_end.x - this.drag_start.x) / this.current_wheel_zoom
-      this.point_at_center.y = this.point_at_center.y - (this.drag_end.y - this.drag_start.y) / this.current_wheel_zoom
-      this.drag_start = this.drag_end
+      this.point_at_center.x = this.point_at_center.x - (mouse_position.x - this.drag_start.x) / this.current_wheel_zoom
+      this.point_at_center.y = this.point_at_center.y - (mouse_position.y - this.drag_start.y) / this.current_wheel_zoom
+      this.drag_start = mouse_position
+      this.redraw(e)
     }
-    this.redraw(e)
+    else
+      this.update_zoom(e)
+    this.setState({ hovering_pixel: this.pixel_at(
+      // point at center + distance between mouse pointer and center scaled by zoom factor
+      Math.floor(this.point_at_center.x + (mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom),
+      Math.floor(this.point_at_center.y + (mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom),
+      0)
+    })
+  }
+
+  pixel_at(x, y, z) {
+    let color_data = this.pixel_buffer_ctx.getImageData(x, y, 1, 1).data
+    let color = { r: color_data[0], g: color_data[1], b: color_data[2], a: 255 }
+    return new Pixel(
+      x,
+      y,
+      z,
+      ColorUtils.rgbToHex(color),
+      null,
+      null,
+      Math.floor(Math.random() * 500)
+    )
   }
 
   start_dragging(e) {
     e.preventDefault()
     this.dragging_canvas = true
-    let x = e.clientX
-    let y = e.clientY
-    this.drag_start = { x: x, y: y }
+    this.drag_start = { x: e.layerX, y: e.layerY }
   }
 
   stop_dragging(e) {
     e.preventDefault()
     this.dragging_canvas = false
-    let x = e.clientX
-    let y = e.clientY
-    this.drag_end = { x: x, y: y }
+    this.drag_end = { x: e.layerX, y: e.layerY }
   }
 
   update_minimap() {
@@ -248,7 +268,7 @@ class App extends Component {
   wheel_zoom(e) {
     e.preventDefault()
     /* Check whether the wheel event is supported. */
-    if (e.type == "wheel") this.wheel_even_supported = true
+    if (e.type === "wheel") this.wheel_even_supported = true
     else if (this.wheel_even_supported) return
     /* Determine the direction of the scroll (< 0 → up, > 0 → down). */
     var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
@@ -435,6 +455,7 @@ class App extends Component {
               </div>
             </Col>
           </div>
+          <Footer pixel={this.state.hovering_pixel} />
         </main>
       </div>
     )

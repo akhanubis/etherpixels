@@ -8,7 +8,7 @@ const ZeroClientProvider = require ('web3-provider-engine/zero.js')
  
 let get_web3 = () => {
   let provider = null
-  if (true)/*(process.env.NODE_ENV === 'development')*/ {
+  if (process.env.NODE_ENV === 'development') {
     console.log('Using development web3')
     provider = new Web3.providers.HttpProvider('http://127.0.0.1:9545')
   }
@@ -34,25 +34,17 @@ let process_pixel_solds = (pixel_solds) => {
     let img = new Canvas.Image
     img.src = file_data
     
-    //console.log(pixel_solds)
     let canvas = new Canvas(2049, 2049)
     let pixel_buffer_ctx = canvas.getContext('2d')
     pixel_buffer_ctx.drawImage(img, 0, 0)
     pixel_solds.forEach((log) => {
       let x = log.args.x.toNumber()
       let y = log.args.y.toNumber()
-
       let pixel_array = new Uint8ClampedArray(ColorUtils.bytes3ToIntArray(log.args.new_color))
       let image_data = new Canvas.ImageData(pixel_array, 1, 1)
-
       pixel_buffer_ctx.putImageData(image_data, x, y)
-      console.log("PUTEANDO DATA")
-      console.log(x)
-      console.log(y)
-      console.log(pixel_array)
     })
-    let uint8array = canvas.toBuffer()
-    fs.writeFileSync('test.png', uint8array, 'binary')
+    fs.writeFileSync('test.png', canvas.toBuffer(), 'binary')
   })
 }
 

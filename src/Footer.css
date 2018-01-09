@@ -1,0 +1,20 @@
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  margin-bottom: 40px;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: auto;
+  height: 40px;
+  line-height: 40px;
+  background-color: #f5f5f5;
+}
+
+.pixel-status {
+  text-align: left;
+}

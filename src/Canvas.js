@@ -1,10 +1,9 @@
-import React from 'react'
+import React, { Component } from 'react'
 import CanvasUtils from './utils/CanvasUtils'
 import WheelUtils from './utils/WheelUtils'
+import './Canvas.css'
 
-class Canvas extends React.Component {
-
-
+class Canvas extends Component {
   componentDidMount() {
     this.ctx = CanvasUtils.getContext(this.canvas, this.props.aliasing)
     this.clear()

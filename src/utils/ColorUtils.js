@@ -5,8 +5,8 @@ var ColorUtils = (() => {
     return ('00' + int.toString(16)).slice(-2)
   }
   
-  var _rgbToHex = (rgb) => {
-    return `${ _intToPaddedHex(rgb.r) }${ _intToPaddedHex(rgb.g) }${ _intToPaddedHex(rgb.b) }`
+  var rgbToHex = (rgb) => {
+    return `#${ _intToPaddedHex(rgb.r) }${ _intToPaddedHex(rgb.g) }${ _intToPaddedHex(rgb.b) }`
   }
   
   var _randomChannel = () => {
@@ -18,11 +18,15 @@ var ColorUtils = (() => {
   }
   
   var rgbToBytes3 = (rgb) => {
-    return '0x' + _rgbToHex(rgb)
+    return '0x' + rgbToHex(rgb).substr(1, 6)
   }
   
+  var hexToIntArray = (hex) => {
+    return [parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16), 255]
+  }
+
   var bytes3ToIntArray = (bytes3) => {
-    return [parseInt(bytes3.substr(2, 2), 16), parseInt(bytes3.substr(4, 2), 16), parseInt(bytes3.substr(6, 2), 16), 255]
+    return hexToIntArray(bytes3ToHex(bytes3))
   }
   
   var randomColor = () => {
@@ -36,8 +40,10 @@ var ColorUtils = (() => {
   
   return {
     rgbToBytes3: rgbToBytes3,
+    rgbToHex: rgbToHex,
     bytes3ToHex: bytes3ToHex,
     bytes3ToIntArray: bytes3ToIntArray,
+    hexToIntArray: hexToIntArray,
     emptyColor: emptyColor,
     randomColor: randomColor
   }

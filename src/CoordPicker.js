@@ -1,7 +1,6 @@
-// eslint-disable-next-line
 import React, { Component } from 'react'
 
-class CoordPicker extends React.Component {
+class CoordPicker extends Component {
   render() {
     return (
       <div>
