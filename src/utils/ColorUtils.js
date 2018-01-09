@@ -8,6 +8,16 @@ var ColorUtils = (() => {
   var rgbToHex = (rgb) => {
     return `#${ _intToPaddedHex(rgb.r) }${ _intToPaddedHex(rgb.g) }${ _intToPaddedHex(rgb.b) }`
   }
+
+  var hexToRgb = (hex) => {
+    let int_array = hexToIntArray(hex)
+    return {
+      r: int_array[0],
+      g: int_array[1],
+      b: int_array[2],
+      a: int_array[3]
+    }
+  }
   
   var _randomChannel = () => {
     return Math.floor(Math.random() * 256)
@@ -43,6 +53,7 @@ var ColorUtils = (() => {
     rgbToHex: rgbToHex,
     bytes3ToHex: bytes3ToHex,
     bytes3ToIntArray: bytes3ToIntArray,
+    hexToRgb: hexToRgb,
     hexToIntArray: hexToIntArray,
     emptyColor: emptyColor,
     randomColor: randomColor

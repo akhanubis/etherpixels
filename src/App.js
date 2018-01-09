@@ -189,31 +189,34 @@ class App extends Component {
   main_canvas_mouse_move(e) {
     if (!this.point_at_center)
       return
-    let mouse_position = { x: e.layerX, y: e.layerY }
+    this.mouse_position = { x: e.layerX, y: e.layerY }
     if (this.dragging_canvas)
-    {
-      this.point_at_center.x = this.point_at_center.x - (mouse_position.x - this.drag_start.x) / this.current_wheel_zoom
-      this.point_at_center.y = this.point_at_center.y - (mouse_position.y - this.drag_start.y) / this.current_wheel_zoom
-      this.drag_start = mouse_position
-      this.redraw(e)
-    }
+      this.drag(e)
     else
       this.update_zoom(e)
-    this.setState({ hovering_pixel: this.pixel_at(
-      // point at center + distance between mouse pointer and center scaled by zoom factor
-      Math.floor(this.point_at_center.x + (mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom),
-      Math.floor(this.point_at_center.y + (mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom),
-      0)
-    })
+    this.update_hovering_pixel()
   }
 
-  pixel_at(x, y, z) {
+  drag(e) {
+    this.point_at_center.x = this.point_at_center.x - (this.mouse_position.x - this.drag_start.x) / this.current_wheel_zoom
+    this.point_at_center.y = this.point_at_center.y - (this.mouse_position.y - this.drag_start.y) / this.current_wheel_zoom
+    this.drag_start = this.mouse_position
+    this.redraw(e)
+  }
+
+  update_hovering_pixel() {
+    this.setState({ hovering_pixel: this.pixel_at_pointer() })
+  }
+
+  pixel_at_pointer() {
+    let x = Math.floor(this.point_at_center.x + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
+    let y = Math.floor(this.point_at_center.y + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     let color_data = this.pixel_buffer_ctx.getImageData(x, y, 1, 1).data
     let color = { r: color_data[0], g: color_data[1], b: color_data[2], a: 255 }
     return new Pixel(
       x,
       y,
-      z,
+      0,
       ColorUtils.rgbToHex(color),
       null,
       null,
@@ -227,12 +230,22 @@ class App extends Component {
     this.drag_start = { x: e.layerX, y: e.layerY }
   }
 
-  stop_dragging(e) {
+  main_canvas_mouse_up(e) {
     e.preventDefault()
+    this.stop_dragging(e)
+    this.pick_color(e)
+  }
+
+  stop_dragging(e) {
     this.dragging_canvas = false
     this.drag_end = { x: e.layerX, y: e.layerY }
   }
 
+  pick_color(e) {
+    if (!e.shiftKey)
+      return
+    this.setState({ current_color: this.pixel_at_pointer().rgba_color() })
+  }
   update_minimap() {
     this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
@@ -439,6 +452,7 @@ class App extends Component {
                 <button onClick={this.paint.bind(this)}>
                   Paint
                 </button>
+                <p>Tip: you can pick a color from the canvas with Shift + click</p>
                 <CoordPicker value={this.state.x} min={this.state.min} max={this.state.max} label='X' onChange={this.new_x.bind(this)} />
                 <CoordPicker value={this.state.y} min={this.state.min} max={this.state.max} label='Y' onChange={this.new_y.bind(this)} />
                 <h2>Smart Contract Example</h2>
@@ -451,7 +465,7 @@ class App extends Component {
               <div className='canvas-container' style={this.state.viewport_size}>
                 <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
                 <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={true} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
-                <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.stop_dragging.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
+                <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
               </div>
             </Col>
           </div>

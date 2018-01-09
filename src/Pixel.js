@@ -28,6 +28,10 @@ class Pixel {
     var pixel_array = new Uint8ClampedArray(ColorUtils.hexToIntArray(this.color))
     this.image_data = new ImageData(pixel_array, 1, 1)
   }
+
+  rgba_color() {
+    return ColorUtils.hexToRgb(this.color)
+  }
 }
 
 export default Pixel
