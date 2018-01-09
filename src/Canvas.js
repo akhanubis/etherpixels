@@ -32,8 +32,11 @@ class Canvas extends Component {
       WheelUtils.events.forEach((e) => { this.canvas.removeEventListener(e, this.props.on_mouse_wheel) })
   }
   
-  clear() {
-    CanvasUtils.clear(this.ctx, 'gray', this.props)
+  clear(background) {
+    if (background)
+      this.drawImage(background, 0, 0, this.canvas.width, this.canvas.height)
+    else
+      CanvasUtils.clear(this.ctx, 'gray', this.props)
   }
 
   drawImage(...args) {
