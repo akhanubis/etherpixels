@@ -71,7 +71,7 @@ class App extends Component {
   }
 
   load_canvases() {
-    var img = new Image()
+    let img = new Image()
     this.last_cache_block = 0 //TODO
     img.src = '2049_2049.png'
     img.style.display = 'none'
@@ -82,6 +82,16 @@ class App extends Component {
       this.redraw()
       this.start_watching()
       this.update_pixels([])
+    }
+    this.load_clear_image()
+  }
+
+  load_clear_image() {
+    let clear_image = new Image()
+    clear_image.src = 'clear_image.png'
+    clear_image.style.display = 'none'
+    clear_image.onload = () => {
+      this.clear_image = clear_image
     }
   }
 
@@ -96,7 +106,7 @@ class App extends Component {
   redraw(e){
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
-    this.main_canvas.clear()
+    this.main_canvas.clear(this.clear_image)
     this.main_canvas.drawImage(this.pixel_buffer_ctx.canvas,
       0, 0,
       this.state.canvas_size.width, this.state.canvas_size.height,
