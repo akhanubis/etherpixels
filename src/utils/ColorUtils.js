@@ -9,6 +9,10 @@ var ColorUtils = (() => {
     return `#${ _intToPaddedHex(rgb.r) }${ _intToPaddedHex(rgb.g) }${ _intToPaddedHex(rgb.b) }`
   }
 
+  var hexToIntArray = (hex) => {
+    return [parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16), 255]
+  }
+  
   var hexToRgb = (hex) => {
     let int_array = hexToIntArray(hex)
     return {
@@ -31,10 +35,6 @@ var ColorUtils = (() => {
     return '0x' + rgbToHex(rgb).substr(1, 6)
   }
   
-  var hexToIntArray = (hex) => {
-    return [parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16), 255]
-  }
-
   var bytes3ToIntArray = (bytes3) => {
     return hexToIntArray(bytes3ToHex(bytes3))
   }

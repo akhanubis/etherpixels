@@ -5,38 +5,36 @@ import "./UsingCanvasBoundaries.sol";
 contract Canvas is usingMortal, usingCanvasBoundaries {
 	struct Pixel {
     bytes3 color;
-    bytes32 signature;
     uint floor_price;
     address owner;
   }
 	
-  Pixel[2049][2049][24] public pixels;
+  mapping(uint => Pixel) public pixels;
   
-  event PixelSold(uint x, uint y, uint z, bytes3 new_color, bytes32 new_signature, address old_owner, address new_owner, uint price);
+  event PixelSold(uint i, bytes3 new_color, address old_owner, address new_owner, uint price);
   
-	function Paint(uint _x, uint _y, uint _z, bytes3 _color, bytes32 _signature) public payable {
-    paint_pixel(_x, _y, _z, _color, _signature, msg.value);
+	function Paint(uint _index, bytes3 _color) public payable {
+    paint_pixel(_index, _color, msg.value);
 	}
   
-  function BatchPaint(uint8 _batch_size, uint[] _x, uint[] _y, uint[] _z, bytes3[] _color, uint[] _price, bytes32 _signature) public payable {
+  function BatchPaint(uint8 _batch_size, uint[] _index, bytes3[] _color, uint[] _price) public payable {
     int remaining = int(msg.value);
     for(uint8 i = 0; i < _batch_size; i++) {
-      paint_pixel(_x[i], _y[i], _z[i], _color[i], _signature, _price[i]);
+      paint_pixel(_index[i], _color[i], _price[i]);
       remaining -= int(_price[i]);
       require(remaining > 0);
     }
   }
   
-  function paint_pixel(uint _x, uint _y, uint _z, bytes3 _color, bytes32 _signature, uint _price) private {
+  function paint_pixel(uint _index, bytes3 _color, uint _price) private {
     //checkCoordinates(_z, _x, _y);
-    Pixel storage pixel = pixels[_z][_y][_x];
+    Pixel storage pixel = pixels[_index];
     //require(_price > pixel.floor_price);
     pixel.color = _color;
-    pixel.signature = _signature;
     pixel.floor_price = _price;
     address old_owner = pixel.owner == address(0) ? owner : pixel.owner; //nuevos pixeles son propiedad mia
     pixel.owner = msg.sender;
     old_owner.transfer(_price);
-    PixelSold(_x, _y, _z, _color, _signature, old_owner, msg.sender, _price);
+    PixelSold(_index, _color, old_owner, msg.sender, _price);
 	}
 }

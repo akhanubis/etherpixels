@@ -1,4 +1,5 @@
 import ColorUtils from './utils/ColorUtils'
+import ContractToCanvas from './utils/ContractToCanvas'
 
 class Pixel {
   constructor(x, y, z, color, signature, owner, price) {
@@ -13,10 +14,11 @@ class Pixel {
   }
 
   static from_contract(contract_args) {
+    let coords = new ContractToCanvas(contract_args.i.toNumber()).get_coords()
     return new this(
-      contract_args.x.toNumber(),
-      contract_args.y.toNumber(),
-      contract_args.z.toNumber(),
+      coords.x,
+      coords.y,
+      0,
       ColorUtils.bytes3ToHex(contract_args.new_color),
       contract_args.new_signature, //TODO: unpack de signature
       contract_args.new_owner,

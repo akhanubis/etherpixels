@@ -9,6 +9,8 @@ import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
+import CanvasToContract from './utils/CanvasToContract'
+import ContractToCanvas from './utils/ContractToCanvas'
 import Canvas from './Canvas'
 
 import './css/oswald.css'
@@ -356,11 +358,7 @@ class App extends Component {
           })
         })
         */
-        
-        
-        
-       
-        //this.state.web3.eth.estimateGas({from: accounts[0], to: contractInstance.address, amount: this.state.web3.toWei(1, "ether")}, (result) => { console.log(result)}) TODO VER ESTIMACION DE PAINT Y DEMAS
+
       })
       
       this.state.web3.eth.filter("latest").watch((error, block_hash) => {
@@ -395,16 +393,15 @@ class App extends Component {
     
     var xx = parseInt(this.state.x)
     var yy = parseInt(this.state.y)
-    var zz = parseInt(this.state.z)
     let x = [xx, xx + 1, xx + 2, xx + 3, xx + 4, xx + 5, xx + 6, xx + 7, xx + 8, xx + 9, xx + 10]
     let y = [yy, yy + 1, yy + 2, yy + 3, yy + 4, yy  + 5, yy + 6, yy + 7, yy + 8, yy + 9, yy + 10]
-    let z = [zz, zz, zz, zz, zz, zz, zz, zz, zz, zz, zz]
-    console.log(x)
-    console.log(y)
-    console.log(z)
+    var coords = []
+    for(var a = 0; a < x.length; a++) {
+      coords.push(new CanvasToContract(x[a], y[a]).get_index())
+    }
     let color = [ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor())]
     let price = [100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
-    this.contract_instance.BatchPaint(10, x, y, z, color, price, this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "3000000" })
+    this.contract_instance.BatchPaint(10, coords, color, price, { from: this.account, value: "3000000000", gas: "3000000" })
   }
   
   thresholds_fetched() {
