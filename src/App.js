@@ -49,8 +49,7 @@ class App extends Component {
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
       x: 0,
-      y: 0,
-      z: 0
+      y: 0
     }
     this.processed_logs = []
     this.bootstrap_steps = 2
@@ -249,7 +248,7 @@ class App extends Component {
 
   pixel_at_pointer() {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
-    let y = Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
+    let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     let canvas_coords = WorldToCanvas.to_canvas(x, y, this.state.canvas_size)
     let color_data = this.pixel_buffer_ctx.getImageData(canvas_coords.x, canvas_coords.y, 1, 1).data
     let color = { r: color_data[0], g: color_data[1], b: color_data[2], a: 255 }
@@ -397,13 +396,11 @@ class App extends Component {
         this.state.infura.eth.getBlockNumber((error, b_number) => {
           if (error)
             console.error(error)
-          else {
-            let max_index = b_number - g_block
+          else
             this.setState({ genesis_block: g_block }, () => {
               this.update_block_number(b_number)
               this.load_canvases()
             })
-          }
         })
       })
     })
@@ -451,14 +448,18 @@ class App extends Component {
     this.setState(new_coord)
   }
   
-  new_x(e) { this.new_coordinate(e, { x: parseInt(e.target.value) }) }
+  new_x(e) { this.new_coordinate(e, { x: parseInt(e.target.value, 10) }) }
     
-  new_y(e) { this.new_coordinate(e, { y: parseInt(e.target.value) }) }
-    
-  
-  
+  new_y(e) { this.new_coordinate(e, { y: parseInt(e.target.value, 10) }) }
+
+  max_dimension() {
+    return 0.5 * (this.state.canvas_size.width - 1)
+  }
+
   render() {
     let block_info = null
+    let max_dimension = this.max_dimension()
+    let min_dimension = -max_dimension
     if (this.state.current_block) {
       block_info = ([
         <p>Genesis block: {this.state.genesis_block}</p>,
@@ -495,8 +496,8 @@ class App extends Component {
                 </button>
                 <p>Tip: you can pick a color from the canvas with Shift + click</p>
                 <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
-                <CoordPicker value={this.state.x} min={this.state.min} max={this.state.max} label='X' onChange={this.new_x.bind(this)} />
-                <CoordPicker value={this.state.y} min={this.state.min} max={this.state.max} label='Y' onChange={this.new_y.bind(this)} />
+                <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
+                <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                 {block_info}
               </div>
             </Col>
