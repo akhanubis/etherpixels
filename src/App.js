@@ -4,12 +4,11 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col } from 'react-bootstrap';
+import { Col, Grid, Button, ButtonToolbar } from 'react-bootstrap';
 import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
-import WorldToContract from './utils/WorldToContract'
 import ContractToWorld from './utils/ContractToWorld'
 import WorldToCanvas from './utils/WorldToCanvas'
 import CanvasUtils from './utils/CanvasUtils'
@@ -49,7 +48,8 @@ class App extends Component {
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
       x: 0,
-      y: 0
+      y: 0,
+      batch_paint: []
     }
     this.processed_logs = []
     this.bootstrap_steps = 2
@@ -258,7 +258,6 @@ class App extends Component {
       0,
       ColorUtils.rgbToHex(color),
       null,
-      null,
       Math.floor(Math.random() * 500)
     )
   }
@@ -414,10 +413,21 @@ class App extends Component {
     })
   }
 
+  pixel_to_paint() {
+    return new Pixel(
+      this.state.x,
+      this.state.y,
+      0,
+      ColorUtils.rgbToHex(this.state.current_color),
+      null,
+      1000
+      )
+  }
+
   paint(e) {
     e.preventDefault()
-    
-    this.contract_instance.Paint(new WorldToContract(this.state.x, this.state.y).get_index(), ColorUtils.rgbToBytes3(this.state.current_color), { from: this.account, value: "3000000000", gas: "2000000" })
+    let pixel = this.pixel_to_paint()
+    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
     
     //this.contract_instance.BatchPaint(1, [this.state.x], [this.state.y], [this.state.z], [ColorUtils.rgbToBytes3(this.state.current_color)], [100000], this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
     /*
@@ -433,6 +443,37 @@ class App extends Component {
     let price = [200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
     this.contract_instance.BatchPaint(9, coords, color, price, { from: this.account, value: "3000000000", gas: "3000000" })
     */
+  }
+
+  batch_paint_full() {
+    return this.state.batch_paint.length >= 10
+  }
+
+  batch_paint(e) {
+    e.preventDefault()
+    let batch_length = this.state.batch_paint.length
+    let indexes = []
+    let colors = []
+    let prices = []
+    let total_price = 0
+    //TODO: chequear si hay que usar bignumber para price y total price
+    this.state.batch_paint.forEach((pixel, i) => {
+      indexes.push(pixel.contract_index())
+      colors.push(pixel.bytes3_color())
+      prices.push(pixel.price)
+      total_price += pixel.price
+    })
+    this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
+    this.setState({ batch_paint: []})
+  }
+
+  add_to_batch(e) {
+    e.preventDefault()
+    if (this.batch_paint_full())
+      return
+    this.setState((prev_state) => {
+      return { batch_paint: prev_state.batch_paint.concat(this.pixel_to_paint()) }
+    })
   }
   
   thresholds_fetched() {
@@ -481,35 +522,39 @@ class App extends Component {
             <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
         </nav>
 
-        <main className="container-fluid">
-          <div className="pure-g">
-            <Col md={4}>
-              <div className="pure-u-1-1">
-                <h1>Good to Go!</h1>
-                <p>Your Truffle Box is installed and ready.</p>
-                <SketchPicker
-                  color={ this.state.current_color }
-                  onChangeComplete={ this.handleColorChangeComplete.bind(this) }
-                />
-                <button onClick={this.paint.bind(this)}>
-                  Paint
-                </button>
-                <p>Tip: you can pick a color from the canvas with Shift + click</p>
-                <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
-                <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
-                <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
-                {block_info}
-              </div>
-            </Col>
-            <Col md={8}>
-              <div className='canvas-container' style={this.state.viewport_size}>
-                <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
-                <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
-              </div>
-            </Col>
-          </div>
-          <Footer pixel={this.state.hovering_pixel} />
+        <main>
+          <Grid fluid={true}>
+            <div className="pure-g">
+              <Col md={4}>
+                <div className="pure-u-1-1">
+                  <h1>Good to Go!</h1>
+                  <p>Your Truffle Box is installed and ready.</p>
+                  <SketchPicker
+                    color={ this.state.current_color }
+                    onChangeComplete={ this.handleColorChangeComplete.bind(this) }
+                  />
+                  <ButtonToolbar>
+                    <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
+                    <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
+                    <Button bsStyle="primary" disabled={!this.state.batch_paint.length} onClick={this.batch_paint.bind(this)}>Batch paint</Button>
+                  </ButtonToolbar>
+                  <p>Tip: you can pick a color from the canvas with Shift + click</p>
+                  <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
+                  <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
+                  <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
+                  {block_info}
+                </div>
+              </Col>
+              <Col md={8}>
+                <div className='canvas-container' style={this.state.viewport_size}>
+                  <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
+                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
+                  <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
+                </div>
+              </Col>
+            </div>
+            <Footer pixel={this.state.hovering_pixel} />
+          </Grid>
         </main>
       </div>
     )

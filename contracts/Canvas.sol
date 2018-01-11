@@ -22,7 +22,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     for(uint8 i = 0; i < _batch_size; i++) {
       paint_pixel(_index[i], _color[i], _price[i]);
       remaining -= int(_price[i]);
-      require(remaining > 0);
+      require(remaining >= 0);
     }
   }
   

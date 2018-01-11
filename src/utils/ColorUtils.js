@@ -22,6 +22,10 @@ var ColorUtils = (() => {
       a: int_array[3]
     }
   }
+
+  var hexToBytes3 = (hex) => {
+    return `0x${ hex.substr(1, 6) }`
+  }
   
   var _randomChannel = () => {
     return Math.floor(Math.random() * 256)
@@ -32,7 +36,7 @@ var ColorUtils = (() => {
   }
   
   var rgbToBytes3 = (rgb) => {
-    return '0x' + rgbToHex(rgb).substr(1, 6)
+    return hexToBytes3(rgbToHex(rgb))
   }
   
   var bytes3ToIntArray = (bytes3) => {
@@ -55,6 +59,7 @@ var ColorUtils = (() => {
     bytes3ToIntArray: bytes3ToIntArray,
     hexToRgb: hexToRgb,
     hexToIntArray: hexToIntArray,
+    hexToBytes3: hexToBytes3,
     emptyColor: emptyColor,
     randomColor: randomColor
   }

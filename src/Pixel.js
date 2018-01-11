@@ -1,13 +1,13 @@
 import ColorUtils from './utils/ColorUtils'
 import ContractToWorld from './utils/ContractToWorld'
+import WorldToContract from './utils/WorldToContract'
 
 class Pixel {
-  constructor(x, y, z, color, signature, owner, price) {
+  constructor(x, y, z, color, owner, price) {
     this.x = x
     this.y = y
     this.z = z
     this.color = color
-    this.signature = signature
     this.owner = owner
     this.price = price
     this.build_image_data()
@@ -20,7 +20,6 @@ class Pixel {
       coords.y,
       0,
       ColorUtils.bytes3ToHex(contract_args.new_color),
-      contract_args.new_signature, //TODO: unpack de signature
       contract_args.new_owner,
       contract_args.price
     )
@@ -33,6 +32,14 @@ class Pixel {
 
   rgba_color() {
     return ColorUtils.hexToRgb(this.color)
+  }
+
+  contract_index() {
+    return new WorldToContract(this.x, this.y).get_index()
+  }
+
+  bytes3_color() {
+    return ColorUtils.hexToBytes3(this.color)
   }
 }
 
