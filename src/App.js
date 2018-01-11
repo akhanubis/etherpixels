@@ -9,8 +9,10 @@ import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
-import CanvasToContract from './utils/CanvasToContract'
-import ContractToCanvas from './utils/ContractToCanvas'
+import WorldToContract from './utils/WorldToContract'
+import ContractToWorld from './utils/ContractToWorld'
+import WorldToCanvas from './utils/WorldToCanvas'
+import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 
 import './css/oswald.css'
@@ -51,6 +53,8 @@ class App extends Component {
       z: 0
     }
     this.processed_logs = []
+    this.bootstrap_steps = 2
+    this.bootstraped = 0
   }
 
   componentWillMount() {
@@ -72,20 +76,31 @@ class App extends Component {
     })
   }
 
+  try_bootstrap() {
+    this.bootstraped++
+    if (this.bootstraped < this.bootstrap_steps)
+      return
+    this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
+    this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
+    this.resize_pixel_buffer(this.state.canvas_size, -1, this.state.max_index)
+    this.start_watching()
+    this.update_pixels([])
+  }
+
   load_canvases() {
+    this.load_cache_image()
+    this.load_clear_image()
+  }
+
+  load_cache_image() {
     let img = new Image()
     this.last_cache_block = 0 //TODO
     img.src = '2049_2049.png'
     img.style.display = 'none'
     img.onload = () => {
       this.load_buffer_data(img)
-      this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
-      this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-      this.redraw()
-      this.start_watching()
-      this.update_pixels([])
+      this.try_bootstrap()
     }
-    this.load_clear_image()
   }
 
   load_clear_image() {
@@ -94,15 +109,16 @@ class App extends Component {
     clear_image.style.display = 'none'
     clear_image.onload = () => {
       this.clear_image = clear_image
+      this.try_bootstrap()
     }
   }
 
   load_buffer_data(img) {
     let canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
+    canvas.width = this.state.canvas_size.width
+    canvas.height = this.state.canvas_size.height
     this.pixel_buffer_ctx = canvas.getContext('2d')
-    this.pixel_buffer_ctx.drawImage(img, 0, 0)
+    //this.pixel_buffer_ctx.drawImage(img, 0, 0)
   }
 
   redraw(e){
@@ -164,6 +180,16 @@ class App extends Component {
     var pixel_sold_event = this.infura_contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
     pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
     pixel_sold_event.get(this.pixel_sold_handler.bind(this))
+
+    this.state.web3.eth.filter("latest").watch((error, block_hash) => {
+      this.state.web3.eth.getBlock(block_hash, (error, result) => {
+        if (error)
+          console.error(error)
+        else
+          if (result.number > this.state.current_block)
+            this.update_block_number(result.number)
+      })
+    })
   }
   
   process_pixel_solds(log) {
@@ -178,8 +204,9 @@ class App extends Component {
   
   update_pixels(new_pixels) {
     for(var i = 0; i < new_pixels.length; i++) {
-      var new_pixel = new_pixels[i]
-      this.pixel_buffer_ctx.putImageData(new_pixel.image_data, new_pixel.x, new_pixel.y)
+      let new_pixel = new_pixels[i]
+      let canvas_coords = WorldToCanvas.to_canvas(new_pixel.x, new_pixel.y, this.state.canvas_size)
+      this.pixel_buffer_ctx.putImageData(new_pixel.image_data, canvas_coords.x, canvas_coords.y)
     }
     this.redraw()
     this.update_minimap()
@@ -221,9 +248,10 @@ class App extends Component {
   }
 
   pixel_at_pointer() {
-    let x = Math.floor(this.point_at_center.x + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
-    let y = Math.floor(this.point_at_center.y + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
-    let color_data = this.pixel_buffer_ctx.getImageData(x, y, 1, 1).data
+    let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
+    let y = Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
+    let canvas_coords = WorldToCanvas.to_canvas(x, y, this.state.canvas_size)
+    let color_data = this.pixel_buffer_ctx.getImageData(canvas_coords.x, canvas_coords.y, 1, 1).data
     let color = { r: color_data[0], g: color_data[1], b: color_data[2], a: 255 }
     return new Pixel(
       x,
@@ -246,6 +274,7 @@ class App extends Component {
     e.preventDefault()
     this.stop_dragging(e)
     this.pick_color(e)
+    this.pick_coords(e)
   }
 
   stop_dragging(e) {
@@ -253,12 +282,21 @@ class App extends Component {
     this.drag_end = { x: e.layerX, y: e.layerY }
   }
 
+  pick_coords(e) {
+    if (!e.ctrlKey)
+      return
+    let pap = this.pixel_at_pointer()
+    this.setState({ x: pap.x, y: pap.y })
+  }
+
   pick_color(e) {
     if (!e.shiftKey)
       return
     this.setState({ current_color: this.pixel_at_pointer().rgba_color() })
   }
+
   update_minimap() {
+    this.minimap_canvas.clear()
     this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
                       this.state.canvas_size.width, this.state.canvas_size.height,
@@ -301,7 +339,43 @@ class App extends Component {
     this.redraw()
   }
 
+  update_block_number(block_number) {
+    let old_max_index = this.state.max_index
+    let new_max_index = block_number + 1 - this.state.genesis_block
+    let new_size = new ContractToWorld(new_max_index).get_canvas_size()
+    this.setState({ current_block: block_number, max_index: new_max_index })
+    //if (new_size.width != this.state.canvas_size.width || new_size.height != this.state.canvas_size.height)
+    this.resize_pixel_buffer(new_size, old_max_index, new_max_index)
+  }
+
+  resize_pixel_buffer(new_size, old_max_index, new_max_index) {
+    let delta_w = 0.5 * (new_size.width - this.state.canvas_size.width)
+    let delta_h = 0.5 * (new_size.height - this.state.canvas_size.height)
+    this.setState({ canvas_size: new_size }, () => {
+      let new_canvas = document.createElement('canvas')
+      let new_context = new_canvas.getContext('2d')
+      new_canvas.width = new_size.width
+      new_canvas.height = new_size.height
+      if (this.pixel_buffer_ctx) {
+        CanvasUtils.clear(new_context, 'rgba(0,0,0,0)', new_size)
+        let i_data = new ImageData(new Uint8ClampedArray([0, 0, 0, 127]), 1, 1)
+        for (var i = old_max_index; i < new_max_index; i++) {
+          let world_coods = new ContractToWorld(i + 1).get_coords()
+          let canvas_coords = WorldToCanvas.to_canvas(world_coods.x, world_coods.y, new_size)
+          new_context.putImageData(i_data, canvas_coords.x, canvas_coords.y)
+        }
+        new_context.drawImage(this.pixel_buffer_ctx.canvas, delta_w, delta_h)
+        this.pixel_buffer_ctx = new_context
+        this.point_at_center.x = this.point_at_center.x + delta_w
+        this.point_at_center.y = this.point_at_center.y + delta_h
+        this.redraw()
+        this.update_minimap()
+      }
+    })
+  }
+
   instantiateContract() {
+
     /*
      * SMART CONTRACT EXAMPLE
      *
@@ -318,20 +392,19 @@ class App extends Component {
     canvasContract2.deployed().then((instance) => {
       this.infura_contract_instance = instance
       
-      instance.CurrentBoundaries().watch((error, result) => {
-        if (error)
-          console.error(error)
-        else
-          this.setState({ min: result.args['current_min'].toNumber(), max: result.args['current_max'].toNumber() })	
-      })
-        
-      instance.CanvasSize.call().then(contract_canvas_size => {
-        this.setState({ canvas_size: {
-          width: contract_canvas_size[0].toNumber(),
-          height: contract_canvas_size[1].toNumber(),
-          z: contract_canvas_size[2].toNumber()
-        }})
-        this.load_canvases()
+      instance.GenesisBlock.call().then(genesis_block => {
+        let g_block = genesis_block.toNumber()
+        this.state.infura.eth.getBlockNumber((error, b_number) => {
+          if (error)
+            console.error(error)
+          else {
+            let max_index = b_number - g_block
+            this.setState({ genesis_block: g_block }, () => {
+              this.update_block_number(b_number)
+              this.load_canvases()
+            })
+          }
+        })
       })
     })
 
@@ -340,68 +413,29 @@ class App extends Component {
       canvasContract.deployed().then((instance) => {
         this.contract_instance = instance
         this.account = accounts[0]
-        
-        
-          
-        /*
-        
-		
-        instance.ThresholdsData.call().then(thresholds_data => {
-          var t_length = thresholds_data[0].length
-          var ts = []
-          for(var i = 0; i < t_length; i++)
-            ts.push( { threshold: thresholds_data[0][i].toNumber(), blocks_per_retarget: thresholds_data[1][i].toNumber() })
-          this.setState({
-            genesis_block: thresholds_data[2].toNumber(),
-            thresholds_length: t_length,
-            thresholds: ts
-          })
-        })
-        */
-
-      })
-      
-      this.state.web3.eth.filter("latest").watch((error, block_hash) => {
-        this.state.web3.eth.getBlock(block_hash, (error, result) => {
-          if (error)
-            console.error(error)
-          else
-            this.setState({ current_block: result.number })  
-        })
       })
     })
   }
-  
-  prox_retarget(c_instance) {
-    var current_block_since_genesis = this.state.current_block - this.state.genesis_block
-    var current_threshold = this.state.thresholds.findIndex(e => e.threshold > current_block_since_genesis)
-    if (current_threshold === -1)
-      return 'inf'
-    else {
-      var prev_threshold = current_threshold ? this.state.thresholds[current_threshold - 1] : 0
-      var blocks_per_retarget = this.state.thresholds[current_threshold].blocks_per_retarget
-      return blocks_per_retarget - ((current_block_since_genesis - prev_threshold) % blocks_per_retarget)
-    }
-  }
-  
+
   paint(e) {
     e.preventDefault()
     
-    //this.contract_instance.Paint(this.state.x, this.state.y, this.state.z, ColorUtils.rgbToBytes3(this.state.current_color), this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
+    this.contract_instance.Paint(new WorldToContract(this.state.x, this.state.y).get_index(), ColorUtils.rgbToBytes3(this.state.current_color), { from: this.account, value: "3000000000", gas: "2000000" })
     
     //this.contract_instance.BatchPaint(1, [this.state.x], [this.state.y], [this.state.z], [ColorUtils.rgbToBytes3(this.state.current_color)], [100000], this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
-    
-    var xx = parseInt(this.state.x)
-    var yy = parseInt(this.state.y)
-    let x = [xx, xx + 1, xx + 2, xx + 3, xx + 4, xx + 5, xx + 6, xx + 7, xx + 8, xx + 9, xx + 10]
-    let y = [yy, yy + 1, yy + 2, yy + 3, yy + 4, yy  + 5, yy + 6, yy + 7, yy + 8, yy + 9, yy + 10]
+    /*
+    var xx = -1 
+    var yy = -1
+    let x = [xx, xx + 1, xx + 2, xx, xx + 1, xx + 2, xx, xx + 1, xx + 2]
+    let y = [yy, yy, yy, yy + 1, yy + 1, yy + 1, yy + 2, yy + 2, yy + 2]
     var coords = []
     for(var a = 0; a < x.length; a++) {
-      coords.push(new CanvasToContract(x[a], y[a]).get_index())
+      coords.push(new WorldToContract(x[a], y[a]).get_index())
     }
-    let color = [ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor())]
-    let price = [100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
-    this.contract_instance.BatchPaint(10, coords, color, price, { from: this.account, value: "3000000000", gas: "3000000" })
+    let color = [ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor())]
+    let price = [200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
+    this.contract_instance.BatchPaint(9, coords, color, price, { from: this.account, value: "3000000000", gas: "3000000" })
+    */
   }
   
   thresholds_fetched() {
@@ -417,23 +451,23 @@ class App extends Component {
     this.setState(new_coord)
   }
   
-  new_x(e) { this.new_coordinate(e, { x: e.target.value }) }
+  new_x(e) { this.new_coordinate(e, { x: parseInt(e.target.value) }) }
     
-  new_y(e) { this.new_coordinate(e, { y: e.target.value }) }
+  new_y(e) { this.new_coordinate(e, { y: parseInt(e.target.value) }) }
     
   
   
   render() {
-    let retarget_info = null
-    if (this.thresholds_fetched()) {
-      retarget_info = ([
+    let block_info = null
+    if (this.state.current_block) {
+      block_info = ([
         <p>Genesis block: {this.state.genesis_block}</p>,
         <p>Blocknumber: {this.state.current_block}</p>,
-        <p>Prox retarget en X bloques: {this.prox_retarget(this.state.contractInstance)}</p>
+        <p>Max index: {this.state.max_index}</p>
       ])
     }
     else
-      retarget_info = ''
+      block_info = ''
     return (
       <div className="App">
         <Helmet>
@@ -460,18 +494,16 @@ class App extends Component {
                   Paint
                 </button>
                 <p>Tip: you can pick a color from the canvas with Shift + click</p>
+                <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
                 <CoordPicker value={this.state.x} min={this.state.min} max={this.state.max} label='X' onChange={this.new_x.bind(this)} />
                 <CoordPicker value={this.state.y} min={this.state.min} max={this.state.max} label='Y' onChange={this.new_y.bind(this)} />
-                <h2>Smart Contract Example</h2>
-                <p>El minimo es: {this.state.min}</p>
-                <p>El maximo es: {this.state.max}</p>
-                {retarget_info}
+                {block_info}
               </div>
             </Col>
             <Col md={8}>
               <div className='canvas-container' style={this.state.viewport_size}>
                 <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={true} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
+                <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
                 <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
               </div>
             </Col>

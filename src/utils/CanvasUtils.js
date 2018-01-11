@@ -9,7 +9,7 @@ var CanvasUtils = (() => {
   }
   
   var clear = (ctx, color, canvas_size) => {
-    ctx.fillStyle = 'gray'
+    ctx.fillStyle = color
     ctx.fillRect(0, 0, canvas_size.width, canvas_size.height)
   }
   

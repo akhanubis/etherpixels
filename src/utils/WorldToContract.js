@@ -1,4 +1,4 @@
-class CanvasToContract {
+class WorldToContract {
   constructor(x,y) {
     this.x = x
     this.y = y
@@ -35,4 +35,4 @@ class CanvasToContract {
 
 }
 
-export default CanvasToContract
+export default WorldToContract

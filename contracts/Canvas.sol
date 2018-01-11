@@ -27,7 +27,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   }
   
   function paint_pixel(uint _index, bytes3 _color, uint _price) private {
-    //checkCoordinates(_z, _x, _y);
+    checkCoordinates(_index);
     Pixel storage pixel = pixels[_index];
     //require(_price > pixel.floor_price);
     pixel.color = _color;

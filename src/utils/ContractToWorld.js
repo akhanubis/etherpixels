@@ -1,4 +1,4 @@
-class ContractToCanvas {
+class ContractToWorld {
   constructor(index) {
     this.i = index
     this.find_ring_and_first_index()
@@ -24,14 +24,27 @@ class ContractToCanvas {
     return result
   }
 
+  get_canvas_size() {
+    if (this.ring === 0)
+      return {
+        width: 1,
+        height: 1
+      }
+    let side_length = this.ring * 2 + 1
+    return {
+      width: side_length,
+      height: side_length
+    }
+  }
+
   f_x_max() { return { x: this.ring, y: this.i + 1 - (this.first_index + this.ring) } }
 
   f_x_min() { return { x: -this.ring, y: this.first_index + 5 * this.ring - this.i - 1 } }
 
-  f_y_max() { return { x: this.i + 1 - (this.first_index + 3 * this.ring), y: this.ring } }
+  f_y_max() { return { x: this.first_index + 3 * this.ring - this.i - 1, y: this.ring } }
 
-  f_y_min() { return { x: this.first_index + 7 * this.ring - this.i - 1, y: -this.ring } }
+  f_y_min() { return { x: this.i + 1 - (this.first_index + 7 * this.ring), y: -this.ring } }
 
 }
 
-export default ContractToCanvas
+export default ContractToWorld

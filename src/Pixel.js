@@ -1,5 +1,5 @@
 import ColorUtils from './utils/ColorUtils'
-import ContractToCanvas from './utils/ContractToCanvas'
+import ContractToWorld from './utils/ContractToWorld'
 
 class Pixel {
   constructor(x, y, z, color, signature, owner, price) {
@@ -14,7 +14,7 @@ class Pixel {
   }
 
   static from_contract(contract_args) {
-    let coords = new ContractToCanvas(contract_args.i.toNumber()).get_coords()
+    let coords = new ContractToWorld(contract_args.i.toNumber()).get_coords()
     return new this(
       coords.x,
       coords.y,

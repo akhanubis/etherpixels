@@ -36,7 +36,7 @@ class Canvas extends Component {
     if (background)
       this.drawImage(background, 0, 0, this.canvas.width, this.canvas.height)
     else
-      CanvasUtils.clear(this.ctx, 'gray', this.props)
+      CanvasUtils.clear(this.ctx, 'white', this.props)
   }
 
   drawImage(...args) {
