@@ -42,6 +42,18 @@ class Canvas extends Component {
   drawImage(...args) {
     this.ctx.drawImage(...args)
   }
+
+  outline(x, y, width, height) {
+    let center_x = x + 0.5 * width
+    let center_y = y + 0.5 * height
+    let gradient = this.ctx.createRadialGradient(center_x, center_y, width, center_x, center_y, 0)
+    gradient.addColorStop(0.3,"white")
+    gradient.addColorStop(0.4,"green")
+    gradient.addColorStop(0.47,"blue")
+    gradient.addColorStop(0.5,"red")
+    this.ctx.strokeStyle = gradient
+    this.ctx.strokeRect(x, y, width, height)
+  }
   
   putImageData(...args) {
     this.ctx.putImageData(...args)

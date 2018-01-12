@@ -58,6 +58,7 @@ class App extends Component {
     this.processed_logs = []
     this.bootstrap_steps = 2
     this.bootstraped = 0
+    this.max_event_logs_size = 100
   }
 
   componentWillMount() {
@@ -136,8 +137,17 @@ class App extends Component {
       destination_top_left.x, destination_top_left.y,
       destination_size.x, destination_size.y)
     this.update_zoom(e)
+    this.outline_current_pixel()
   }
   
+  outline_current_pixel() {
+    /* current_wheel_zoom happens to be the same as the canvas sixe of a pixel */
+    /* simplified from (this.state.x - this.point_at_center.x + 0.5 * this.state.canvas_size.width) * this.current_wheel_zoom + this.state.viewport_size.width * 0.5 - this.current_wheel_zoom * 0.5 */
+    let x = (0.5 * (this.state.canvas_size.width - 1) + this.state.x - this.point_at_center.x) * this.current_wheel_zoom + this.state.viewport_size.width * 0.5
+    let y = (0.5 * (this.state.canvas_size.height - 1) - this.state.y - this.point_at_center.y) * this.current_wheel_zoom + this.state.viewport_size.height * 0.5
+    this.main_canvas.outline(x, y, this.current_wheel_zoom, this.current_wheel_zoom)
+  }
+
   whole_canvas_on_viewport_ratio() {
     return this.state.viewport_size.width / this.state.canvas_size.width
   }
@@ -222,6 +232,8 @@ class App extends Component {
   push_event(event) {
     this.setState((prev_state) => {
       prev_state.event_logs.unshift(event)
+      if (prev_state.event_logs.length > this.max_event_logs_size)
+        prev_state.event_logs.pop()
       return { event_logs: prev_state.event_logs }
     })
   }
@@ -250,7 +262,8 @@ class App extends Component {
     if (this.dragging_canvas)
       this.drag(e)
     else
-      this.update_zoom(e)
+      /* redraw to update_zoom */
+      this.redraw(e)
     this.update_hovering_pixel()
   }
 
@@ -301,7 +314,7 @@ class App extends Component {
     if (!e.ctrlKey)
       return
     let pap = this.pixel_at_pointer()
-    this.setState({ x: pap.x, y: pap.y })
+    this.new_coordinate({ x: pap.x, y: pap.y })
   }
 
   pick_color(e) {
@@ -508,7 +521,8 @@ class App extends Component {
     if (this.batch_paint_full())
       return
     this.setState((prev_state) => {
-      return { batch_paint: prev_state.batch_paint.concat(this.pixel_to_paint()) }
+      prev_state.batch_paint.push(this.pixel_to_paint())
+      return { batch_paint: prev_state.batch_paint }
     })
   }
   
@@ -520,14 +534,15 @@ class App extends Component {
     this.setState({ current_color: new_color.rgb })
   }
   
-  new_coordinate(e, new_coord) {
-    e.preventDefault()
-    this.setState(new_coord)
+  new_coordinate(new_coord, e) {
+    if (e)
+      e.preventDefault()
+    this.setState(new_coord, this.redraw.bind(this))
   }
   
-  new_x(e) { this.new_coordinate(e, { x: parseInt(e.target.value, 10) }) }
+  new_x(e) { this.new_coordinate({ x: parseInt(e.target.value, 10) }, e) }
     
-  new_y(e) { this.new_coordinate(e, { y: parseInt(e.target.value, 10) }) }
+  new_y(e) { this.new_coordinate({ y: parseInt(e.target.value, 10) }, e) }
 
   max_dimension() {
     return 0.5 * (this.state.canvas_size.width - 1)
