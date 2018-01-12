@@ -3,7 +3,7 @@ import './PixelSquare.css'
 
 class PixelSquare extends Component {
   render() {
-    return <div className="pixel-color" style={{ backgroundColor: this.props.pixel.color}}></div>
+    return <div className="pixel-square" style={{ backgroundColor: this.props.color}}></div>
   }
 }
 

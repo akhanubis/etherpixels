@@ -4,7 +4,7 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Button, ButtonToolbar } from 'react-bootstrap';
+import { Col, Grid, Button, ButtonToolbar } from 'react-bootstrap'
 import Pixel from './Pixel'
 import CoordPicker from './CoordPicker'
 import Footer from './Footer'
@@ -13,6 +13,7 @@ import ContractToWorld from './utils/ContractToWorld'
 import WorldToCanvas from './utils/WorldToCanvas'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
+import PixelBatch from './PixelBatch'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -249,14 +250,12 @@ class App extends Component {
   pixel_at_pointer() {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
-    let canvas_coords = WorldToCanvas.to_canvas(x, y, this.state.canvas_size)
-    let color_data = this.pixel_buffer_ctx.getImageData(canvas_coords.x, canvas_coords.y, 1, 1).data
-    let color = { r: color_data[0], g: color_data[1], b: color_data[2], a: 255 }
+    let color = this.color_at(x, y)
     return new Pixel(
       x,
       y,
       0,
-      ColorUtils.rgbToHex(color),
+      color,
       null,
       Math.floor(Math.random() * 500)
     )
@@ -413,6 +412,17 @@ class App extends Component {
     })
   }
 
+  color_at(x, y) {
+    let canvas_coords = WorldToCanvas.to_canvas(x, y, this.state.canvas_size)
+    let color_data = this.pixel_buffer_ctx.getImageData(canvas_coords.x, canvas_coords.y, 1, 1).data
+    return ColorUtils.rgbToHex({
+      r: color_data[0],
+      g: color_data[1],
+      b: color_data[2],
+      a: 1
+    })
+  }
+
   pixel_to_paint() {
     return new Pixel(
       this.state.x,
@@ -420,7 +430,8 @@ class App extends Component {
       0,
       ColorUtils.rgbToHex(this.state.current_color),
       null,
-      1000
+      1000,
+      this.color_at(this.state.x, this.state.y)
       )
   }
 
@@ -502,11 +513,13 @@ class App extends Component {
     let max_dimension = this.max_dimension()
     let min_dimension = -max_dimension
     if (this.state.current_block) {
-      block_info = ([
-        <p>Genesis block: {this.state.genesis_block}</p>,
-        <p>Blocknumber: {this.state.current_block}</p>,
-        <p>Max index: {this.state.max_index}</p>
-      ])
+      block_info = (
+        <div>
+          <p>Genesis block: {this.state.genesis_block}</p>
+          <p>Blocknumber: {this.state.current_block}</p>
+          <p>Max index: {this.state.max_index}</p>
+        </div>
+      )
     }
     else
       block_info = ''
@@ -527,8 +540,6 @@ class App extends Component {
             <div className="pure-g">
               <Col md={4}>
                 <div className="pure-u-1-1">
-                  <h1>Good to Go!</h1>
-                  <p>Your Truffle Box is installed and ready.</p>
                   <SketchPicker
                     color={ this.state.current_color }
                     onChangeComplete={ this.handleColorChangeComplete.bind(this) }
@@ -536,13 +547,13 @@ class App extends Component {
                   <ButtonToolbar>
                     <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
                     <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
-                    <Button bsStyle="primary" disabled={!this.state.batch_paint.length} onClick={this.batch_paint.bind(this)}>Batch paint</Button>
                   </ButtonToolbar>
                   <p>Tip: you can pick a color from the canvas with Shift + click</p>
                   <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
                   <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
                   <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                   {block_info}
+                  <PixelBatch on_batch_click={this.batch_paint.bind(this)} batch={this.state.batch_paint} />
                 </div>
               </Col>
               <Col md={8}>

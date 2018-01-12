@@ -3,13 +3,14 @@ import ContractToWorld from './utils/ContractToWorld'
 import WorldToContract from './utils/WorldToContract'
 
 class Pixel {
-  constructor(x, y, z, color, owner, price) {
+  constructor(x, y, z, color, owner, price, old_color) {
     this.x = x
     this.y = y
     this.z = z
     this.color = color
     this.owner = owner
     this.price = price
+    this.old_color = old_color
     this.build_image_data()
   }
 

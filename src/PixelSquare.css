@@ -1,7 +1,11 @@
-.footer .pixel-color {
-  float: left;
+.pixel-square {
+  display: inline-block;
   width: 20px;
   height: 20px;
   margin: 10px 5px 5px 5px;
   border: 1px solid rgba(0, 0, 0, .2);
+}
+
+.footer .pixel-square {
+  float: left;
 }

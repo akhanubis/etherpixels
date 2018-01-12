@@ -8,7 +8,7 @@ class Footer extends Component {
       return (
         <footer className="footer">
           <div className="container-fluid pixel-status">
-            <PixelSquare pixel={this.props.pixel} />
+            <PixelSquare color={this.props.pixel.color} />
             <span className="text-muted">({this.props.pixel.x}, {this.props.pixel.y}) for {this.props.pixel.price}</span>
           </div>
         </footer>
