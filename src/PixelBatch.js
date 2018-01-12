@@ -10,6 +10,11 @@ class PixelBatch extends Component {
     }, 0)
   }
 
+  remove_batch(i, e) {
+    e.preventDefault()
+    this.props.on_batch_remove(i)
+  }
+
   render() {
     if (this.props.batch.length)
       return (
@@ -24,12 +29,15 @@ class PixelBatch extends Component {
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
                     <span className='text'>({p.x}, {p.y}) for {p.price}</span>
+                    <div className='batch-delete' key={i} onClick={this.remove_batch.bind(this, i)}>
+                      remove
+                    </div>
                   </div>
                 )
               })
             }
           </div>
-          <Button bsStyle="primary batch-button" onClick={this.props.on_batch_click}>Batch paint</Button>
+          <Button className="batch-button" bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
         </div>
       )
     else

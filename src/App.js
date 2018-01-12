@@ -460,6 +460,12 @@ class App extends Component {
     return this.state.batch_paint.length >= 10
   }
 
+  batch_remove(i) {
+    this.setState((prev_state) => {
+      return { batch_paint: prev_state.batch_paint.filter((_, index) => index !== i) }
+    })
+  }
+
   batch_paint(e) {
     e.preventDefault()
     let batch_length = this.state.batch_paint.length
@@ -553,7 +559,7 @@ class App extends Component {
                   <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
                   <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                   {block_info}
-                  <PixelBatch on_batch_click={this.batch_paint.bind(this)} batch={this.state.batch_paint} />
+                  <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
                 </div>
               </Col>
               <Col md={8}>

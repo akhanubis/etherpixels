@@ -13,6 +13,13 @@
   float: left;
 }
 
+.batch-pixel-info .batch-delete {
+  float: right;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-right: 5px;
+}
+
 .batch-container {
   border: 1px solid black;
 }
