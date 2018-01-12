@@ -1,0 +1,31 @@
+.event-info:after {
+  content:'';
+  display: block;
+  clear: both;
+}
+
+.event-info .pixel-square {
+  float: left;
+  margin-top: 0px;
+}
+
+.event-info .text {
+  float: left;
+}
+
+.events-container .clear {
+  float: right;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-right: 5px;
+}
+
+.events-container a {
+  color: black;
+  text-decoration: none; /* no underline */
+}
+
+.events-container .events-list {
+  height: 800px;
+  overflow-y: auto;
+}

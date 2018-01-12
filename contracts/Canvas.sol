@@ -11,7 +11,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
 	
   mapping(uint => Pixel) public pixels;
   
-  event PixelSold(uint i, bytes3 new_color, address old_owner, address new_owner, uint price);
+  event PixelSold(uint i, address old_owner, address new_owner, uint price, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     paint_pixel(_index, _color, msg.value);
@@ -35,6 +35,6 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     address old_owner = pixel.owner == address(0) ? owner : pixel.owner; //nuevos pixeles son propiedad mia
     pixel.owner = msg.sender;
     old_owner.transfer(_price);
-    PixelSold(_index, _color, old_owner, msg.sender, _price);
+    PixelSold(_index, old_owner, msg.sender, _price, _color);
 	}
 }

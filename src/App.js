@@ -14,6 +14,7 @@ import WorldToCanvas from './utils/WorldToCanvas'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
+import EventLog from './EventLog'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -50,7 +51,8 @@ class App extends Component {
       current_color: { r: 255, g: 255, b: 255, a: 255 },
       x: 0,
       y: 0,
-      batch_paint: []
+      batch_paint: [],
+      event_logs: []
     }
     this.processed_logs = []
     this.bootstrap_steps = 2
@@ -195,7 +197,7 @@ class App extends Component {
   process_pixel_solds(log) {
     var new_pixels = log.reduce((pixel_data, l) => {
       if (this.new_log(l.logIndex, l.transactionHash))
-        pixel_data.push(Pixel.from_contract(l.args))
+        pixel_data.push(Pixel.from_contract(l.transactionHash, l.args))
       return pixel_data
     }, [])
     if (new_pixels.length)
@@ -205,13 +207,22 @@ class App extends Component {
   update_pixels(new_pixels) {
     for(var i = 0; i < new_pixels.length; i++) {
       let new_pixel = new_pixels[i]
+      new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
       let canvas_coords = WorldToCanvas.to_canvas(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data, canvas_coords.x, canvas_coords.y)
+      this.setState((prev_state) => {
+        prev_state.event_logs.unshift(new_pixel)
+        return { event_logs: prev_state.event_logs }
+      })
     }
     this.redraw()
     this.update_minimap()
   }
   
+  clear_logs() {
+    this.setState({ event_logs: []})
+  }
+
   update_zoom(e) {
     if (!(e || this.current_zoom))
       return
@@ -543,9 +554,7 @@ class App extends Component {
 
         <main>
           <Grid fluid={true}>
-            <div className="pure-g">
-              <Col md={4}>
-                <div className="pure-u-1-1">
+              <Col md={3}>
                   <SketchPicker
                     color={ this.state.current_color }
                     onChangeComplete={ this.handleColorChangeComplete.bind(this) }
@@ -560,16 +569,17 @@ class App extends Component {
                   <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                   {block_info}
                   <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
-                </div>
               </Col>
-              <Col md={8}>
+              <Col md={7}>
                 <div className='canvas-container' style={this.state.viewport_size}>
                   <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
                   <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
                   <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
                 </div>
               </Col>
-            </div>
+              <Col md={2}>
+                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} />
+              </Col>
             <Footer pixel={this.state.hovering_pixel} />
           </Grid>
         </main>

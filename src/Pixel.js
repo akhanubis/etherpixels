@@ -14,16 +14,18 @@ class Pixel {
     this.build_image_data()
   }
 
-  static from_contract(contract_args) {
+  static from_contract(tx_hash, contract_args) {
     let coords = new ContractToWorld(contract_args.i.toNumber()).get_coords()
-    return new this(
+    let p = new this(
       coords.x,
       coords.y,
       0,
       ColorUtils.bytes3ToHex(contract_args.new_color),
       contract_args.new_owner,
-      contract_args.price
+      contract_args.price.toNumber()
     )
+    p.tx = tx_hash
+    return p
   }
   
   build_image_data() {

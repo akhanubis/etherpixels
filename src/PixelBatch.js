@@ -29,7 +29,7 @@ class PixelBatch extends Component {
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
                     <span className='text'>({p.x}, {p.y}) for {p.price}</span>
-                    <div className='batch-delete' key={i} onClick={this.remove_batch.bind(this, i)}>
+                    <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
                       remove
                     </div>
                   </div>
