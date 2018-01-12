@@ -15,6 +15,7 @@ import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
+import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -85,6 +86,8 @@ class App extends Component {
     this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
     this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
     this.resize_pixel_buffer(this.state.canvas_size, -1, this.state.max_index)
+    //TODO TEMPORAL HASTA TENER EL CACHE
+    this.clear_logs()
     this.start_watching()
     this.update_pixels([])
   }
@@ -210,15 +213,19 @@ class App extends Component {
       new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
       let canvas_coords = WorldToCanvas.to_canvas(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data, canvas_coords.x, canvas_coords.y)
-      this.setState((prev_state) => {
-        prev_state.event_logs.unshift(new_pixel)
-        return { event_logs: prev_state.event_logs }
-      })
+      this.push_event(new PixelSoldEvent(new_pixel))
     }
     this.redraw()
     this.update_minimap()
   }
   
+  push_event(event) {
+    this.setState((prev_state) => {
+      prev_state.event_logs.unshift(event)
+      return { event_logs: prev_state.event_logs }
+    })
+  }
+
   clear_logs() {
     this.setState({ event_logs: []})
   }
@@ -350,9 +357,9 @@ class App extends Component {
   update_block_number(block_number) {
     let old_max_index = this.state.max_index
     let new_max_index = block_number + 1 - this.state.genesis_block
-    let new_size = new ContractToWorld(new_max_index).get_canvas_size()
+    let new_pixel = new ContractToWorld(new_max_index)
+    let new_size = new_pixel.get_canvas_size()
     this.setState({ current_block: block_number, max_index: new_max_index })
-    //if (new_size.width != this.state.canvas_size.width || new_size.height != this.state.canvas_size.height)
     this.resize_pixel_buffer(new_size, old_max_index, new_max_index)
   }
 
@@ -370,6 +377,7 @@ class App extends Component {
         for (var i = old_max_index; i < new_max_index; i++) {
           let world_coods = new ContractToWorld(i + 1).get_coords()
           let canvas_coords = WorldToCanvas.to_canvas(world_coods.x, world_coods.y, new_size)
+          this.push_event(new NewPixelEvent(world_coods))
           new_context.putImageData(i_data, canvas_coords.x, canvas_coords.y)
         }
         new_context.drawImage(this.pixel_buffer_ctx.canvas, delta_w, delta_h)
