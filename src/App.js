@@ -370,6 +370,7 @@ class App extends Component {
     /* Determine the direction of the scroll (< 0 → up, > 0 → down). */
     var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
     this.current_wheel_zoom = this.current_wheel_zoom * (delta > 0 ? 0.8 : 1.25)
+    this.update_hovering_pixel()
     this.redraw()
   }
 
