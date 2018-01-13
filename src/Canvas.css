@@ -22,3 +22,7 @@
 .canvas {
   border: solid 1px black;
 }
+
+.picking-color {
+  cursor: url('/assets/pick-color-icon.png') 0 16, pointer;
+}

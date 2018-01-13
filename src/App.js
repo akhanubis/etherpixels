@@ -16,6 +16,7 @@ import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
 import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
+import KeyListener from './KeyListener'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -42,18 +43,14 @@ class App extends Component {
       },
       canvas_size: {},
       web3: null,
-      //min: 0,
-      //max: 0,
-      min: -20,
-      max: 30,
       thresholds: [],
       genesis_block: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
-      x: 0,
-      y: 0,
+      selected_pixel: { x: 0, y: 0 },
       batch_paint: [],
-      event_logs: []
+      event_logs: [],
+      keys_down: {}
     }
     this.processed_logs = []
     this.bootstrap_steps = 2
@@ -138,14 +135,22 @@ class App extends Component {
       destination_size.x, destination_size.y)
     this.update_zoom(e)
     this.outline_current_pixel()
+    this.outline_hovering_pixel()
   }
   
-  outline_current_pixel() {
-    /* current_wheel_zoom happens to be the same as the canvas sixe of a pixel */
-    /* simplified from (this.state.x - this.point_at_center.x + 0.5 * this.state.canvas_size.width) * this.current_wheel_zoom + this.state.viewport_size.width * 0.5 - this.current_wheel_zoom * 0.5 */
-    let x = (0.5 * (this.state.canvas_size.width - 1) + this.state.x - this.point_at_center.x) * this.current_wheel_zoom + this.state.viewport_size.width * 0.5
-    let y = (0.5 * (this.state.canvas_size.height - 1) - this.state.y - this.point_at_center.y) * this.current_wheel_zoom + this.state.viewport_size.height * 0.5
-    this.main_canvas.outline(x, y, this.current_wheel_zoom, this.current_wheel_zoom)
+  outline_pixel(world_pixel, soft) {
+    let viewport_coords = WorldToCanvas.to_viewport(world_pixel, this.state.canvas_size, this.point_at_center, this.current_wheel_zoom, this.state.viewport_size)
+    this.main_canvas.outline(viewport_coords.x, viewport_coords.y, this.current_wheel_zoom, this.current_wheel_zoom, soft)
+  }
+
+  outline_hovering_pixel() {
+    if (this.state.hovering_pixel) {
+      this.outline_pixel(this.state.hovering_pixel, true)
+    }
+  }
+
+  outline_current_pixel() { 
+    this.outline_pixel(this.state.selected_pixel)
   }
 
   whole_canvas_on_viewport_ratio() {
@@ -221,8 +226,8 @@ class App extends Component {
     for(var i = 0; i < new_pixels.length; i++) {
       let new_pixel = new_pixels[i]
       new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
-      let canvas_coords = WorldToCanvas.to_canvas(new_pixel.x, new_pixel.y, this.state.canvas_size)
-      this.pixel_buffer_ctx.putImageData(new_pixel.image_data, canvas_coords.x, canvas_coords.y)
+      let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
+      this.pixel_buffer_ctx.putImageData(new_pixel.image_data, buffer_coords.x, buffer_coords.y)
       this.push_event(new PixelSoldEvent(new_pixel))
     }
     this.redraw()
@@ -311,16 +316,17 @@ class App extends Component {
   }
 
   pick_coords(e) {
-    if (!e.ctrlKey)
-      return
     let pap = this.pixel_at_pointer()
     this.new_coordinate({ x: pap.x, y: pap.y })
   }
 
   pick_color(e) {
-    if (!e.shiftKey)
-      return
-    this.setState({ current_color: this.pixel_at_pointer().rgba_color() })
+    if (e.altKey)
+      this.setState({ current_color: this.pixel_at_pointer().rgba_color() })
+  }
+
+  is_picking_color() {
+    return this.state.keys_down.alt
   }
 
   update_minimap() {
@@ -389,9 +395,9 @@ class App extends Component {
         let i_data = new ImageData(new Uint8ClampedArray([0, 0, 0, 127]), 1, 1)
         for (var i = old_max_index; i < new_max_index; i++) {
           let world_coods = new ContractToWorld(i + 1).get_coords()
-          let canvas_coords = WorldToCanvas.to_canvas(world_coods.x, world_coods.y, new_size)
+          let buffer_coords = WorldToCanvas.to_buffer(world_coods.x, world_coods.y, new_size)
           this.push_event(new NewPixelEvent(world_coods))
-          new_context.putImageData(i_data, canvas_coords.x, canvas_coords.y)
+          new_context.putImageData(i_data, buffer_coords.x, buffer_coords.y)
         }
         new_context.drawImage(this.pixel_buffer_ctx.canvas, delta_w, delta_h)
         this.pixel_buffer_ctx = new_context
@@ -445,8 +451,8 @@ class App extends Component {
   }
 
   color_at(x, y) {
-    let canvas_coords = WorldToCanvas.to_canvas(x, y, this.state.canvas_size)
-    let color_data = this.pixel_buffer_ctx.getImageData(canvas_coords.x, canvas_coords.y, 1, 1).data
+    let buffer_coords = WorldToCanvas.to_buffer(x, y, this.state.canvas_size)
+    let color_data = this.pixel_buffer_ctx.getImageData(buffer_coords.x, buffer_coords.y, 1, 1).data
     return ColorUtils.rgbToHex({
       r: color_data[0],
       g: color_data[1],
@@ -457,13 +463,13 @@ class App extends Component {
 
   pixel_to_paint() {
     return new Pixel(
-      this.state.x,
-      this.state.y,
+      this.state.selected_pixel.x,
+      this.state.selected_pixel.y,
       0,
       ColorUtils.rgbToHex(this.state.current_color),
       null,
       1000,
-      this.color_at(this.state.x, this.state.y)
+      this.color_at(this.state.selected_pixel.x, this.state.selected_pixel.y)
       )
   }
 
@@ -471,21 +477,6 @@ class App extends Component {
     e.preventDefault()
     let pixel = this.pixel_to_paint()
     this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
-    
-    //this.contract_instance.BatchPaint(1, [this.state.x], [this.state.y], [this.state.z], [ColorUtils.rgbToBytes3(this.state.current_color)], [100000], this.state.web3.fromAscii('pablo'), { from: this.account, value: "3000000000", gas: "2000000" })
-    /*
-    var xx = -1 
-    var yy = -1
-    let x = [xx, xx + 1, xx + 2, xx, xx + 1, xx + 2, xx, xx + 1, xx + 2]
-    let y = [yy, yy, yy, yy + 1, yy + 1, yy + 1, yy + 2, yy + 2, yy + 2]
-    var coords = []
-    for(var a = 0; a < x.length; a++) {
-      coords.push(new WorldToContract(x[a], y[a]).get_index())
-    }
-    let color = [ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor()), ColorUtils.rgbToBytes3(ColorUtils.randomColor())]
-    let price = [200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000]
-    this.contract_instance.BatchPaint(9, coords, color, price, { from: this.account, value: "3000000000", gas: "3000000" })
-    */
   }
 
   batch_paint_full() {
@@ -537,7 +528,8 @@ class App extends Component {
   new_coordinate(new_coord, e) {
     if (e)
       e.preventDefault()
-    this.setState(new_coord, this.redraw.bind(this))
+    let new_pixel = {...this.state.selected_pixel, ...new_coord}
+    this.setState({ selected_pixel: new_pixel }, this.redraw.bind(this))
   }
   
   new_x(e) { this.new_coordinate({ x: parseInt(e.target.value, 10) }, e) }
@@ -546,6 +538,20 @@ class App extends Component {
 
   max_dimension() {
     return 0.5 * (this.state.canvas_size.width - 1)
+  }
+
+  on_alt_down() {
+    this.setState((prev_state) => {
+      prev_state.keys_down.alt = true
+      return { keys_down: prev_state.keys_down }
+    })
+  }
+
+  on_alt_up() {
+    this.setState((prev_state) => {
+      prev_state.keys_down.alt = false
+      return { keys_down: prev_state.keys_down }
+    })
   }
 
   render() {
@@ -571,41 +577,43 @@ class App extends Component {
           <script src='ZeroClientProvider.js' type='text/javascript'></script>
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
-        <nav className="navbar pure-menu pure-menu-horizontal">
-            <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
-        </nav>
+        <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
+          <nav className="navbar pure-menu pure-menu-horizontal">
+              <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
+          </nav>
 
-        <main>
-          <Grid fluid={true}>
-              <Col md={3}>
-                  <SketchPicker
-                    color={ this.state.current_color }
-                    onChangeComplete={ this.handleColorChangeComplete.bind(this) }
-                  />
-                  <ButtonToolbar>
-                    <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
-                    <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
-                  </ButtonToolbar>
-                  <p>Tip: you can pick a color from the canvas with Shift + click</p>
-                  <p>Tip: you can pick a set of coordinates from the canvas with Ctrl + click</p>
-                  <CoordPicker value={this.state.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
-                  <CoordPicker value={this.state.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
-                  {block_info}
-                  <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
-              </Col>
-              <Col md={7}>
-                <div className='canvas-container' style={this.state.viewport_size}>
-                  <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
-                  <Canvas className='canvas' on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
-                </div>
-              </Col>
-              <Col md={2}>
-                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} />
-              </Col>
-            <Footer pixel={this.state.hovering_pixel} />
-          </Grid>
-        </main>
+          <main>
+            <Grid fluid={true}>
+                <Col md={3}>
+                    <SketchPicker
+                      color={ this.state.current_color }
+                      onChangeComplete={ this.handleColorChangeComplete.bind(this) }
+                    />
+                    <ButtonToolbar>
+                      <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
+                      <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
+                    </ButtonToolbar>
+                    <p>Tip: you can pick a color from the canvas with Shift + click</p>
+                    <p>Tip: you can pick a set of coordinates from the canvas with click</p>
+                    <CoordPicker value={this.state.selected_pixel.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
+                    <CoordPicker value={this.state.selected_pixel.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
+                    {block_info}
+                    <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
+                </Col>
+                <Col md={7}>
+                  <div className='canvas-container' style={this.state.viewport_size}>
+                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
+                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
+                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.start_dragging.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
+                  </div>
+                </Col>
+                <Col md={2}>
+                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} />
+                </Col>
+              <Footer pixel={this.state.hovering_pixel} />
+            </Grid>
+          </main>
+        </KeyListener>
       </div>
     )
   }
