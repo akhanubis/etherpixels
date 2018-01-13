@@ -1,6 +1,6 @@
 {
   "name": "react-box",
-  "homepage": "http://akhanubis.github.io/fictional-chainsaw-page",
+  "homepage": "http://ethpaint.herokuapp.com",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
