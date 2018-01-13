@@ -25,9 +25,9 @@ class WorldToContract {
     return result
   }
 
-  f_x_max() { return this.first_index + this.ring - 1 + this.y }
+  f_x_max() { return this.first_index + this.ring - 1 - this.y }
 
-  f_x_min() { return this.first_index + 5 * this.ring - 1 - this.y }
+  f_x_min() { return this.first_index + 5 * this.ring - 1 + this.y }
 
   f_y_max() { return this.first_index + 7 * this.ring - 1 + this.x }
 
