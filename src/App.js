@@ -56,7 +56,7 @@ class App extends Component {
     this.bootstrap_steps = 2
     this.bootstraped = 0
     this.max_event_logs_size = 100
-    this.may_be_a_click = true
+    this.click_timer_in_progress = true
   }
 
   componentWillMount() {
@@ -306,22 +306,27 @@ class App extends Component {
 
   start_dragging(e) {
     this.dragging_canvas = true
-    this.drag_start = { x: e.layerX, y: e.layerY }
+    this.initial_drag_start = { x: e.layerX, y: e.layerY }
+    this.drag_start = this.initial_drag_start
   }
 
   mouse_down_held_too_long(e) {
-    this.may_be_a_click = false
+    this.click_timer_in_progress = false
+  }
+
+  may_be_a_click(e) {
+    return this.click_timer_in_progress && this.initial_drag_start.x === e.layerX && this.initial_drag_start.y === e.layerY
   }
 
   main_canvas_mouse_up(e) {
     e.preventDefault()
     clearTimeout(this.click_detection_timer)
-    if (this.may_be_a_click) {
+    if (this.may_be_a_click(e)) {
       this.pick_color(e)
       this.pick_coords(e)  
     }
     this.stop_dragging(e)
-    this.may_be_a_click = true
+    this.click_timer_in_progress = true
   }
 
   stop_dragging(e) {
