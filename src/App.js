@@ -615,7 +615,7 @@ class App extends Component {
                       <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
                       <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
                     </ButtonToolbar>
-                    <p>Tip: you can pick a color from the canvas with Shift + click</p>
+                    <p>Tip: you can pick a color from the canvas with Alt + click</p>
                     <p>Tip: you can pick a set of coordinates from the canvas with click</p>
                     <CoordPicker value={this.state.selected_pixel.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
                     <CoordPicker value={this.state.selected_pixel.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
