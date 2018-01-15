@@ -65,7 +65,7 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "build_canvas_updater": "babel ./scripts/canvas_updater/canvas_updater_es6.js --out-file ./scripts/canvas_updater/build/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./scripts/canvas_updater/build/utils/ColorUtils.js",
+    "build_canvas_updater": "copy scripts\\.babelrc src\\.babelrc && babel ./scripts/canvas_updater/canvas_updater_es6.js --out-file ./scripts/canvas_updater/build/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./scripts/canvas_updater/build/utils/ColorUtils.js && babel ./src/utils/ContractToWorld.js --out-file ./scripts/canvas_updater/build/utils/ContractToWorld.js && babel ./src/utils/WorldToCanvas.js --out-file ./scripts/canvas_updater/build/utils/WorldToCanvas.js && del src\\.babelrc",
     "start_canvas_updater_dev": "set NODE_ENV=development&&forever start scripts/canvas_updater/build/canvas_updater.js",
     "start_canvas_updater_prod": "set NODE_ENV=production&&forever start scripts/canvas_updater/build/canvas_updater.js"
   },
