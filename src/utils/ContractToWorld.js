@@ -24,19 +24,6 @@ class ContractToWorld {
     return result
   }
 
-  get_canvas_size() {
-    if (this.ring === 0)
-      return {
-        width: 1,
-        height: 1
-      }
-    let side_length = this.ring * 2 + 1
-    return {
-      width: side_length,
-      height: side_length
-    }
-  }
-
   f_x_max() { return { x: this.ring, y: this.first_index + this.ring - this.i - 1 } }
 
   f_x_min() { return { x: -this.ring, y: this.i + 1 - (this.first_index + 5 * this.ring) } }
@@ -45,6 +32,13 @@ class ContractToWorld {
 
   f_y_min() { return { x: this.first_index + 3 * this.ring - this.i - 1, y: -this.ring } }
 
+  static max_index(genesis_block, current_block) {
+    return current_block + 1 - genesis_block
+  }
+
+  static canvas_dimension(max_i) {
+    return new this(max_i).ring * 2 + 1
+  }
 }
 
 export default ContractToWorld

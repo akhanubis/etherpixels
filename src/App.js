@@ -78,33 +78,34 @@ class App extends Component {
     })
   }
 
+  bootstraping() {
+    return this.bootstraped < this.bootstrap_steps
+  }
+
   try_bootstrap() {
     this.bootstraped++
-    if (this.bootstraped < this.bootstrap_steps)
+    if (this.bootstraping())
       return
     this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
     this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-    this.resize_pixel_buffer(this.state.canvas_size, -1, this.state.max_index)
+    this.resize_pixel_buffer(this.state.canvas_size, -1 /*TODO SACAR DEL JSON DE CACHE EL ULTIMO INDICE CACHEADO*/, this.state.max_index)
     //TODO TEMPORAL HASTA TENER EL CACHE
     this.clear_logs()
     this.start_watching()
     this.update_pixels([])
   }
 
-  load_canvases() {
-    this.load_cache_image()
+  load_canvases(latest_block) {
+    this.load_cache_image(latest_block)
     this.load_clear_image()
   }
 
-  load_cache_image() {
+  load_cache_image(latest_block) {
     let img = new Image()
     this.last_cache_block = 0 //TODO
-    img.src = '2049_2049.png'
+    img.src = '2458807.png'
     img.style.display = 'none'
-    img.onload = () => {
-      this.load_buffer_data(img)
-      this.try_bootstrap()
-    }
+    img.onload = this.load_buffer_data.bind(this, img, latest_block)
   }
 
   load_clear_image() {
@@ -117,12 +118,15 @@ class App extends Component {
     }
   }
 
-  load_buffer_data(img) {
+  load_buffer_data(img, latest_block) {
     let canvas = document.createElement('canvas')
-    canvas.width = this.state.canvas_size.width
-    canvas.height = this.state.canvas_size.height
+    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, latest_block)
+    let dimension = ContractToWorld.canvas_dimension(new_max_index)
+    canvas.width = dimension
+    canvas.height = dimension
     this.pixel_buffer_ctx = canvas.getContext('2d')
-    //this.pixel_buffer_ctx.drawImage(img, 0, 0)
+    this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
+    this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap.bind(this))
   }
 
   redraw(e){
@@ -397,38 +401,30 @@ class App extends Component {
 
   update_block_number(block_number) {
     let old_max_index = this.state.max_index
-    let new_max_index = block_number + 1 - this.state.genesis_block
-    let new_pixel = new ContractToWorld(new_max_index)
-    let new_size = new_pixel.get_canvas_size()
+    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, block_number)
+    let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.setState({ current_block: block_number, max_index: new_max_index })
-    this.resize_pixel_buffer(new_size, old_max_index, new_max_index)
+    this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
   }
 
   resize_pixel_buffer(new_size, old_max_index, new_max_index) {
-    let delta_w = 0.5 * (new_size.width - this.state.canvas_size.width)
-    let delta_h = 0.5 * (new_size.height - this.state.canvas_size.height)
-    this.setState({ canvas_size: new_size }, () => {
-      let new_canvas = document.createElement('canvas')
-      let new_context = new_canvas.getContext('2d')
-      new_canvas.width = new_size.width
-      new_canvas.height = new_size.height
-      if (this.pixel_buffer_ctx) {
-        CanvasUtils.clear(new_context, 'rgba(0,0,0,0)', new_size)
-        let i_data = new ImageData(new Uint8ClampedArray([0, 0, 0, 127]), 1, 1)
-        for (var i = old_max_index; i < new_max_index; i++) {
-          let world_coods = new ContractToWorld(i + 1).get_coords()
-          let buffer_coords = WorldToCanvas.to_buffer(world_coods.x, world_coods.y, new_size)
-          this.push_event(new NewPixelEvent(world_coods))
-          new_context.putImageData(i_data, buffer_coords.x, buffer_coords.y)
-        }
-        new_context.drawImage(this.pixel_buffer_ctx.canvas, delta_w, delta_h)
-        this.pixel_buffer_ctx = new_context
-        this.point_at_center.x = this.point_at_center.x + delta_w
-        this.point_at_center.y = this.point_at_center.y + delta_h
-        this.redraw()
-        this.update_minimap()
+    CanvasUtils.resize_canvas(
+      this.pixel_buffer_ctx,
+      document.createElement('canvas'),
+      new_size,
+      old_max_index,
+      new_max_index,
+      (new_ctx, new_pixels_world_coords, delta_w, delta_h) => {
+        this.pixel_buffer_ctx = new_ctx
+        new_pixels_world_coords.forEach((w_coords) => { this.push_event(new NewPixelEvent(w_coords)) })
+        this.setState({ canvas_size: new_size }, () => {
+          this.point_at_center.x = this.point_at_center.x + delta_w
+          this.point_at_center.y = this.point_at_center.y + delta_h
+          this.redraw()
+          this.update_minimap()
+        })
       }
-    })
+    )
   }
 
   instantiateContract() {
@@ -456,8 +452,7 @@ class App extends Component {
             console.error(error)
           else
             this.setState({ genesis_block: g_block }, () => {
-              this.update_block_number(b_number)
-              this.load_canvases()
+              this.load_canvases(b_number)
             })
         })
       })
