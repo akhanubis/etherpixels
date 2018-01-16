@@ -1,4 +1,4 @@
-import CanvasContract from "../../../build/contracts/Canvas.json"
+import CanvasContract from "../build/contracts/Canvas.json"
 import Web3 from 'web3'
 import ColorUtils from "./utils/ColorUtils.js"
 import ContractToWorld from "./utils/ContractToWorld.js"
@@ -22,8 +22,8 @@ let last_cache_block = null
 let current_block = null
 let max_index = null
 let web3 = null
-const file_path = 'public/pixels.png'
-const json_file_path = 'public/init.json'
+const file_path = `${process.env.FILE_DIR}/pixels.png`
+const json_file_path = `${process.env.FILE_DIR}/init.json`
 
 let get_web3 = () => {
   let provider = null

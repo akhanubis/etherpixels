@@ -59,4 +59,5 @@ typings/
 
 build/
 build_webpack/
+build_worker/
 dist/
