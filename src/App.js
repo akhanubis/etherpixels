@@ -17,6 +17,7 @@ import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
 import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
 import KeyListener from './KeyListener'
+import axios from 'axios'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -88,7 +89,8 @@ class App extends Component {
       return
     this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
     this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-    this.resize_pixel_buffer(this.state.canvas_size, -1 /*TODO SACAR DEL JSON DE CACHE EL ULTIMO INDICE CACHEADO*/, this.state.max_index)
+    let last_cache_index = ContractToWorld.max_index(this.genesis_block, this.last_cache_block)
+    this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
     //TODO TEMPORAL HASTA TENER EL CACHE
     this.clear_logs()
     this.start_watching()
@@ -101,11 +103,13 @@ class App extends Component {
   }
 
   load_cache_image(latest_block) {
-    let img = new Image()
-    this.last_cache_block = 0 //TODO
-    img.src = '2458807.png'
-    img.style.display = 'none'
-    img.onload = this.load_buffer_data.bind(this, img, latest_block)
+    axios.get('init.json').then((response) => {
+      this.last_cache_block = response.data.last_cache_block
+      let img = new Image()
+      img.src = 'pixels.png'
+      img.style.display = 'none'
+      img.onload = this.load_buffer_data.bind(this, img, latest_block)
+    })
   }
 
   load_clear_image() {
@@ -414,6 +418,7 @@ class App extends Component {
       new_size,
       old_max_index,
       new_max_index,
+      ImageData,
       (new_ctx, new_pixels_world_coords, delta_w, delta_h) => {
         this.pixel_buffer_ctx = new_ctx
         new_pixels_world_coords.forEach((w_coords) => { this.push_event(new NewPixelEvent(w_coords)) })
