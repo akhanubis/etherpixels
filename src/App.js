@@ -89,9 +89,8 @@ class App extends Component {
       return
     this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
     this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-    let last_cache_index = ContractToWorld.max_index(this.genesis_block, this.last_cache_block)
+    let last_cache_index = ContractToWorld.max_index(this.state.genesis_block, this.last_cache_block)
     this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
-    //TODO TEMPORAL HASTA TENER EL CACHE
     this.clear_logs()
     this.start_watching()
     this.update_pixels([])
@@ -102,13 +101,24 @@ class App extends Component {
     this.load_clear_image()
   }
 
+  bucket_url(key) {
+    return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}`
+  }
+
   load_cache_image(latest_block) {
-    axios.get('init.json').then((response) => {
-      this.last_cache_block = response.data.last_cache_block
-      let img = new Image()
-      img.src = 'pixels.png'
-      img.style.display = 'none'
-      img.onload = this.load_buffer_data.bind(this, img, latest_block)
+    axios.get(this.bucket_url('init.json')).then((response) => {
+      if (this.infura_contract_instance.address === response.data.contract_address) {
+        this.last_cache_block = response.data.last_cache_block
+        let img = new Image()
+        img.crossOrigin = ''
+        img.src = this.bucket_url('pixels.png')
+        img.style.display = 'none'
+        img.onload = this.load_buffer_data.bind(this, img, latest_block)
+      }
+      else {
+        this.last_cache_block = this.state.genesis_block - 2
+        this.load_buffer_data(null, latest_block)
+      }
     })
   }
 
@@ -129,7 +139,8 @@ class App extends Component {
     canvas.width = dimension
     canvas.height = dimension
     this.pixel_buffer_ctx = canvas.getContext('2d')
-    this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
+    if (img)
+      this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
     this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap.bind(this))
   }
 

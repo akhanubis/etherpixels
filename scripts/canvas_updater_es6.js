@@ -4,6 +4,9 @@ import ColorUtils from "./utils/ColorUtils.js"
 import ContractToWorld from "./utils/ContractToWorld.js"
 import WorldToCanvas from "./utils/WorldToCanvas.js"
 import CanvasUtils from "./utils/CanvasUtils.js"
+
+require('dotenv').config()
+
 const fs = require('fs')
 const zlib = require('zlib')
 const Canvas = require('canvas')
@@ -11,6 +14,8 @@ const ProviderEngine = require('web3-provider-engine')
 const ZeroClientProvider = require ('web3-provider-engine/zero.js')
 const contract = require('truffle-contract')
 const canvasContract = contract(CanvasContract)
+const AWS = require('aws-sdk')
+const s3 = new AWS.S3()
  
 let owner_canvas = null
 let canvas = null
@@ -22,8 +27,11 @@ let last_cache_block = null
 let current_block = null
 let max_index = null
 let web3 = null
-const file_path = `${process.env.FILE_DIR}/pixels.png`
-const json_file_path = `${process.env.FILE_DIR}/init.json`
+let instance = null
+
+const bucket = process.env.REACT_APP_S3_BUCKET
+const pixels_key = 'pixels.png'
+const init_key = 'init.json'
 
 let get_web3 = () => {
   let provider = null
@@ -49,8 +57,19 @@ let get_web3 = () => {
 
 let write_file = () => {
   console.log("Updating files...")
-  fs.writeFileSync(file_path, canvas.toBuffer(), 'binary')
-  fs.writeFileSync(json_file_path, `{ "last_cache_block": ${current_block /* -1 ????? */} }`, 'utf8')
+  s3.upload({ ACL: 'public-read', Bucket: bucket, Key: pixels_key, Body: canvas.toBuffer() }, (err, data) => {
+    if (err)
+      console.log(err)
+    else
+      console.log(`New pixels.png: ${data.ETag}`)
+  })
+  let init_json = JSON.stringify({ contract_address: instance.address, last_cache_block: current_block /* restarle 1 ????? */ })
+  s3.upload({ ACL: 'public-read', Bucket: bucket, Key: init_key, Body: init_json }, (err, data) => {
+    if (err)
+      console.log(err)
+    else
+      console.log(`New init.json: ${data.ETag}`)
+  })
 }
 
 let process_new_block = (b_number) => {
@@ -113,67 +132,94 @@ let resize_canvas = (old_i) => {
   )
 }
 
+let start_watching = () => {
+    let pixel_sold_event = instance.PixelSold({}, { fromBlock: last_cache_block, toBlock: 'latest' })
+    pixel_sold_event.watch(pixel_sold_handler)
+    pixel_sold_event.get(pixel_sold_handler)
+
+    web3.eth.filter("latest").watch((error, block_hash) => {
+      web3.eth.getBlock(block_hash, (error, result) => {
+        if (error)
+          console.error(error)
+        else
+          if (result.number > current_block)
+            process_new_block(result.number)
+      })
+    })
+  }
+
 web3 = get_web3()
 canvasContract.setProvider(web3.currentProvider)
-canvasContract.deployed().then((instance) => {
+canvasContract.deployed().then((contract_instance) => {
+  var matching_contract = false
+  instance = contract_instance
   console.log(`Contract deployed\nFetching genesis block...`)
   instance.GenesisBlock.call().then((g_block) => {
     genesis_block = g_block
     console.log(`Genesis block: ${ g_block }\nFetching init.json...`)
-    fs.readFile(json_file_path, (error, json_data) => {
+    s3.getObject({ Bucket: bucket, Key: init_key }, (error, data) => {
       if (error) {
         console.log('File init.json not found, setting last_cache_block to genesis_block')
         last_cache_block = g_block
       }
       else {
-        last_cache_block = JSON.parse(json_data).last_cache_block
+        let json_data = JSON.parse(data.Body.toString())
+        last_cache_block = json_data.last_cache_block
         console.log(`Last block cached: ${ last_cache_block }`)
+        let cache_address = json_data.contract_address
+        console.log(instance.address)
+        console.log(cache_address)
+        matching_contract =cache_address === instance.address
+        console.log(matching_contract)
       }
       console.log('Fetching current block...')
       web3.eth.getBlockNumber((error, b_number) => {
         if (error)
           throw error
         else {
-          store_new_index(b_number)
-          canvas = new Canvas(canvas_dimension, canvas_dimension)
-          pixel_buffer_ctx = canvas.getContext('2d')
-          console.log(`Reading ${file_path}...`)
-          fs.readFile(file_path, (error, file_data) => {
-            if (error) {
-              console.log('Last cache file not found')
-              resize_canvas(-1)
+          if (last_cache_block > b_number) {
+            console.log('Last cache file seems to point to older contract version, ignoring...')
+            resize_canvas(-1)
+            start_watching()
+          }
+          else {
+            store_new_index(b_number)
+            canvas = new Canvas(canvas_dimension, canvas_dimension)
+            pixel_buffer_ctx = canvas.getContext('2d')
+            console.log('Cache')
+            if (matching_contract) {
+              console.log(`Reading ${bucket}/${pixels_key}...`)
+              s3.getObject({ Bucket: bucket, Key: pixels_key }, (error, pixels_data) => {
+                if (error) {
+                  console.log('Last cache file not found')
+                  resize_canvas(-1)
+                }
+                else {
+                  let last_cache_dimension = ContractToWorld.canvas_dimension(ContractToWorld.max_index(genesis_block, last_cache_block))
+                  console.log(`Last cache dimensions: ${last_cache_dimension}x${last_cache_dimension}`)
+                  let offset = 0.5 * (canvas_dimension - last_cache_dimension)
+                  let img = new Canvas.Image()
+                  img.src = "data:image/png;base64," + Buffer.from(pixels_data.Body).toString('base64')
+                  pixel_buffer_ctx.drawImage(img, offset, offset)
+                  /*
+                  fs.readFile('public/owners.png', (e2, file_data2) => {
+                    console.log(file_data2.length)
+                    let buffer = zlib.deflateSync(file_data2)
+                    console.log(buffer.length)
+                    //console.log(buffer_to_array_buffer(file_data2))
+                    //owner_data = file_data2
+                  })*/
+                }
+                start_watching()
+              })
             }
             else {
-              let img = new Canvas.Image
-              img.src = file_data
-              console.log(`Last canvas dimensions: ${img.width}x${img.height}`)
-              let offset = 0.5 * (canvas_dimension - img.width)
-              pixel_buffer_ctx.drawImage(img, offset, offset)
-              /*
-              fs.readFile('public/owners.png', (e2, file_data2) => {
-                console.log(file_data2.length)
-                let buffer = zlib.deflateSync(file_data2)
-                console.log(buffer.length)
-                //console.log(buffer_to_array_buffer(file_data2))
-                //owner_data = file_data2
-              })*/
-            } 
-            let pixel_sold_event = instance.PixelSold({}, { fromBlock: last_cache_block, toBlock: 'latest' })
-            pixel_sold_event.watch(pixel_sold_handler)
-            pixel_sold_event.get(pixel_sold_handler)
-
-            web3.eth.filter("latest").watch((error, block_hash) => {
-              web3.eth.getBlock(block_hash, (error, result) => {
-                if (error)
-                  console.error(error)
-                else
-                  if (result.number > current_block)
-                    process_new_block(result.number)
-              })
-            })
-
-            setInterval(() => { console.log("Listening for events...") }, 60000)
-          })
+              console.log('Last cache file points to older contract version, ignoring...')
+              resize_canvas(-1)
+              start_watching()
+            }
+          }
+          setInterval(() => { console.log("Listening for events...") }, 60000)
         }
       })
     })
