@@ -1,5 +1,7 @@
 var HDWalletProvider = require("truffle-hdwallet-provider");
 
+require('dotenv').config();
+
 module.exports = {
   networks: {
     development: {
@@ -8,7 +10,7 @@ module.exports = {
       network_id: "*" // Match any network id
     },
     ropsten: {
-      provider: new HDWalletProvider("velvet orange exhibit phone train sphere actor gloom liar student engage act", "https://ropsten.infura.io/koPGObK3IvOlTaqovf2G"),
+      provider: new HDWalletProvider(process.env.REACT_APP_ROPSTEN_SEED, "https://ropsten.infura.io/" + process.env.REACT_APP_INFURA_API_KEY),
       network_id: 3,
       gas: 3000000 
     }

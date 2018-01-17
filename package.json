@@ -68,7 +68,7 @@
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
     "build_canvas_updater": "copy scripts\\.babelrc src\\.babelrc && babel ./scripts/canvas_updater_es6.js --out-file ./build_worker/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./build_worker/utils/ColorUtils.js && babel ./src/utils/ContractToWorld.js --out-file ./build_worker/utils/ContractToWorld.js && babel ./src/utils/WorldToCanvas.js --out-file ./build_worker/utils/WorldToCanvas.js && babel ./src/utils/CanvasUtils.js --out-file ./build_worker/utils/CanvasUtils.js && del src\\.babelrc",
-    "start_canvas_updater": "set NODE_ENV=development&&set S3_BUCKET=ethpaint-development&&node build_worker/canvas_updater.js"
+    "start_canvas_updater": "set NODE_ENV=development&&node build_worker/canvas_updater.js"
   },
   "jest": {
     "collectCoverageFrom": [
