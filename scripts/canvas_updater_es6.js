@@ -5,7 +5,7 @@ import ContractToWorld from "./utils/ContractToWorld.js"
 import WorldToCanvas from "./utils/WorldToCanvas.js"
 import CanvasUtils from "./utils/CanvasUtils.js"
 
-require('dotenv').config()
+require('dotenv').config({silent: true})
 
 const fs = require('fs')
 const zlib = require('zlib')

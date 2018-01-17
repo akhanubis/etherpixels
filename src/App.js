@@ -221,8 +221,8 @@ class App extends Component {
     pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
     pixel_sold_event.get(this.pixel_sold_handler.bind(this))
 
-    this.state.web3.eth.filter("latest").watch((error, block_hash) => {
-      this.state.web3.eth.getBlock(block_hash, (error, result) => {
+    this.state.infura.eth.filter("latest").watch((error, block_hash) => {
+      this.state.infura.eth.getBlock(block_hash, (error, result) => {
         if (error)
           console.error(error)
         else

@@ -27,9 +27,9 @@ let getWeb3 = new Promise(function(resolve, reject) {
 
         results = {
           web3: web3,
-          infura: web3
+          infura: infura
         }
-        console.log('Using injected web3')
+        console.log('Using injected web3 + infura')
         resolve(results)
       }
       else {
