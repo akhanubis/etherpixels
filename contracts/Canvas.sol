@@ -3,9 +3,10 @@ import "./UsingMortal.sol";
 import "./UsingCanvasBoundaries.sol";
 
 contract Canvas is usingMortal, usingCanvasBoundaries {
+  /* packed to 32 bytes */
 	struct Pixel {
     bytes3 color;
-    uint floor_price;
+    uint72 floor_price; /* max value 4722.366482869645213695 eth */
     address owner;
   }
 	
@@ -27,11 +28,12 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   }
   
   function paint_pixel(uint _index, bytes3 _color, uint _price) private {
-    checkCoordinates(_index);
+    require(_price == uint72(_price)); /* who would pay more than 4k eth? */
+    check_coordinates(_index);
     Pixel storage pixel = pixels[_index];
     //require(_price > pixel.floor_price);
     pixel.color = _color;
-    pixel.floor_price = _price;
+    pixel.floor_price = uint72(_price);
     address old_owner = pixel.owner == address(0) ? owner : pixel.owner; //nuevos pixeles son propiedad mia
     pixel.owner = msg.sender;
     old_owner.transfer(_price);

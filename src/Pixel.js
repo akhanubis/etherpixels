@@ -3,10 +3,9 @@ import ContractToWorld from './utils/ContractToWorld'
 import WorldToContract from './utils/WorldToContract'
 
 class Pixel {
-  constructor(x, y, z, color, owner, price, old_color) {
+  constructor(x, y, color, owner, price, old_color) {
     this.x = x
     this.y = y
-    this.z = z
     this.color = color
     this.owner = owner
     this.price = price
@@ -19,10 +18,9 @@ class Pixel {
     let p = new this(
       coords.x,
       coords.y,
-      0,
       ColorUtils.bytes3ToHex(contract_args.new_color),
       contract_args.new_owner,
-      contract_args.price.toNumber()
+      contract_args.price
     )
     p.tx = tx_hash
     return p

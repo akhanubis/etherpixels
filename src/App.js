@@ -17,6 +17,7 @@ import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
 import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
 import KeyListener from './KeyListener'
+import BigNumber from 'bignumber.js'
 import axios from 'axios'
 
 import './css/oswald.css'
@@ -57,6 +58,7 @@ class App extends Component {
     this.bootstrap_steps = 2
     this.bootstraped = 0
     this.max_event_logs_size = 100
+    this.max_batch_length = 20
     this.click_timer_in_progress = true
   }
 
@@ -310,7 +312,6 @@ class App extends Component {
     return new Pixel(
       x,
       y,
-      0,
       color,
       null,
       Math.floor(Math.random() * 500)
@@ -498,10 +499,9 @@ class App extends Component {
     return new Pixel(
       this.state.selected_pixel.x,
       this.state.selected_pixel.y,
-      0,
       ColorUtils.rgbToHex(this.state.current_color),
       null,
-      1000,
+      new BigNumber(1000) /* TODO LEER DE LA DATA */,
       this.color_at(this.state.selected_pixel.x, this.state.selected_pixel.y)
       )
   }
@@ -513,7 +513,7 @@ class App extends Component {
   }
 
   batch_paint_full() {
-    return this.state.batch_paint.length >= 10
+    return this.state.batch_paint.length >= this.max_batch_length
   }
 
   batch_remove(i) {
@@ -528,13 +528,13 @@ class App extends Component {
     let indexes = []
     let colors = []
     let prices = []
-    let total_price = 0
+    let total_price = new BigNumber(0)
     //TODO: chequear si hay que usar bignumber para price y total price
     this.state.batch_paint.forEach((pixel, i) => {
       indexes.push(pixel.contract_index())
       colors.push(pixel.bytes3_color())
       prices.push(pixel.price)
-      total_price += pixel.price
+      total_price = total_price.plus(pixel.price)
     })
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
     this.setState({ batch_paint: []})

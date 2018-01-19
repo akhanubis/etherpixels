@@ -8,6 +8,7 @@ class NewPixelEvent {
   }
   
   render(i) {
+    // TODO: hacer clickeable las coords para centrar en el pixel
     return (
       <div key={i}>
         New pixel available at ({this.x}, {this.y})
@@ -22,15 +23,19 @@ class PixelSoldEvent {
   }
   
   render(i) {
+    // TODO: hacer clickeable para centrar en el pixel o ver info
     return (
-      <a target="_blank" key={i} href={`https://etherscan.io/tx/${this.pixel.tx}`}>
-        <div className='event-info'>
-          <PixelSquare color={this.pixel.old_color} />
-          <span className='text'>=></span>
-          <PixelSquare color={this.pixel.color} />
-          <span className='text'>({this.pixel.x}, {this.pixel.y}) for {this.pixel.price}</span>
+      <div className='event-info' key={i}>
+        <PixelSquare color={this.pixel.old_color} />
+        <span className='text'>=></span>
+        <PixelSquare color={this.pixel.color} />
+        <span className='text'>({this.pixel.x}, {this.pixel.y}) for {this.pixel.price.toNumber()}</span>
+        <div className='right-link'>
+          <a target="_blank" href={`https://etherscan.io/tx/${this.pixel.tx}`}>
+            view on explorer
+          </a>
         </div>
-      </a>
+      </div>
     )
   }
 }

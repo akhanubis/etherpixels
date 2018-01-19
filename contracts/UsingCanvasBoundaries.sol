@@ -7,11 +7,11 @@ contract usingCanvasBoundaries {
     g_block = block.number;
   }
 
-	function checkCoordinates(uint _index) internal {
+	function check_coordinates(uint _index) internal view {
     require(_index < max_index() + 1);
 	}
 	
-	function max_index() private view returns(uint max_index) {
+	function max_index() private view returns(uint m_index) {
     return block.number - g_block;
   }
 

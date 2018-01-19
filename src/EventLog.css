@@ -13,6 +13,13 @@
   float: left;
 }
 
+.event-info .right-link {
+  float: right;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-right: 5px;
+}
+
 .events-container .clear {
   float: right;
   cursor: pointer;
