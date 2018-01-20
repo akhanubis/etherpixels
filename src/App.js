@@ -19,6 +19,7 @@ import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
 import KeyListener from './KeyListener'
 import BigNumber from 'bignumber.js'
 import axios from 'axios'
+import AddressBuffer from './AddressBuffer'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -55,7 +56,7 @@ class App extends Component {
       keys_down: {}
     }
     this.processed_logs = []
-    this.bootstrap_steps = 2
+    this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 100
     this.max_batch_length = 20
@@ -101,14 +102,24 @@ class App extends Component {
   load_canvases(latest_block) {
     this.load_cache_image(latest_block)
     this.load_clear_image()
+    this.load_addresses_buffer()
   }
 
   bucket_url(key) {
     return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}`
   }
 
+  load_addresses_buffer() {
+    axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
+      AddressBuffer.decompress_buffer(response.data)
+      .then(result => this.address_buffer = new AddressBuffer(result.buffer))
+      .catch(error => console.error("Error when inflating cache buffer"))
+      .then(this.try_bootstrap.bind(this))
+    })
+  }
+
   load_cache_image(latest_block) {
-    axios.get(this.bucket_url('init.json')).then((response) => {
+    axios.get(this.bucket_url('init.json')).then(response => {
       if (this.infura_contract_instance.address === response.data.contract_address) {
         this.last_cache_block = response.data.last_cache_block
         let img = new Image()
@@ -257,7 +268,7 @@ class App extends Component {
   }
   
   push_event(event) {
-    this.setState((prev_state) => {
+    this.setState(prev_state => {
       prev_state.event_logs.unshift(event)
       if (prev_state.event_logs.length > this.max_event_logs_size)
         prev_state.event_logs.pop()
@@ -433,7 +444,7 @@ class App extends Component {
       ImageData,
       (new_ctx, new_pixels_world_coords, delta_w, delta_h) => {
         this.pixel_buffer_ctx = new_ctx
-        new_pixels_world_coords.forEach((w_coords) => { this.push_event(new NewPixelEvent(w_coords)) })
+        new_pixels_world_coords.forEach(w_coords => this.push_event(new NewPixelEvent(w_coords)))
         this.setState({ canvas_size: new_size }, () => {
           this.point_at_center.x = this.point_at_center.x + delta_w
           this.point_at_center.y = this.point_at_center.y + delta_h
@@ -459,7 +470,7 @@ class App extends Component {
     
     var canvasContract2 = contract(CanvasContract)
     canvasContract2.setProvider(this.state.infura.currentProvider)
-    canvasContract2.deployed().then((instance) => {
+    canvasContract2.deployed().then(instance => {
       this.infura_contract_instance = instance
       
       instance.GenesisBlock.call().then(genesis_block => {
@@ -477,7 +488,7 @@ class App extends Component {
 
     // Get accounts.
     this.state.web3.eth.getAccounts((error, accounts) => {
-      canvasContract.deployed().then((instance) => {
+      canvasContract.deployed().then(instance => {
         this.contract_instance = instance
         this.account = accounts[0]
       })
@@ -517,7 +528,7 @@ class App extends Component {
   }
 
   batch_remove(i) {
-    this.setState((prev_state) => {
+    this.setState(prev_state => {
       return { batch_paint: prev_state.batch_paint.filter((_, index) => index !== i) }
     })
   }
@@ -534,7 +545,7 @@ class App extends Component {
       indexes.push(pixel.contract_index())
       colors.push(pixel.bytes3_color())
       prices.push(pixel.price)
-      total_price = total_price.plus(pixel.price)
+      total_price = total_price.add(pixel.price)
     })
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
     this.setState({ batch_paint: []})
@@ -544,7 +555,7 @@ class App extends Component {
     e.preventDefault()
     if (this.batch_paint_full())
       return
-    this.setState((prev_state) => {
+    this.setState(prev_state => {
       prev_state.batch_paint.push(this.pixel_to_paint())
       return { batch_paint: prev_state.batch_paint }
     })
@@ -574,14 +585,14 @@ class App extends Component {
   }
 
   on_alt_down() {
-    this.setState((prev_state) => {
+    this.setState(prev_state => {
       prev_state.keys_down.alt = true
       return { keys_down: prev_state.keys_down }
     })
   }
 
   on_alt_up() {
-    this.setState((prev_state) => {
+    this.setState(prev_state => {
       prev_state.keys_down.alt = false
       return { keys_down: prev_state.keys_down }
     })
@@ -635,9 +646,9 @@ class App extends Component {
                 </Col>
                 <Col md={7}>
                   <div className='canvas-container' style={this.state.viewport_size}>
-                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => {this.zoom_canvas = c}} />
-                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => {this.minimap_canvas = c}} />
-                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => {this.main_canvas = c}} />
+                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => this.zoom_canvas = c} />
+                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => this.minimap_canvas = c} />
+                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => this.main_canvas = c} />
                   </div>
                 </Col>
                 <Col md={2}>
