@@ -44,7 +44,7 @@ class AddressBuffer {
   set_address_at(i, address) {
     this.try_resize(i)
     let byte_array = new Array(AddressBuffer.address_length)
-    address = address.substr(2, AddressBuffer.address_length)
+    address = address.substr(2, AddressBuffer.address_length * 2) /* 2 hex chars per byte */
     for (var j = 0; j < AddressBuffer.address_length; j++)
       byte_array[j] = parseInt(address.substr(j * 2, 2), 16)
     this.buffer.set(byte_array, this.address_offset(i))
