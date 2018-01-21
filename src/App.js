@@ -11,6 +11,7 @@ import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
 import ContractToWorld from './utils/ContractToWorld'
 import WorldToCanvas from './utils/WorldToCanvas'
+import WorldToContract from './utils/WorldToContract'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
@@ -261,6 +262,7 @@ class App extends Component {
       new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
       let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data, buffer_coords.x, buffer_coords.y)
+      this.address_buffer.update_pixel(new_pixel)
       this.push_event(new PixelSoldEvent(new_pixel))
     }
     this.redraw()
@@ -313,19 +315,24 @@ class App extends Component {
   }
 
   update_hovering_pixel() {
-    this.setState({ hovering_pixel: this.pixel_at_pointer() })
+    let pap = this.pixel_at_pointer()
+    this.setState({ hovering_pixel: pap.index <= this.state.max_index ? pap : null })
   }
 
   pixel_at_pointer() {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
+    let i = new WorldToContract(x, y).get_index()
     let color = this.color_at(x, y)
+    let fetch_buffer = i <= this.state.max_index
     return new Pixel(
       x,
       y,
       color,
+      fetch_buffer ? this.address_buffer.address_at(i) : null,
+      fetch_buffer ? this.address_buffer.price_at(i) : null,
       null,
-      Math.floor(Math.random() * 500)
+      i
     )
   }
 

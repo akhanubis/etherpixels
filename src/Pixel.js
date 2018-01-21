@@ -3,13 +3,14 @@ import ContractToWorld from './utils/ContractToWorld'
 import WorldToContract from './utils/WorldToContract'
 
 class Pixel {
-  constructor(x, y, color, owner, price, old_color) {
+  constructor(x, y, color, owner, price, old_color, index) {
     this.x = x
     this.y = y
     this.color = color
     this.owner = owner
     this.price = price
     this.old_color = old_color
+    this.index = index
     this.build_image_data()
   }
 
@@ -20,7 +21,9 @@ class Pixel {
       coords.y,
       ColorUtils.bytes3ToHex(contract_args.new_color),
       contract_args.new_owner,
-      contract_args.price
+      contract_args.price,
+      null,
+      contract_args.i.toNumber()
     )
     p.tx = tx_hash
     return p
