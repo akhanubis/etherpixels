@@ -28,7 +28,7 @@ class PixelBatch extends Component {
                     <PixelSquare color={p.old_color} />
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
-                    <span className='text'>({p.x}, {p.y}) for {p.price}</span>
+                    <span className='text'>({p.x}, {p.y}) for {p.price.toNumber()}</span>
                     <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
                       remove
                     </div>
