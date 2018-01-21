@@ -13,10 +13,12 @@ class AddressBuffer {
   }
 
   address_at(i) {
+    this.try_resize(i)
     return `0x${this.hex_slice(this.address_offset(i), AddressBuffer.address_length)}`
   }
 
   price_at(i) {
+    this.try_resize(i)
     let hex_price = this.hex_slice(this.price_offset(i), AddressBuffer.price_length)
     return new BigNumber(hex_price, 16)
   }
