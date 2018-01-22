@@ -185,7 +185,7 @@ let continue_cache = (b_number, pixels_data, buffer_data) => {
   pixel_buffer_ctx = canvas.getContext('2d')
   pixel_buffer_ctx.drawImage(img, 0, 0)
   /* init the buffer with the last cached buffer */
-  address_buffer = buffer_data
+  address_buffer = zlib.inflateRawSync(buffer_data)
   max_index = ContractToWorld.max_index(genesis_block, last_cache_block) /* temp set mat_index to old_index to set old_index to the right value */
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
