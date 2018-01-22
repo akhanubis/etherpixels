@@ -569,8 +569,12 @@ class App extends Component {
     .catch(error => console.error(error))
   }
 
+  selected_pixel_in_batch() {
+    return this.state.batch_paint.findIndex(p => p.x === this.state.selected_pixel.x && p.y === this.state.selected_pixel.y)
+  }
+
   batch_paint_full() {
-    return this.state.batch_paint.length >= this.max_batch_length
+    return this.selected_pixel_in_batch() === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
   batch_remove(i) {
@@ -614,7 +618,10 @@ class App extends Component {
     let p = this.pixel_to_paint()
     this.update_preview(p)
     this.setState(prev_state => {
-      prev_state.batch_paint.push(p)
+      let index_to_insert = this.selected_pixel_in_batch()
+      if (index_to_insert === -1)
+        index_to_insert = prev_state.batch_paint.length
+      prev_state.batch_paint[index_to_insert] = p
       return { batch_paint: prev_state.batch_paint }
     })
   }

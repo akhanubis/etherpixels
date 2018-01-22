@@ -2,12 +2,14 @@ import React, { Component } from 'react'
 import PixelSquare from './PixelSquare'
 import { Button } from 'react-bootstrap'
 import './PixelBatch.css'
+import BigNumber from 'bignumber.js'
 
 class PixelBatch extends Component {
   total_price() {
-    return this.props.batch.reduce((total, p) => {
-      return total + p.price
-    }, 0)
+    let total = this.props.batch.reduce((total, p) => {
+      return total.add(p.price)
+    }, new BigNumber(0))
+    return total.toNumber()
   }
 
   remove_batch(i, e) {
