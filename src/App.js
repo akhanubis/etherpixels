@@ -155,7 +155,16 @@ class App extends Component {
     this.pixel_buffer_ctx = canvas.getContext('2d')
     if (img)
       this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
+    this.init_preview_buffer(dimension)
     this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap.bind(this))
+  }
+
+  init_preview_buffer(dimension) {
+    let preview_canvas = document.createElement('canvas')
+    preview_canvas.width = dimension
+    preview_canvas.height = dimension
+    this.preview_buffer_ctx = preview_canvas.getContext('2d')
+    CanvasUtils.clear(this.preview_buffer_ctx, 'rgba(0, 0, 0, 0)', preview_canvas)
   }
 
   redraw(e){
@@ -167,11 +176,30 @@ class App extends Component {
       this.state.canvas_size.width, this.state.canvas_size.height,
       destination_top_left.x, destination_top_left.y,
       destination_size.x, destination_size.y)
+    this.main_canvas.drawImage(this.preview_buffer_ctx.canvas,
+      0, 0,
+      this.state.canvas_size.width, this.state.canvas_size.height,
+      destination_top_left.x, destination_top_left.y,
+      destination_size.x, destination_size.y)
     this.update_zoom(e)
     this.outline_current_pixel()
     this.outline_hovering_pixel()
   }
   
+  update_preview(pixel) {
+    let b_coords = WorldToCanvas.to_buffer(pixel.x, pixel.y, this.preview_buffer_ctx.canvas)
+    this.preview_buffer_ctx.putImageData(pixel.image_data, b_coords.x, b_coords.y)
+    this.redraw()
+  }
+  
+  remove_preview(pixels) {
+    pixels.forEach(p => {
+      let b_coords = WorldToCanvas.to_buffer(p.x, p.y, this.preview_buffer_ctx.canvas)
+      this.preview_buffer_ctx.putImageData(CanvasUtils.transparent_image_data(ImageData), b_coords.x, b_coords.y)
+    })
+    this.redraw()
+  }
+
   outline_pixel(world_pixel, soft) {
     let viewport_coords = WorldToCanvas.to_viewport(world_pixel, this.state.canvas_size, this.point_at_center, this.current_wheel_zoom, this.state.viewport_size)
     this.main_canvas.outline(viewport_coords.x, viewport_coords.y, this.current_wheel_zoom, this.current_wheel_zoom, soft)
@@ -186,6 +214,7 @@ class App extends Component {
   outline_current_pixel() { 
     this.outline_pixel(this.state.selected_pixel)
   }
+  
 
   whole_canvas_on_viewport_ratio() {
     return this.state.viewport_size.width / this.state.canvas_size.width
@@ -442,13 +471,21 @@ class App extends Component {
   }
 
   resize_pixel_buffer(new_size, old_max_index, new_max_index) {
+    this.preview_buffer_ctx = CanvasUtils.resize_canvas(
+      this.preview_buffer_ctx,
+      document.createElement('canvas'),
+      new_size,
+      old_max_index,
+      new_max_index,
+      CanvasUtils.transparent_image_data(ImageData)
+    )
     CanvasUtils.resize_canvas(
       this.pixel_buffer_ctx,
       document.createElement('canvas'),
       new_size,
       old_max_index,
       new_max_index,
-      ImageData,
+      CanvasUtils.semitrans_image_data(ImageData),
       (new_ctx, new_pixels_world_coords, delta_w, delta_h) => {
         this.pixel_buffer_ctx = new_ctx
         new_pixels_world_coords.forEach(w_coords => this.push_event(new NewPixelEvent(w_coords)))
@@ -535,6 +572,8 @@ class App extends Component {
   }
 
   batch_remove(i) {
+    let removed_pixel = this.state.batch_paint[i]
+    this.remove_preview([removed_pixel])
     this.setState(prev_state => {
       return { batch_paint: prev_state.batch_paint.filter((_, index) => index !== i) }
     })
@@ -555,6 +594,7 @@ class App extends Component {
       total_price = total_price.add(pixel.price)
     })
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
+    this.remove_preview(this.state.batch_paint)
     this.setState({ batch_paint: []})
   }
 
@@ -562,8 +602,10 @@ class App extends Component {
     e.preventDefault()
     if (this.batch_paint_full())
       return
+    let p = this.pixel_to_paint()
+    this.update_preview(p)
     this.setState(prev_state => {
-      prev_state.batch_paint.push(this.pixel_to_paint())
+      prev_state.batch_paint.push(p)
       return { batch_paint: prev_state.batch_paint }
     })
   }

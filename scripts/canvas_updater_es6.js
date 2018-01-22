@@ -19,6 +19,7 @@ const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
 const buffer_entry_size = 29 /* 20 bytes for address, 9 bytes for price */
 const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000011C37937E08000', 'hex') /* empty address and 0.005 eth */
+const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
 let canvas = null
 let canvas_dimension = null
@@ -135,7 +136,7 @@ let resize_canvas = (old_i) => {
     { width: canvas_dimension, height: canvas_dimension },
     old_i,
     max_index,
-    Canvas.ImageData
+    new_pixel_image_data
   )
 }
 
