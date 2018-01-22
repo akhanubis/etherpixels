@@ -1,8 +1,9 @@
 import Web3 from 'web3'
+const ZeroClientProvider = require('./ZeroClientProvider.js')
 
 var Infura = (() => {
   var get = () => {
-    return new Web3(window.ZeroClientProvider({
+    return new Web3(ZeroClientProvider({
               static: {
                 eth_syncing: false,
                 web3_clientVersion: 'ZeroClientProvider',
@@ -11,7 +12,7 @@ var Infura = (() => {
               rpcUrl: `https://ropsten.infura.io/${ process.env.REACT_APP_INFURA_API_KEY }`,
               // account mgmt
               getAccounts: (cb) => cb(null, [])
-            }))
+    }))
   }
   
   return {

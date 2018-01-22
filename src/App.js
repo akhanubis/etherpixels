@@ -676,7 +676,6 @@ class App extends Component {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Pavlito clabo un clabito</title>
-          <script src='ZeroClientProvider.js' type='text/javascript'></script>
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>

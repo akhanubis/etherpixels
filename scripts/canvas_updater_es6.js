@@ -113,10 +113,11 @@ let update_buffer = (log) => {
 let pixel_sold_handler = (error, result) => {
   if (error)
     console.error(error)
-  else
+  else {
     if (result.transactionHash) // event, not log
       result = [result]
     process_pixel_solds(result)
+  }
 }
 
 let store_new_index = (b_number) => {
