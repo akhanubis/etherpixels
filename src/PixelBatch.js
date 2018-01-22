@@ -37,7 +37,10 @@ class PixelBatch extends Component {
               })
             }
           </div>
-          <Button className="batch-button" bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
+          <div className="batch-button">
+            <Button bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
+            <Button bsStyle="primary" onClick={this.props.on_batch_clear}>Clear</Button>
+          </div>
         </div>
       )
     else

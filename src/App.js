@@ -565,6 +565,8 @@ class App extends Component {
     e.preventDefault()
     let pixel = this.pixel_to_paint()
     this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
+    .then(result => this.process_pixel_solds(result.logs))
+    .catch(error => console.error(error))
   }
 
   batch_paint_full() {
@@ -586,7 +588,6 @@ class App extends Component {
     let colors = []
     let prices = []
     let total_price = new BigNumber(0)
-    //TODO: chequear si hay que usar bignumber para price y total price
     this.state.batch_paint.forEach((pixel, i) => {
       indexes.push(pixel.contract_index())
       colors.push(pixel.bytes3_color())
@@ -594,6 +595,14 @@ class App extends Component {
       total_price = total_price.add(pixel.price)
     })
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
+    .then(result => this.process_pixel_solds(result.logs))
+    .catch(error => console.error(error))
+    this.clear_batch()
+  }
+
+  clear_batch(e) {
+    if (e)
+      e.preventDefault()
     this.remove_preview(this.state.batch_paint)
     this.setState({ batch_paint: []})
   }
@@ -691,7 +700,7 @@ class App extends Component {
                     <CoordPicker value={this.state.selected_pixel.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
                     <CoordPicker value={this.state.selected_pixel.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                     {block_info}
-                    <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
+                    <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
                 </Col>
                 <Col md={7}>
                   <div className='canvas-container' style={this.state.viewport_size}>
