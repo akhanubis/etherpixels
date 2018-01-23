@@ -34,9 +34,15 @@ class Canvas extends Component {
       WheelUtils.events.forEach((e) => { this.canvas.removeEventListener(e, this.props.on_mouse_wheel) })
   }
   
-  clear(background) {
-    if (background)
-      this.drawImage(background, 0, 0, this.canvas.width, this.canvas.height)
+  set_clear_pattern(clear_image) {
+    this.clear_pattern = this.ctx.createPattern(clear_image, 'repeat')
+  }
+
+  clear(use_pattern) {
+    if (use_pattern) {
+      this.ctx.fillStyle = this.clear_pattern
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+    }
     else
       CanvasUtils.clear(this.ctx, 'white', this.props)
   }
