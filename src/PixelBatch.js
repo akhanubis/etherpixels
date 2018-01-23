@@ -19,8 +19,10 @@ class PixelBatch extends Component {
 
   render() {
     if (this.props.batch.length)
+
       return (
         <div className='batch-container'>
+          {this.props.is_full_callback() ? <p>Batch full </p> : null }
           <p>Batch (total: {this.total_price()})</p>
           <div className='batch-inner-container'>
             {

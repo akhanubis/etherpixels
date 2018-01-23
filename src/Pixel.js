@@ -29,6 +29,13 @@ class Pixel {
     return p
   }
   
+  change_color(new_color) {
+    this.old_color = this.color
+    this.color = new_color
+    this.build_image_data()
+    return this
+  }
+
   build_image_data() {
     var pixel_array = new Uint8ClampedArray(ColorUtils.hexToIntArray(this.color))
     this.image_data = new ImageData(pixel_array, 1, 1)

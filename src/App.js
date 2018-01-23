@@ -4,9 +4,8 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Button, ButtonToolbar } from 'react-bootstrap'
+import { Col, Grid } from 'react-bootstrap'
 import Pixel from './Pixel'
-import CoordPicker from './CoordPicker'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
 import ContractToWorld from './utils/ContractToWorld'
@@ -51,10 +50,11 @@ class App extends Component {
       genesis_block: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
-      selected_pixel: { x: 0, y: 0 },
       batch_paint: [],
       event_logs: [],
-      keys_down: {}
+      keys_down: {},
+      x: 0,
+      y: 0
     }
     this.processed_logs = []
     this.bootstrap_steps = 3
@@ -182,7 +182,6 @@ class App extends Component {
       destination_top_left.x, destination_top_left.y,
       destination_size.x, destination_size.y)
     this.update_zoom(e)
-    this.outline_current_pixel()
     this.outline_hovering_pixel()
   }
   
@@ -210,11 +209,6 @@ class App extends Component {
       this.outline_pixel(this.state.hovering_pixel, true)
     }
   }
-
-  outline_current_pixel() { 
-    this.outline_pixel(this.state.selected_pixel)
-  }
-  
 
   whole_canvas_on_viewport_ratio() {
     return this.state.viewport_size.width / this.state.canvas_size.width
@@ -390,7 +384,7 @@ class App extends Component {
     clearTimeout(this.click_detection_timer)
     if (this.may_be_a_click(e)) {
       this.pick_color(e)
-      this.pick_coords(e)  
+      this.add_to_batch(e)  
     }
     this.stop_dragging(e)
     this.click_timer_in_progress = true
@@ -399,13 +393,6 @@ class App extends Component {
   stop_dragging(e) {
     this.dragging_canvas = false
     this.drag_end = { x: e.layerX, y: e.layerY }
-  }
-
-  pick_coords(e) {
-    if (e.altKey)
-      return
-    let pap = this.pixel_at_pointer()
-    this.new_coordinate({ x: pap.x, y: pap.y })
   }
 
   pick_color(e) {
@@ -551,29 +538,17 @@ class App extends Component {
   }
 
   pixel_to_paint() {
-    return new Pixel(
-      this.state.selected_pixel.x,
-      this.state.selected_pixel.y,
-      ColorUtils.rgbToHex(this.state.current_color),
-      null,
-      new BigNumber(1000) /* TODO LEER DE LA DATA */,
-      this.color_at(this.state.selected_pixel.x, this.state.selected_pixel.y)
-      )
-  }
-
-  paint(e) {
-    e.preventDefault()
-    let pixel = this.pixel_to_paint()
-    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
-    .then(result => this.process_pixel_solds(result.logs))
-    .catch(error => console.error(error))
+    return this.pixel_at_pointer().change_color(ColorUtils.rgbToHex(this.state.current_color))
   }
 
   selected_pixel_in_batch() {
-    return this.state.batch_paint.findIndex(p => p.x === this.state.selected_pixel.x && p.y === this.state.selected_pixel.y)
+    let pap = this.pixel_at_pointer()
+    return this.state.batch_paint.findIndex(p => p.x === pap.x && p.y === pap.y)
   }
 
   batch_paint_full() {
+    if (!this.state.batch_paint.length)
+      return false
     return this.selected_pixel_in_batch() === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
@@ -585,12 +560,20 @@ class App extends Component {
     })
   }
 
-  batch_paint(e) {
+  paint(e) {
     e.preventDefault()
     let batch_length = this.state.batch_paint.length
-    let indexes = []
-    let colors = []
-    let prices = []
+    if (batch_length) {
+      if (batch_length === 1)
+        this.paint_one()
+      else
+        this.paint_many(batch_length)
+      this.clear_batch()
+    }
+  }
+
+  paint_many(batch_length) {
+    let indexes = [], colors = [], prices = []
     let total_price = new BigNumber(0)
     this.state.batch_paint.forEach((pixel, i) => {
       indexes.push(pixel.contract_index())
@@ -601,7 +584,13 @@ class App extends Component {
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
     .then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
-    this.clear_batch()
+  }
+
+  paint_one() {
+    let pixel = this.state.batch_paint[0]
+    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
+    .then(result => this.process_pixel_solds(result.logs))
+    .catch(error => console.error(error))
   }
 
   clear_batch(e) {
@@ -613,7 +602,7 @@ class App extends Component {
 
   add_to_batch(e) {
     e.preventDefault()
-    if (this.batch_paint_full())
+    if (e.altKey || this.batch_paint_full())
       return
     let p = this.pixel_to_paint()
     this.update_preview(p)
@@ -633,22 +622,7 @@ class App extends Component {
   handleColorChangeComplete(new_color) {
     this.setState({ current_color: new_color.rgb })
   }
-  
-  new_coordinate(new_coord, e) {
-    if (e)
-      e.preventDefault()
-    let new_pixel = {...this.state.selected_pixel, ...new_coord}
-    this.setState({ selected_pixel: new_pixel }, this.redraw.bind(this))
-  }
-  
-  new_x(e) { this.new_coordinate({ x: parseInt(e.target.value, 10) }, e) }
-    
-  new_y(e) { this.new_coordinate({ y: parseInt(e.target.value, 10) }, e) }
-
-  max_dimension() {
-    return 0.5 * (this.state.canvas_size.width - 1)
-  }
-
+ 
   on_alt_down() {
     this.setState(prev_state => {
       prev_state.keys_down.alt = true
@@ -665,8 +639,6 @@ class App extends Component {
 
   render() {
     let block_info = null
-    let max_dimension = this.max_dimension()
-    let min_dimension = -max_dimension
     if (this.state.current_block) {
       block_info = (
         <div>
@@ -697,16 +669,9 @@ class App extends Component {
                       color={ this.state.current_color }
                       onChangeComplete={ this.handleColorChangeComplete.bind(this) }
                     />
-                    <ButtonToolbar>
-                      <Button bsStyle="primary" onClick={this.paint.bind(this)}>Paint</Button>
-                      <Button bsStyle="primary" disabled={this.batch_paint_full()} onClick={this.add_to_batch.bind(this)}>Add to batch paint</Button>
-                    </ButtonToolbar>
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                    <p>Tip: you can pick a set of coordinates from the canvas with click</p>
-                    <CoordPicker value={this.state.selected_pixel.x} min={min_dimension} max={max_dimension} label='X' onChange={this.new_x.bind(this)} />
-                    <CoordPicker value={this.state.selected_pixel.y} min={min_dimension} max={max_dimension} label='Y' onChange={this.new_y.bind(this)} />
                     {block_info}
-                    <PixelBatch on_batch_submit={this.batch_paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} />
+                    <PixelBatch on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
                 <Col md={7}>
                   <div className='canvas-container' style={this.state.viewport_size}>
