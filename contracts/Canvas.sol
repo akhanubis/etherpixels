@@ -10,6 +10,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     address owner;
   }
 	
+  uint private total_value;
   mapping(uint => Pixel) public pixels;
   
   event PixelSold(uint i, address old_owner, address new_owner, uint price, bytes3 new_color);
@@ -33,10 +34,24 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     Pixel storage pixel = pixels[_index];
     //require(_price > pixel.floor_price);
     pixel.color = _color;
+    
+    address old_owner;
+    if (pixel.owner == address(0))
+      old_owner = contract_owner; /* new pixels belong to me */
+    else {
+      old_owner = pixel.owner;
+      total_value -= pixel.floor_price;
+    }
+
     pixel.floor_price = uint72(_price);
-    address old_owner = pixel.owner == address(0) ? owner : pixel.owner; //nuevos pixeles son propiedad mia
+    total_value += pixel.floor_price;
+
     pixel.owner = msg.sender;
     old_owner.transfer(_price);
     PixelSold(_index, old_owner, msg.sender, _price, _color);
 	}
+
+  function MarketCap() public view returns(uint market_cap) {
+    return total_value;
+  }
 }
