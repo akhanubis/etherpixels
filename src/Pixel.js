@@ -52,6 +52,10 @@ class Pixel {
   bytes3_color() {
     return ColorUtils.hexToBytes3(this.color)
   }
+
+  is_inside_canvas(max_index) {
+    return this.index <= max_index
+  }
 }
 
 export default Pixel

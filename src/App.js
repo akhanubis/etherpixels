@@ -342,6 +342,10 @@ class App extends Component {
     this.setState({ hovering_pixel: pap.index <= this.state.max_index ? pap : null })
   }
 
+  pointer_inside_canvas(pixel_at_pointer) {
+    return pixel_at_pointer.is_inside_canvas(this.state.max_index)
+  }
+
   pixel_at_pointer() {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
@@ -383,8 +387,12 @@ class App extends Component {
     e.preventDefault()
     clearTimeout(this.click_detection_timer)
     if (this.may_be_a_click(e)) {
-      this.pick_color(e)
-      this.add_to_batch(e)  
+      let pap = this.pixel_at_pointer()
+      if (this.pointer_inside_canvas(pap))
+        if (e.altKey)
+          this.pick_color(pap)
+        else
+          this.add_to_batch(pap)
     }
     this.stop_dragging(e)
     this.click_timer_in_progress = true
@@ -395,9 +403,8 @@ class App extends Component {
     this.drag_end = { x: e.layerX, y: e.layerY }
   }
 
-  pick_color(e) {
-    if (e.altKey)
-      this.setState({ current_color: this.pixel_at_pointer().rgba_color() })
+  pick_color(pixel_at_pointer) {
+    this.setState({ current_color: pixel_at_pointer.rgba_color() })
   }
 
   is_picking_color() {
@@ -537,19 +544,19 @@ class App extends Component {
     })
   }
 
-  pixel_to_paint() {
-    return this.pixel_at_pointer().change_color(ColorUtils.rgbToHex(this.state.current_color))
+  pixel_to_paint(pixel_at_pointer) {
+    return pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
   }
 
-  selected_pixel_in_batch() {
-    let pap = this.pixel_at_pointer()
-    return this.state.batch_paint.findIndex(p => p.x === pap.x && p.y === pap.y)
+  selected_pixel_in_batch(pixel_at_pointer) {
+    pixel_at_pointer = pixel_at_pointer || this.pixel_at_pointer()
+    return this.state.batch_paint.findIndex(p => p.x === pixel_at_pointer.x && p.y === pixel_at_pointer.y)
   }
 
-  batch_paint_full() {
+  batch_paint_full(pixel_at_pointer) {
     if (!this.state.batch_paint.length)
       return false
-    return this.selected_pixel_in_batch() === -1 && this.state.batch_paint.length >= this.max_batch_length
+    return this.selected_pixel_in_batch(pixel_at_pointer) === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
   batch_remove(i) {
@@ -600,14 +607,13 @@ class App extends Component {
     this.setState({ batch_paint: []})
   }
 
-  add_to_batch(e) {
-    e.preventDefault()
-    if (e.altKey || this.batch_paint_full())
+  add_to_batch(pixel_at_pointer) {
+    let p = this.pixel_to_paint(pixel_at_pointer)
+    if (this.batch_paint_full(pixel_at_pointer))
       return
-    let p = this.pixel_to_paint()
     this.update_preview(p)
     this.setState(prev_state => {
-      let index_to_insert = this.selected_pixel_in_batch()
+      let index_to_insert = this.selected_pixel_in_batch(p)
       if (index_to_insert === -1)
         index_to_insert = prev_state.batch_paint.length
       prev_state.batch_paint[index_to_insert] = p
