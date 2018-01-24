@@ -75,14 +75,14 @@ let update_cache = () => {
   s3.upload({ ACL: 'public-read', Bucket: bucket, Key: buffer_key, Body: deflated_body }, upload_callback)
 }
 
-let process_new_block = (b_number) => {
+let process_new_block = b_number => {
   console.log(`New block: ${b_number}`)
   let old_dimension = canvas_dimension
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
 }
 
-let process_pixel_solds = (pixel_solds) => {
+let process_pixel_solds = pixel_solds => {
   console.log(`Processing ${pixel_solds.length} pixel/s`)
   pixel_solds.forEach((log) => {
     //TODO: mandar email a old_owner
@@ -94,7 +94,7 @@ let process_pixel_solds = (pixel_solds) => {
   })
 }
 
-let update_pixel = (log) => {
+let update_pixel = log => {
   let world_coords = new ContractToWorld(log.args.i.toNumber()).get_coords()
   let canvas_coords = WorldToCanvas.to_buffer(world_coords.x, world_coords.y, { width: canvas_dimension, height: canvas_dimension })
   let pixel_array = new Uint8ClampedArray(ColorUtils.bytes3ToIntArray(log.args.new_color))
@@ -102,7 +102,7 @@ let update_pixel = (log) => {
   pixel_buffer_ctx.putImageData(image_data, canvas_coords.x, canvas_coords.y)
 }
 
-let update_buffer = (log) => {
+let update_buffer = log => {
   let offset = buffer_entry_size * log.args.i.toNumber()
   let formatted_address = log.args.new_owner.substr(2, 40)
   let formatted_price = left_pad(log.args.price.toString(16), 18, 0)
@@ -120,7 +120,7 @@ let pixel_sold_handler = (error, result) => {
   }
 }
 
-let store_new_index = (b_number) => {
+let store_new_index = b_number => {
   let old_index = max_index
   current_block = b_number
   max_index = ContractToWorld.max_index(genesis_block, current_block)
@@ -128,7 +128,7 @@ let store_new_index = (b_number) => {
   return old_index
 }
 
-let resize_canvas = (old_i) => {
+let resize_canvas = old_i => {
   console.log(`Resizing canvas to: ${canvas_dimension}x${canvas_dimension}...`)
   canvas = new Canvas(canvas_dimension, canvas_dimension) /* pixel_buffer_ctx keeps a temp reference to old canvas */
   pixel_buffer_ctx = CanvasUtils.resize_canvas(
@@ -141,12 +141,12 @@ let resize_canvas = (old_i) => {
   )
 }
 
-let resize_buffer = (old_i) => {
+let resize_buffer = old_i => {
   console.log(`Resizing buffer to: ${buffer_entry_size * (max_index + 1)}...`)
   address_buffer = Buffer.concat([address_buffer, Buffer.allocUnsafe(buffer_entry_size * (max_index - old_i)).fill(free_pixel_buffer)], buffer_entry_size * (max_index + 1))
 }
 
-let resize_assets = (old_i) => {
+let resize_assets = old_i => {
   console.log(`Resizing assets: ${old_i} => ${max_index}...`)
   resize_canvas(old_i)
   resize_buffer(old_i)
@@ -154,22 +154,27 @@ let resize_assets = (old_i) => {
 }
 
 let start_watching = () => {
-  let pixel_sold_event = instance.PixelSold({}, { fromBlock: last_cache_block, toBlock: 'latest' })
-  pixel_sold_event.watch(pixel_sold_handler)
-  pixel_sold_event.get(pixel_sold_handler)
-
+  process_past_logs(last_cache_block)
+  
   web3.eth.filter("latest").watch((error, block_hash) => {
     web3.eth.getBlock(block_hash, (error, result) => {
       if (error)
         console.error(error)
       else
-        if (result.number > current_block)
+        if (result.number > current_block) {
           process_new_block(result.number)
+          process_past_logs(current_block)
+        }
     })
   })
 }
 
-let reset_cache = (b_number) => {
+let process_past_logs = last_processed_block => {
+  console.log(`Fetching events since ${last_processed_block}...`)
+  instance.PixelSold({}, { fromBlock: last_processed_block, toBlock: 'latest' }).get(pixel_sold_handler)
+}
+
+let reset_cache = b_number => {
   console.log("Resetting cache...")
   max_index = -1
   last_cache_block = genesis_block
@@ -194,7 +199,7 @@ let continue_cache = (b_number, pixels_data, buffer_data) => {
   start_watching()
 }
 
-let fetch_pixels = (b_number) => {
+let fetch_pixels = b_number => {
   console.log(`Reading ${bucket}/${pixels_key}...`)
   s3.getObject({ Bucket: bucket, Key: pixels_key }, (error, pixels_data) => {
     if (error) {

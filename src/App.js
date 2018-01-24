@@ -601,7 +601,6 @@ class App extends Component {
       prices.push(pixel.price)
       total_price = total_price.add(pixel.price)
     })
-    console.log(total_price.toNumber())
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
     .then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
