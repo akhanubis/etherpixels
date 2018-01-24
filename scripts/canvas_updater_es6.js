@@ -18,7 +18,7 @@ const canvasContract = contract(CanvasContract)
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
 const buffer_entry_size = 29 /* 20 bytes for address, 9 bytes for price */
-const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000008000', 'hex') /* empty address and 0.005 eth */
+const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000000000', 'hex') /* empty address and price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
 let canvas = null

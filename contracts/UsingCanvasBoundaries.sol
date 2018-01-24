@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 contract usingCanvasBoundaries {
-  uint private g_block;  //TODO private	
+  uint private g_block;
 	 
   function usingCanvasBoundaries() internal {
     g_block = block.number;

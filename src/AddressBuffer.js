@@ -12,17 +12,16 @@ class AddressBuffer {
     this.buffer = new Uint8Array(buffer)
   }
 
-  address_at(i) {
+  entry_at(i) {
     this.try_resize(i)
-    return `0x${this.hex_slice(this.address_offset(i), AddressBuffer.address_length)}`
+    let address = this.address_at(i)
+    let price = parseInt(address, 16) ? this.price_at(i) : this.new_pixel_price
+    return {
+      address: address,
+      price: price
+    }
   }
-
-  price_at(i) {
-    this.try_resize(i)
-    let hex_price = this.hex_slice(this.price_offset(i), AddressBuffer.price_length)
-    return new BigNumber(hex_price, 16)
-  }
-
+  
   update_pixel(pixel) {
     this.set_address_at(pixel.index, pixel.owner).set_price_at(pixel.index, pixel.price)
   }
@@ -51,6 +50,10 @@ class AddressBuffer {
     return this
   }
 
+  set_new_pixel_price(new_price) {
+    this.new_pixel_price = new_price
+  }
+
   try_resize(i) {
     if (this.address_offset(i) < this.buffer.byteLength)
       return
@@ -73,6 +76,15 @@ class AddressBuffer {
     return this.buffer.slice(start, start + length).reduce((out, byte) => {
       return out + byte.toString(16).padStart(2, '0')
     }, '')
+  }
+
+  address_at(i) {
+    return `0x${this.hex_slice(this.address_offset(i), AddressBuffer.address_length)}`
+  }
+
+  price_at(i) {
+    let hex_price = this.hex_slice(this.price_offset(i), AddressBuffer.price_length)
+    return new BigNumber(hex_price, 16)
   }
 
   static decompress_buffer(deflated) {

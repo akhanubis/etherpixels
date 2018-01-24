@@ -9,12 +9,21 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     uint72 floor_price; /* max value 4722.366482869645213695 eth */
     address owner;
   }
-	
-  uint private total_value;
+	/* packed to 32 bytes */
+  uint216 private total_value;
+  uint40 private total_pixels;
+
   mapping(uint => Pixel) public pixels;
   
   event PixelSold(uint i, address old_owner, address new_owner, uint price, bytes3 new_color);
   
+  function Canvas() public {
+    pixels[0] = Pixel(0xf0f0f0, 100, msg.sender);
+    total_value = 100;
+    total_pixels = 1;
+    PixelSold(0, msg.sender, msg.sender, 100, 0xA0A0A0);
+  }
+
 	function Paint(uint _index, bytes3 _color) public payable {
     paint_pixel(_index, _color, msg.value);
 	}
@@ -32,26 +41,30 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     require(_price == uint72(_price)); /* who would pay more than 4k eth? */
     check_coordinates(_index);
     Pixel storage pixel = pixels[_index];
-    //require(_price > pixel.floor_price);
-    pixel.color = _color;
-    
     address old_owner;
-    if (pixel.owner == address(0))
+    if (pixel.owner == address(0)) {
+      require(_price > total_value / total_pixels); /* new pixels price is the mean of all the pixels already sold */
+      total_pixels++;
       old_owner = contract_owner; /* new pixels belong to me */
-    else {
-      old_owner = pixel.owner;
-      total_value -= pixel.floor_price;
     }
-
+    else {
+      total_value -= pixel.floor_price;
+      old_owner = pixel.owner;
+      /* this allows the current owner to buy to himself to change the current color or lower the pixel price (by incurring in some loses) */
+      if (old_owner == msg.sender)
+        require(_price <= pixel.floor_price);
+      else
+        require(_price > pixel.floor_price);
+    }
     pixel.floor_price = uint72(_price);
     total_value += pixel.floor_price;
-
+    pixel.color = _color;
     pixel.owner = msg.sender;
     old_owner.transfer(_price);
     PixelSold(_index, old_owner, msg.sender, _price, _color);
 	}
 
-  function MarketCap() public view returns(uint market_cap) {
-    return total_value;
+  function MarketCap() public view returns(uint market_cap, uint pixels_quantity) {
+    return (total_value, total_pixels);
   }
 }

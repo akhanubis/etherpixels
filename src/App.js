@@ -54,7 +54,8 @@ class App extends Component {
       event_logs: [],
       keys_down: {},
       x: 0,
-      y: 0
+      y: 0,
+      market_cap: new BigNumber(0)
     }
     this.processed_logs = []
     this.bootstrap_steps = 3
@@ -113,7 +114,7 @@ class App extends Component {
   load_addresses_buffer() {
     axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
       AddressBuffer.decompress_buffer(response.data)
-      .then(result => this.address_buffer = new AddressBuffer(result.buffer))
+      .then(result => this.address_buffer = new AddressBuffer(result.buffer, this.infura_contract_instance))
       .catch(error => console.error("Error when inflating cache buffer"))
       .then(this.try_bootstrap.bind(this))
     })
@@ -263,9 +264,19 @@ class App extends Component {
         if (error)
           console.error(error)
         else
-          if (result.number > this.state.current_block)
+          if (result.number > this.state.current_block) {
             this.update_block_number(result.number)
+            this.update_new_pixel_price()
+          }
       })
+    })
+    this.update_new_pixel_price()
+  }
+
+  update_new_pixel_price() {
+    this.infura_contract_instance.MarketCap.call().then(results => {
+      this.setState({ market_cap: results[0] })
+      this.address_buffer.set_new_pixel_price(results[0].dividedToIntegerBy(results[1])) /* total value / amount of pixels sold */
     })
   }
   
@@ -351,13 +362,13 @@ class App extends Component {
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     let i = new WorldToContract(x, y).get_index()
     let color = this.color_at(x, y)
-    let fetch_buffer = i <= this.state.max_index
+    let buffer_info = i <= this.state.max_index ? this.address_buffer.entry_at(i) : {}
     return new Pixel(
       x,
       y,
       color,
-      fetch_buffer ? this.address_buffer.address_at(i) : null,
-      fetch_buffer ? this.address_buffer.price_at(i) : null,
+      buffer_info.address,
+      buffer_info.price,
       null,
       i
     )
@@ -585,9 +596,12 @@ class App extends Component {
     this.state.batch_paint.forEach((pixel, i) => {
       indexes.push(pixel.contract_index())
       colors.push(pixel.bytes3_color())
+      /* TEMP */
+      pixel.price = pixel.price.add(1)
       prices.push(pixel.price)
       total_price = total_price.add(pixel.price)
     })
+    console.log(total_price.toNumber())
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
     .then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
@@ -595,7 +609,7 @@ class App extends Component {
 
   paint_one() {
     let pixel = this.state.batch_paint[0]
-    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price, gas: "200000" })
+    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
     .then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
   }
@@ -676,6 +690,7 @@ class App extends Component {
                       onChangeComplete={ this.handleColorChangeComplete.bind(this) }
                     />
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
+                    <p>Canvas "market cap": { this.state.market_cap.toNumber() } wei</p>
                     {block_info}
                     <PixelBatch on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
