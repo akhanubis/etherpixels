@@ -15,6 +15,7 @@ const ProviderEngine = require('web3-provider-engine')
 const ZeroClientProvider = require ('web3-provider-engine/zero.js')
 const contract = require('truffle-contract')
 const canvasContract = contract(CanvasContract)
+const Pusher = require('pusher')
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
 const buffer_entry_size = 29 /* 20 bytes for address, 9 bytes for price */
@@ -31,6 +32,12 @@ let current_block = null
 let max_index = null
 let web3 = null
 let instance = null
+let pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID || process.env.REACT_APP_PUSHER_APP_ID,
+  key: process.env.PUSHER_APP_KEY || process.env.REACT_APP_PUSHER_APP_KEY,
+  secret: process.env.PUSHER_APP_SECRET || process.env.REACT_APP_PUSHER_APP_SECRET,
+  encrypted: true
+})
 
 const bucket = process.env.REACT_APP_S3_BUCKET
 const pixels_key = 'pixels.png'
@@ -69,7 +76,7 @@ let upload_callback = (err, data) => {
 let update_cache = () => {
   console.log("Updating cache...")
   s3.upload({ ACL: 'public-read', Bucket: bucket, Key: pixels_key, Body: canvas.toBuffer() }, upload_callback)
-  let init_json = JSON.stringify({ contract_address: instance.address, last_cache_block: current_block /* restarle 1 ????? */ })
+  let init_json = JSON.stringify({ contract_address: instance.address, last_cache_block: current_block })
   s3.upload({ ACL: 'public-read', Bucket: bucket, Key: init_key, Body: init_json }, upload_callback)
   let deflated_body = zlib.deflateRawSync(address_buffer)
   s3.upload({ ACL: 'public-read', Bucket: bucket, Key: buffer_key, Body: deflated_body }, upload_callback)
@@ -83,15 +90,15 @@ let process_new_block = b_number => {
 }
 
 let process_pixel_solds = pixel_solds => {
-  console.log(`Processing ${pixel_solds.length} pixel/s`)
+  console.log(`Processing ${pixel_solds.length} pixel${ pixel_solds.length == 1 ? '' : 's'}`)
   pixel_solds.forEach((log) => {
     //TODO: mandar email a old_owner
     update_pixel(log)
     update_buffer(log)
-    
-    let owner = log.args.new_owner
-    let price = log.args.price
   })
+  update_cache()
+  //TODO GUARDAR EN UN BUFFER LOS ULTIMOS 100 eventos asi desp de recibir este push el cliente los busca
+  pusher.trigger('main', 'new_block', { new_block: current_block, events: pixel_solds })
 }
 
 let update_pixel = log => {
@@ -150,7 +157,6 @@ let resize_assets = old_i => {
   console.log(`Resizing assets: ${old_i} => ${max_index}...`)
   resize_canvas(old_i)
   resize_buffer(old_i)
-  update_cache()
 }
 
 let start_watching = () => {

@@ -1,6 +1,7 @@
 import ColorUtils from './utils/ColorUtils'
 import ContractToWorld from './utils/ContractToWorld'
 import WorldToContract from './utils/WorldToContract'
+import BigNumber from 'bignumber.js'
 
 class Pixel {
   constructor(x, y, color, owner, price, old_color, index) {
@@ -15,15 +16,16 @@ class Pixel {
   }
 
   static from_contract(tx_hash, contract_args) {
-    let coords = new ContractToWorld(contract_args.i.toNumber()).get_coords()
+    let i = parseInt(contract_args.i, 10)
+    let coords = new ContractToWorld(i).get_coords()
     let p = new this(
       coords.x,
       coords.y,
       ColorUtils.bytes3ToHex(contract_args.new_color),
       contract_args.new_owner,
-      contract_args.price,
+      new BigNumber(contract_args.price),
       null,
-      contract_args.i.toNumber()
+      i
     )
     p.tx = tx_hash
     return p

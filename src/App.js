@@ -20,6 +20,7 @@ import KeyListener from './KeyListener'
 import BigNumber from 'bignumber.js'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
+import Pusher from 'pusher-js'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -114,7 +115,7 @@ class App extends Component {
   load_addresses_buffer() {
     axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
       AddressBuffer.decompress_buffer(response.data)
-      .then(result => this.address_buffer = new AddressBuffer(result.buffer, this.infura_contract_instance))
+      .then(result => this.address_buffer = new AddressBuffer(result.buffer))
       .catch(error => console.error("Error when inflating cache buffer"))
       .then(this.try_bootstrap.bind(this))
     })
@@ -245,32 +246,17 @@ class App extends Component {
     return new_log
   }
   
-  pixel_sold_handler(error, result) {
-    if (error)
-      console.error(error)
-    else
-      if (result.transactionHash) // event, not log
-        result = [result]
-      this.process_pixel_solds(result)
-  }
-  
   start_watching() {
-    var pixel_sold_event = this.infura_contract_instance.PixelSold(null, { fromBlock: this.last_cache_block, toBlock: 'latest' })
-    pixel_sold_event.watch(this.pixel_sold_handler.bind(this))
-    pixel_sold_event.get(this.pixel_sold_handler.bind(this))
-
-    this.state.infura.eth.filter("latest").watch((error, block_hash) => {
-      this.state.infura.eth.getBlock(block_hash, (error, result) => {
-        if (error)
-          console.error(error)
-        else
-          if (result.number > this.state.current_block) {
-            this.update_block_number(result.number)
-            this.update_new_pixel_price()
-          }
-      })
-    })
     this.update_new_pixel_price()
+    let pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
+      cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
+      encrypted: true
+    })
+    pusher.subscribe('main').bind('new_block', data => {
+      this.update_block_number(data.new_block)
+      this.update_new_pixel_price()
+      this.process_pixel_solds(data.events)
+    })    
   }
 
   update_new_pixel_price() {
@@ -602,14 +588,15 @@ class App extends Component {
       total_price = total_price.add(pixel.price)
     })
     this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
-    .then(result => this.process_pixel_solds(result.logs))
+    //TODO MANEJAR PREVIEW ACA
+    //.then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
   }
 
   paint_one() {
     let pixel = this.state.batch_paint[0]
     this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
-    .then(result => this.process_pixel_solds(result.logs))
+    //.then(result => this.process_pixel_solds(result.logs))
     .catch(error => console.error(error))
   }
 
