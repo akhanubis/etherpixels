@@ -1,5 +1,6 @@
 import React from 'react'
 import PixelSquare from './PixelSquare'
+import PriceFormatter from './utils/PriceFormatter'
 
 class NewPixelEvent {
   constructor(coords) {
@@ -29,7 +30,7 @@ class PixelSoldEvent {
         <PixelSquare color={this.pixel.old_color} />
         <span className='text'>=></span>
         <PixelSquare color={this.pixel.color} />
-        <span className='text'>({this.pixel.x}, {this.pixel.y}) for {this.pixel.price.toNumber()} wei</span>
+        <span className='text'>({this.pixel.x}, {this.pixel.y}) for {PriceFormatter.format(this.pixel.price)}</span>
         <div className='right-link'>
           <a target="_blank" href={`https://etherscan.io/tx/${this.pixel.tx}`}>
             view on explorer

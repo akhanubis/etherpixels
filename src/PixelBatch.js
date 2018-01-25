@@ -3,6 +3,7 @@ import PixelSquare from './PixelSquare'
 import { Button } from 'react-bootstrap'
 import './PixelBatch.css'
 import BigNumber from 'bignumber.js'
+import PriceFormatter from './utils/PriceFormatter'
 
 class PixelBatch extends Component {
   total_price() {
@@ -28,7 +29,7 @@ class PixelBatch extends Component {
       return (
         <div className='batch-container'>
           {this.props.is_full_callback() ? <p>Batch full</p> : null }
-          <p>Batch (total: {this.total_price()})</p>
+          <p>Batch (total: {PriceFormatter.format(this.total_price())})</p>
           <div className='batch-inner-container'>
             {
               this.props.batch.map((p, i) => {
@@ -37,7 +38,7 @@ class PixelBatch extends Component {
                     <PixelSquare color={p.old_color} />
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
-                    <span className='text'>({p.x}, {p.y}) for {p.price.toNumber()}</span>
+                    <span className='text'>({p.x}, {p.y}) for {PriceFormatter.format(p.price)}</span>
                     {this.props.on_batch_remove ?
                       <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
                         remove

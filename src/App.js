@@ -22,6 +22,7 @@ import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
+import PriceFormatter from './utils/PriceFormatter'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -58,7 +59,10 @@ class App extends Component {
       x: 0,
       y: 0,
       market_cap: new BigNumber(0),
-      pending_txs: []
+      pending_txs: [],
+      settings: {
+        unit: 'gwei'
+      }
     }
     this.processed_logs = []
     this.bootstrap_steps = 3
@@ -66,6 +70,8 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.click_timer_in_progress = true
+    PriceFormatter.init()
+    PriceFormatter.set_unit(this.state.settings.unit)
   }
 
   componentWillMount() {
@@ -689,7 +695,7 @@ class App extends Component {
                       onChangeComplete={ this.handleColorChangeComplete.bind(this) }
                     />
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                    <p>Canvas "market cap": { this.state.market_cap.toNumber() } wei</p>
+                    <p>Canvas "market cap": { PriceFormatter.format(this.state.market_cap) }</p>
                     {block_info}
                     <PendingTxList pending_txs={this.state.pending_txs} />
                     <PixelBatch on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />

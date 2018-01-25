@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import PixelBatch from './PixelBatch'
 import BigNumber from 'bignumber.js'
+import PriceFormatter from './utils/PriceFormatter'
 import './PendingTxList.css'
 
 class PendingTxList extends Component {
@@ -17,7 +18,7 @@ class PendingTxList extends Component {
     if (this.props.pending_txs.length)
       return (
         <div className='pending-txs-container'>
-          <p>Pending txs (total: {this.total_price()})</p>
+          <p>Pending txs (total: {PriceFormatter.format(this.total_price())})</p>
           <div className='pending-txs-inner-container'>
             {
               this.props.pending_txs.map((tx, i) => {
