@@ -18,11 +18,16 @@ class PixelBatch extends Component {
   }
 
   render() {
-    if (this.props.batch.length)
-
+    if (this.props.batch.length) {
+      let submit_buttons = null
+      if (this.props.on_batch_submit)
+        submit_buttons = <div className="batch-button">
+                           <Button bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
+                           <Button bsStyle="primary" onClick={this.props.on_batch_clear}>Clear</Button>
+                        </div>
       return (
         <div className='batch-container'>
-          {this.props.is_full_callback() ? <p>Batch full </p> : null }
+          {this.props.is_full_callback() ? <p>Batch full</p> : null }
           <p>Batch (total: {this.total_price()})</p>
           <div className='batch-inner-container'>
             {
@@ -33,20 +38,21 @@ class PixelBatch extends Component {
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
                     <span className='text'>({p.x}, {p.y}) for {p.price.toNumber()}</span>
-                    <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
-                      remove
-                    </div>
+                    {this.props.on_batch_remove ?
+                      <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
+                        remove
+                      </div>
+                      : null
+                    }
                   </div>
                 )
               })
             }
           </div>
-          <div className="batch-button">
-            <Button bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
-            <Button bsStyle="primary" onClick={this.props.on_batch_clear}>Clear</Button>
-          </div>
+          {submit_buttons}
         </div>
       )
+    }
     else
       return null
   }

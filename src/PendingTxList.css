@@ -1,0 +1,29 @@
+.batch-pixel-info:after {
+  content:'';
+  display: block;
+  clear: both;
+}
+
+.batch-pixel-info .pixel-square {
+  float: left;
+  margin-top: 0px;
+}
+
+.batch-pixel-info .text {
+  float: left;
+}
+
+.pending-txs-container .batch-container {
+  border: none;
+}
+
+.pending-txs-container {
+  border: 1px solid black;
+  border-radius: 5px;
+}
+
+.pending-txs-container .batch-container .batch-inner-container {
+  position: relative;
+  overflow-y: auto;
+  height: auto; 
+}

@@ -21,6 +21,7 @@ import BigNumber from 'bignumber.js'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
+import PendingTxList from './PendingTxList'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -56,7 +57,8 @@ class App extends Component {
       keys_down: {},
       x: 0,
       y: 0,
-      market_cap: new BigNumber(0)
+      market_cap: new BigNumber(0),
+      pending_txs: []
     }
     this.processed_logs = []
     this.bootstrap_steps = 3
@@ -568,12 +570,29 @@ class App extends Component {
     e.preventDefault()
     let batch_length = this.state.batch_paint.length
     if (batch_length) {
-      if (batch_length === 1)
-        this.paint_one()
-      else
-        this.paint_many(batch_length)
+      let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
+      this.store_pending_tx(tx_promise)
       this.clear_batch()
     }
+  }
+
+  store_pending_tx(tx_promise) {
+    this.setState(prev_state => {
+      prev_state.pending_txs.push( { promise: tx_promise, pixels: prev_state.batch_paint })
+      return prev_state
+    })
+    tx_promise.then(result => {
+      this.process_pixel_solds(result.logs)
+      this.clear_pending_tx(tx_promise)
+    }).catch(error => console.log(error))
+  }
+
+  clear_pending_tx(fulfilled_promise) {
+    let i = this.state.pending_txs.findIndex(e => e.promise === fulfilled_promise)
+    if (i !== -1)
+      this.setState(prev_state => {
+        return { pending_txs: prev_state.pending_txs.filter((_, index) => index !== i) }
+      })
   }
 
   paint_many(batch_length) {
@@ -587,17 +606,11 @@ class App extends Component {
       prices.push(pixel.price)
       total_price = total_price.add(pixel.price)
     })
-    this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
-    //TODO MANEJAR PREVIEW ACA
-    //.then(result => this.process_pixel_solds(result.logs))
-    .catch(error => console.error(error))
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
   }
 
-  paint_one() {
-    let pixel = this.state.batch_paint[0]
-    this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
-    //.then(result => this.process_pixel_solds(result.logs))
-    .catch(error => console.error(error))
+  paint_one(pixel) {
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
   }
 
   clear_batch(e) {
@@ -678,6 +691,7 @@ class App extends Component {
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
                     <p>Canvas "market cap": { this.state.market_cap.toNumber() } wei</p>
                     {block_info}
+                    <PendingTxList pending_txs={this.state.pending_txs} />
                     <PixelBatch on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
                 <Col md={7}>

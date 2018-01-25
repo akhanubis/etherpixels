@@ -22,6 +22,7 @@
 
 .batch-container {
   border: 1px solid black;
+  border-radius: 5px;
 }
 
 .batch-container .batch-inner-container {
