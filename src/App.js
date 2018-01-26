@@ -299,10 +299,11 @@ class App extends Component {
   
   push_event(event) {
     this.setState(prev_state => {
-      prev_state.event_logs.unshift(event)
-      if (prev_state.event_logs.length > this.max_event_logs_size)
-        prev_state.event_logs.pop()
-      return { event_logs: prev_state.event_logs }
+      let temp = [...prev_state.event_logs]
+      temp.unshift(event) 
+      if (temp.length > this.max_event_logs_size)
+        temp.pop()
+      return { event_logs: temp }
     })
   }
 
@@ -511,7 +512,7 @@ class App extends Component {
     const canvasContract = contract(CanvasContract)
     canvasContract.setProvider(this.state.web3.currentProvider)
     
-    var canvasContract2 = contract(CanvasContract)
+    const canvasContract2 = contract(CanvasContract)
     canvasContract2.setProvider(this.state.infura.currentProvider)
     canvasContract2.deployed().then(instance => {
       this.infura_contract_instance = instance
@@ -584,8 +585,8 @@ class App extends Component {
 
   store_pending_tx(tx_promise) {
     this.setState(prev_state => {
-      prev_state.pending_txs.push( { promise: tx_promise, pixels: prev_state.batch_paint })
-      return prev_state
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint }]
+      return { pending_txs: temp }
     })
     tx_promise.then(result => {
       this.process_pixel_solds(result.logs)
@@ -635,8 +636,9 @@ class App extends Component {
       let index_to_insert = this.selected_pixel_in_batch(p)
       if (index_to_insert === -1)
         index_to_insert = prev_state.batch_paint.length
-      prev_state.batch_paint[index_to_insert] = p
-      return { batch_paint: prev_state.batch_paint }
+      const temp = [...prev_state.batch_paint]
+      temp[index_to_insert] = p
+      return { batch_paint: temp }
     })
   }
   
@@ -650,15 +652,13 @@ class App extends Component {
  
   on_alt_down() {
     this.setState(prev_state => {
-      prev_state.keys_down.alt = true
-      return { keys_down: prev_state.keys_down }
+      return { keys_down: { ...prev_state.keys_down, alt: true } }
     })
   }
 
   on_alt_up() {
     this.setState(prev_state => {
-      prev_state.keys_down.alt = false
-      return { keys_down: prev_state.keys_down }
+      return { keys_down: { ...prev_state.keys_down, alt: false } }
     })
   }
 
