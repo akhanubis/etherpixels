@@ -50,11 +50,12 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     else {
       total_value -= pixel.floor_price;
       old_owner = pixel.owner;
-      /* this allows the current owner to buy to himself to change the current color or lower the pixel price (by incurring in some loses) */
       if (old_owner == msg.sender)
+        /* this allows the current owner to buy to himself to change the current color or lower the pixel price (by incurring in some loses because of gas) */
         require(_price <= pixel.floor_price);
       else
-        require(_price > pixel.floor_price);
+        /* it is possible for the current owner to buy to himself using a different account repeatedly until the pixel price is so hight it is unbuyable but that would mean wasting a lot of gas */ 
+        require(_price > pixel.floor_price && _price < pixel.floor_price * 1.1);
     }
     pixel.floor_price = uint72(_price);
     total_value += pixel.floor_price;

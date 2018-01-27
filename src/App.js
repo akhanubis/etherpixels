@@ -4,7 +4,7 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem } from 'react-bootstrap'
 import Pixel from './Pixel'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
@@ -23,6 +23,7 @@ import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
+import AccountStatus from './AccountStatus'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -530,13 +531,13 @@ class App extends Component {
       })
     })
 
-    // Get accounts.
-    this.state.web3.eth.getAccounts((error, accounts) => {
-      canvasContract.deployed().then(instance => {
-        this.contract_instance = instance
-        this.account = accounts[0]
-      })
-    })
+    /* metamask docs say this is the best way to go about this :shrugs: */
+    setInterval((() => {
+      if (this.state.web3.eth.accounts[0] !== this.state.account)
+        this.setState({ account: this.state.web3.eth.accounts[0] })
+    }).bind(this), 1000)
+
+    canvasContract.deployed().then(instance => this.contract_instance = instance)
   }
 
   color_at(x, y) {
@@ -575,12 +576,16 @@ class App extends Component {
 
   paint(e) {
     e.preventDefault()
-    let batch_length = this.state.batch_paint.length
-    if (batch_length) {
-      let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
-      this.store_pending_tx(tx_promise)
-      this.clear_batch()
+    if (this.state.account) {
+      let batch_length = this.state.batch_paint.length
+      if (batch_length) {
+        let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
+        this.store_pending_tx(tx_promise)
+        this.clear_batch()
+      }
     }
+    else
+      alert('No account detected, unlock metamask')
   }
 
   store_pending_tx(tx_promise) {
@@ -613,11 +618,11 @@ class App extends Component {
       prices.push(pixel.price)
       total_price = total_price.add(pixel.price)
     })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.state.account, value: total_price, gas: "1500000" })
   }
 
   paint_one(pixel) {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
   }
 
   clear_batch(e) {
@@ -683,9 +688,18 @@ class App extends Component {
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
-          <nav className="navbar pure-menu pure-menu-horizontal">
-              <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
-          </nav>
+          <Navbar>
+            <Navbar.Header>
+              <Navbar.Brand>
+                ETHPaint
+              </Navbar.Brand>
+            </Navbar.Header>
+            <Nav pullRight>
+              <NavItem>
+                <AccountStatus account={this.state.account} />
+              </NavItem>
+            </Nav>
+          </Navbar>
 
           <main>
             <Grid fluid={true}>
