@@ -118,7 +118,7 @@ class App extends Component {
   }
 
   bucket_url(key) {
-    return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}`
+    return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
   }
 
   load_addresses_buffer() {
