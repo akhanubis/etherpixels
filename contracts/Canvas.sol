@@ -15,7 +15,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
 
   mapping(uint => Pixel) public pixels;
   
-  event PixelSold(uint i, address old_owner, address new_owner, uint32 locked_until, bytes3 new_color);
+  event PixelPainted(uint i, address old_owner, address new_owner, uint32 locked_until, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     require(msg.value >= paint_fee);
@@ -34,7 +34,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     require(block.number >= pixel.locked_until);
     pixel.locked_until = uint32(block.number + cooldown); /* will break after block 4294967295 */
     pixel.color = _color;
-    PixelSold(_index, pixel.owner, msg.sender, pixel.locked_until, _color);
+    PixelPainted(_index, pixel.owner, msg.sender, pixel.locked_until, _color);
     pixel.owner = msg.sender;
 	}
 }

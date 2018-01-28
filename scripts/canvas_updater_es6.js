@@ -177,7 +177,7 @@ let start_watching = () => {
 
 let process_past_logs = last_processed_block => {
   console.log(`Fetching events since ${last_processed_block}...`)
-  instance.PixelSold({}, { fromBlock: last_processed_block, toBlock: 'latest' }).get(pixel_sold_handler)
+  instance.PixelPainted({}, { fromBlock: last_processed_block, toBlock: 'latest' }).get(pixel_sold_handler)
 }
 
 let reset_cache = b_number => {

@@ -18,7 +18,7 @@ class NewPixelEvent {
   }
 }
 
-class PixelSoldEvent {
+class PixelPaintedEvent {
   constructor(pixel) {
     this.pixel = pixel
     this.key = `${pixel.tx}_${pixel.x}_${pixel.y}`
@@ -42,4 +42,4 @@ class PixelSoldEvent {
   }
 }
 
-export { NewPixelEvent, PixelSoldEvent }
+export { NewPixelEvent, PixelPaintedEvent }

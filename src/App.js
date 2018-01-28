@@ -15,7 +15,7 @@ import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
-import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
+import { PixelPaintedEvent, NewPixelEvent } from './CustomEvents'
 import KeyListener from './KeyListener'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
@@ -285,7 +285,7 @@ class App extends Component {
       let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data, buffer_coords.x, buffer_coords.y)
       this.address_buffer.update_pixel(new_pixel)
-      this.push_event(new PixelSoldEvent(new_pixel))
+      this.push_event(new PixelPaintedEvent(new_pixel))
     }
     this.redraw()
     this.update_minimap()
