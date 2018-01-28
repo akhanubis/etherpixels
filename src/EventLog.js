@@ -5,7 +5,7 @@ class EventLog extends Component {
   render() {
     let logs = null
     if (this.props.event_logs.length)
-      logs = this.props.event_logs.map((event, i) => { return event.render(i) })
+      logs = this.props.event_logs.map(event => event.render(this.props.cooldown_formatter))
     else
       logs = "Listening for new events..."
     return (

@@ -4,6 +4,7 @@ import ColorUtils from "./utils/ColorUtils.js"
 import ContractToWorld from "./utils/ContractToWorld.js"
 import WorldToCanvas from "./utils/WorldToCanvas.js"
 import CanvasUtils from "./utils/CanvasUtils.js"
+import LogUtils from "./utils/LogUtils.js"
 
 require('dotenv').config({silent: true})
 
@@ -18,8 +19,8 @@ const canvasContract = contract(CanvasContract)
 const Pusher = require('pusher')
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
-const buffer_entry_size = 29 /* 20 bytes for address, 9 bytes for price */
-const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000000000', 'hex') /* empty address and price */
+const buffer_entry_size = 24 /* 20 bytes for address, 4 bytes for locked_until */
+const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('000000000000000000000000000000000000000000000000', 'hex') /* empty address and locked_until */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
 let canvas = null
@@ -68,9 +69,9 @@ let get_web3 = () => {
 
 let upload_callback = (err, data) => {
   if (err)
-      console.log(err)
-    else
-      console.log(`New ${data.key}: ${data.ETag}`)
+    console.log(err)
+  else
+    console.log(`New ${data.key}: ${data.ETag}`)
 }
 
 let update_cache = () => {
@@ -91,14 +92,16 @@ let process_new_block = b_number => {
 
 let process_pixel_solds = pixel_solds => {
   console.log(`Processing ${pixel_solds.length} pixel${ pixel_solds.length == 1 ? '' : 's'}`)
+  let pusher_events = []
   pixel_solds.forEach((log) => {
     //TODO: mandar email a old_owner
     update_pixel(log)
     update_buffer(log)
+    pusher_events.push(LogUtils.to_event(log))
   })
   update_cache()
   //TODO GUARDAR EN UN BUFFER LOS ULTIMOS 100 eventos asi desp de recibir este push el cliente los busca
-  pusher.trigger('main', 'new_block', { new_block: current_block, events: pixel_solds })
+  pusher.trigger('main', 'new_block', { new_block: current_block, events: pusher_events })
 }
 
 let update_pixel = log => {
@@ -112,19 +115,16 @@ let update_pixel = log => {
 let update_buffer = log => {
   let offset = buffer_entry_size * log.args.i.toNumber()
   let formatted_address = log.args.new_owner.substr(2, 40)
-  let formatted_price = left_pad(log.args.price.toString(16), 18, 0)
-  let entry = formatted_address + formatted_price
+  let formatted_locked_until = left_pad(log.args.locked_until.toString(16), 8, 0)
+  let entry = formatted_address + formatted_locked_until
   address_buffer.fill(entry, offset, offset + buffer_entry_size, 'hex')
 }
 
 let pixel_sold_handler = (error, result) => {
   if (error)
     console.error(error)
-  else {
-    if (result.transactionHash) // event, not log
-      result = [result]
+  else
     process_pixel_solds(result)
-  }
 }
 
 let store_new_index = b_number => {

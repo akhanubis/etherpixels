@@ -17,12 +17,13 @@ import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
 import { PixelSoldEvent, NewPixelEvent } from './CustomEvents'
 import KeyListener from './KeyListener'
-import BigNumber from 'bignumber.js'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
+import CooldownFormatter from './CooldownFormatter'
+import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
 
 import './css/oswald.css'
@@ -59,13 +60,12 @@ class App extends Component {
       keys_down: {},
       x: 0,
       y: 0,
-      market_cap: new BigNumber(0),
       pending_txs: [],
       settings: {
         unit: 'gwei'
       }
     }
-    this.processed_logs = []
+    this.processed_logs = new Set()
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 100
@@ -247,42 +247,31 @@ class App extends Component {
     }
   }
   
-  new_log(log_index, tx_hash) {
+  new_log(tx_hash, log_index) {
     let log_id = `${tx_hash}-${log_index}`
-    let new_log = !this.processed_logs.includes(log_id)
-    if (new_log)
-      this.processed_logs.push(log_id)
+    let new_log = !this.processed_logs.has(log_id)
+    this.processed_logs.add(log_id)
     return new_log
   }
   
   start_watching() {
-    this.update_new_pixel_price()
     let pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
       encrypted: true
     })
     pusher.subscribe('main').bind('new_block', data => {
       this.update_block_number(data.new_block)
-      this.update_new_pixel_price()
       this.process_pixel_solds(data.events)
     })    
   }
 
-  update_new_pixel_price() {
-    this.infura_contract_instance.MarketCap.call().then(results => {
-      this.setState({ market_cap: results[0] })
-      this.address_buffer.set_new_pixel_price(results[0].dividedToIntegerBy(results[1])) /* total value / amount of pixels sold */
-    })
-  }
-  
-  process_pixel_solds(log) {
-    var new_pixels = log.reduce((pixel_data, l) => {
-      if (this.new_log(l.logIndex, l.transactionHash))
-        pixel_data.push(Pixel.from_contract(l.transactionHash, l.args))
+  process_pixel_solds(pusher_events) {
+    var new_pixels = pusher_events.reduce((pixel_data, event) => {
+      if (this.new_log(event.tx, event.log_index))
+        pixel_data.push(Pixel.from_event(event))
       return pixel_data
     }, [])
-    if (new_pixels.length)
-      this.update_pixels(new_pixels)
+    this.update_pixels(new_pixels)
   }
   
   update_pixels(new_pixels) {
@@ -364,7 +353,7 @@ class App extends Component {
       y,
       color,
       buffer_info.address,
-      buffer_info.price,
+      buffer_info.locked_until,
       null,
       i
     )
@@ -529,13 +518,15 @@ class App extends Component {
             })
         })
       })
+
+      instance.paint_fee.call().then(fee => this.setState({ paint_fee: fee }))
     })
 
     /* metamask docs say this is the best way to go about this :shrugs: */
-    setInterval((() => {
+    setInterval(() => {
       if (this.state.web3.eth.accounts[0] !== this.state.account)
         this.setState({ account: this.state.web3.eth.accounts[0] })
-    }).bind(this), 1000)
+    }, 1000)
 
     canvasContract.deployed().then(instance => this.contract_instance = instance)
   }
@@ -594,7 +585,7 @@ class App extends Component {
       return { pending_txs: temp }
     })
     tx_promise.then(result => {
-      this.process_pixel_solds(result.logs)
+      this.process_pixel_solds(LogUtils.to_events(result.logs))
       this.clear_pending_tx(tx_promise)
     }).catch(error => console.log(error))
   }
@@ -608,21 +599,16 @@ class App extends Component {
   }
 
   paint_many(batch_length) {
-    let indexes = [], colors = [], prices = []
-    let total_price = new BigNumber(0)
-    this.state.batch_paint.forEach((pixel, i) => {
+    let indexes = []
+    let colors = this.state.batch_paint.map((pixel) => {
       indexes.push(pixel.contract_index())
-      colors.push(pixel.bytes3_color())
-      /* TEMP */
-      pixel.price = pixel.price.add(1)
-      prices.push(pixel.price)
-      total_price = total_price.add(pixel.price)
+      return pixel.bytes3_color()
     })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.state.account, value: total_price, gas: "1500000" })
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, { from: this.state.account, value: this.state.paint_fee * batch_length, gas: "1500000" })
   }
 
   paint_one(pixel) {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: this.state.paint_fee, gas: '70000' })
   }
 
   clear_batch(e) {
@@ -687,6 +673,7 @@ class App extends Component {
           <title>Pavlito clabo un clabito</title>
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
+        <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
           <Navbar>
             <Navbar.Header>
@@ -709,22 +696,21 @@ class App extends Component {
                       onChangeComplete={ this.handleColorChangeComplete.bind(this) }
                     />
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                    <p>Canvas "market cap": { PriceFormatter.format(this.state.market_cap) }</p>
                     {block_info}
-                    <PendingTxList pending_txs={this.state.pending_txs} />
-                    <PixelBatch on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
+                    <PendingTxList pending_txs={this.state.pending_txs} paint_fee={this.state.paint_fee} />
+                    <PixelBatch paint_fee={this.state.paint_fee} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
                 <Col md={7}>
                   <div className='canvas-container' style={this.state.viewport_size}>
-                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={(c) => this.zoom_canvas = c} />
-                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={(c) => this.minimap_canvas = c} />
-                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={(c) => this.main_canvas = c} />
+                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
+                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
+                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={c => this.main_canvas = c} />
                   </div>
                 </Col>
                 <Col md={2}>
-                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} />
+                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
                 </Col>
-              <Footer pixel={this.state.hovering_pixel} />
+              <Footer pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
             </Grid>
           </main>
         </KeyListener>

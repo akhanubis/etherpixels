@@ -6,6 +6,11 @@ class KeyListener extends Component {
     window.addEventListener('keyup', this.key_up.bind(this))
   }
 
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.key_down.bind(this))
+    window.removeEventListener('keyup', this.key_up.bind(this))
+  }
+
   key_down(e) {
     if (e.key === 'Alt') {
       e.preventDefault()

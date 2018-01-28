@@ -1,19 +1,19 @@
 import React, { Component } from 'react'
 import PixelSquare from './PixelSquare'
-import PriceFormatter from './utils/PriceFormatter'
 import './Footer.css'
 
 class Footer extends Component {
   render() {
-    if (this.props.pixel)
+    if (this.props.pixel) {
+      let ownage = this.props.pixel.owner === '0x0000000000000000000000000000000000000000' ? '' : ` owned by ${this.props.pixel.owner}`
       return (
         <footer className="footer">
           <div className="container-fluid pixel-status">
             <PixelSquare color={this.props.pixel.color} />
-            <span className="text-muted">({this.props.pixel.x}, {this.props.pixel.y}) for {PriceFormatter.format(this.props.pixel.price)} owned by {this.props.pixel.owner}</span>
+            <span className="text-muted">({this.props.pixel.x}, {this.props.pixel.y}) {this.props.cooldown_formatter.format(this.props.pixel.locked_until)}{ownage}</span>
           </div>
         </footer>
-    )
+    )}
     else
       return null
   }
