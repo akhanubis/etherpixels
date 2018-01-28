@@ -29,7 +29,7 @@ class Pixel {
     p.tx = event.tx
     return p
   }
-  
+
   change_color(new_color) {
     this.old_color = this.color
     this.color = new_color
@@ -56,6 +56,10 @@ class Pixel {
 
   is_inside_canvas(max_index) {
     return this.index <= max_index
+  }
+
+  is_new() {
+    return this.owner === '0x0000000000000000000000000000000000000000'
   }
 }
 

@@ -5,7 +5,7 @@ import './Footer.css'
 class Footer extends Component {
   render() {
     if (this.props.pixel) {
-      let ownage = this.props.pixel.owner === '0x0000000000000000000000000000000000000000' ? '' : ` owned by ${this.props.pixel.owner}`
+      let ownage = this.props.pixel.is_new() ? '' : ` owned by ${this.props.pixel.owner}`
       return (
         <footer className="footer">
           <div className="container-fluid pixel-status">

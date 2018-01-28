@@ -71,6 +71,10 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.click_timer_in_progress = true
+    this.gas_per_new_pixel = 60000
+    this.gas_per_pixel = 45000
+    this.gas_per_extra_new_pixel = 40000
+    this.gas_per_extra_pixel = 25000
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -598,17 +602,24 @@ class App extends Component {
       })
   }
 
+  estimate_gas() {
+    let gas = this.state.batch_paint[0].is_new() ? this.gas_per_new_pixel : this.gas_per_pixel
+    for(var j = 1; j < this.state.batch_paint.length; j++)
+      gas += this.state.batch_paint[j].is_new() ? this.gas_per_extra_new_pixel : this.gas_per_extra_pixel
+    return gas
+  }
+
   paint_many(batch_length) {
     let indexes = []
     let colors = this.state.batch_paint.map((pixel) => {
       indexes.push(pixel.contract_index())
       return pixel.bytes3_color()
     })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, { from: this.state.account, value: this.state.paint_fee * batch_length, gas: "1500000" })
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, { from: this.state.account, value: this.state.paint_fee * batch_length, gas: this.estimate_gas() })
   }
 
   paint_one(pixel) {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: this.state.paint_fee, gas: '70000' })
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: this.state.paint_fee, gas: this.estimate_gas() })
   }
 
   clear_batch(e) {
