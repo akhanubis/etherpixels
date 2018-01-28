@@ -4,7 +4,7 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem } from 'react-bootstrap'
 import Pixel from './Pixel'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
@@ -23,6 +23,7 @@ import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
+import AccountStatus from './AccountStatus'
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -299,10 +300,11 @@ class App extends Component {
   
   push_event(event) {
     this.setState(prev_state => {
-      prev_state.event_logs.unshift(event)
-      if (prev_state.event_logs.length > this.max_event_logs_size)
-        prev_state.event_logs.pop()
-      return { event_logs: prev_state.event_logs }
+      let temp = [...prev_state.event_logs]
+      temp.unshift(event) 
+      if (temp.length > this.max_event_logs_size)
+        temp.pop()
+      return { event_logs: temp }
     })
   }
 
@@ -511,7 +513,7 @@ class App extends Component {
     const canvasContract = contract(CanvasContract)
     canvasContract.setProvider(this.state.web3.currentProvider)
     
-    var canvasContract2 = contract(CanvasContract)
+    const canvasContract2 = contract(CanvasContract)
     canvasContract2.setProvider(this.state.infura.currentProvider)
     canvasContract2.deployed().then(instance => {
       this.infura_contract_instance = instance
@@ -529,13 +531,13 @@ class App extends Component {
       })
     })
 
-    // Get accounts.
-    this.state.web3.eth.getAccounts((error, accounts) => {
-      canvasContract.deployed().then(instance => {
-        this.contract_instance = instance
-        this.account = accounts[0]
-      })
-    })
+    /* metamask docs say this is the best way to go about this :shrugs: */
+    setInterval((() => {
+      if (this.state.web3.eth.accounts[0] !== this.state.account)
+        this.setState({ account: this.state.web3.eth.accounts[0] })
+    }).bind(this), 1000)
+
+    canvasContract.deployed().then(instance => this.contract_instance = instance)
   }
 
   color_at(x, y) {
@@ -574,18 +576,22 @@ class App extends Component {
 
   paint(e) {
     e.preventDefault()
-    let batch_length = this.state.batch_paint.length
-    if (batch_length) {
-      let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
-      this.store_pending_tx(tx_promise)
-      this.clear_batch()
+    if (this.state.account) {
+      let batch_length = this.state.batch_paint.length
+      if (batch_length) {
+        let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
+        this.store_pending_tx(tx_promise)
+        this.clear_batch()
+      }
     }
+    else
+      alert('No account detected, unlock metamask')
   }
 
   store_pending_tx(tx_promise) {
     this.setState(prev_state => {
-      prev_state.pending_txs.push( { promise: tx_promise, pixels: prev_state.batch_paint })
-      return prev_state
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint }]
+      return { pending_txs: temp }
     })
     tx_promise.then(result => {
       this.process_pixel_solds(result.logs)
@@ -612,11 +618,11 @@ class App extends Component {
       prices.push(pixel.price)
       total_price = total_price.add(pixel.price)
     })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.account, value: total_price, gas: "1500000" })
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, prices, { from: this.state.account, value: total_price, gas: "1500000" })
   }
 
   paint_one(pixel) {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: pixel.price.add(1) /* TEMP */, gas: "200000" })
   }
 
   clear_batch(e) {
@@ -635,8 +641,9 @@ class App extends Component {
       let index_to_insert = this.selected_pixel_in_batch(p)
       if (index_to_insert === -1)
         index_to_insert = prev_state.batch_paint.length
-      prev_state.batch_paint[index_to_insert] = p
-      return { batch_paint: prev_state.batch_paint }
+      const temp = [...prev_state.batch_paint]
+      temp[index_to_insert] = p
+      return { batch_paint: temp }
     })
   }
   
@@ -650,15 +657,13 @@ class App extends Component {
  
   on_alt_down() {
     this.setState(prev_state => {
-      prev_state.keys_down.alt = true
-      return { keys_down: prev_state.keys_down }
+      return { keys_down: { ...prev_state.keys_down, alt: true } }
     })
   }
 
   on_alt_up() {
     this.setState(prev_state => {
-      prev_state.keys_down.alt = false
-      return { keys_down: prev_state.keys_down }
+      return { keys_down: { ...prev_state.keys_down, alt: false } }
     })
   }
 
@@ -683,9 +688,18 @@ class App extends Component {
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
-          <nav className="navbar pure-menu pure-menu-horizontal">
-              <a href="#" className="pure-menu-heading pure-menu-link">Truffle Box</a>
-          </nav>
+          <Navbar>
+            <Navbar.Header>
+              <Navbar.Brand>
+                ETHPaint
+              </Navbar.Brand>
+            </Navbar.Header>
+            <Nav pullRight>
+              <NavItem>
+                <AccountStatus account={this.state.account} />
+              </NavItem>
+            </Nav>
+          </Navbar>
 
           <main>
             <Grid fluid={true}>
