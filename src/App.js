@@ -476,20 +476,13 @@ class App extends Component {
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
   }
 
-  resize_secondary_buffer(ctx, new_size, old_max_index, new_max_index) {
-    return CanvasUtils.resize_canvas(
-      ctx,
-      document.createElement('canvas'),
-      new_size,
-      old_max_index,
-      new_max_index,
-      CanvasUtils.transparent_image_data(ImageData)
-    )
+  resize_secondary_buffer(ctx, dimension) {
+    return CanvasUtils.resize_secondary_canvas(ctx, dimension)
   }
 
   resize_pixel_buffer(new_size, old_max_index, new_max_index) {
-    this.resize_secondary_buffer(this.preview_buffer_ctx, new_size, old_max_index, new_max_index)
-    this.resize_secondary_buffer(this.pending_buffer_ctx, new_size, old_max_index, new_max_index)
+    this.preview_buffer_ctx = this.resize_secondary_buffer(this.preview_buffer_ctx, new_size.width)
+    this.pending_buffer_ctx = this.resize_secondary_buffer(this.pending_buffer_ctx, new_size.width)
     CanvasUtils.resize_canvas(
       this.pixel_buffer_ctx,
       document.createElement('canvas'),

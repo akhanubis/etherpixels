@@ -30,6 +30,23 @@ var CanvasUtils = (() => {
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   }
 
+  var new_canvas = (dimension, must_clear) => {
+    let canvas = document.createElement('canvas')
+    canvas.width = dimension
+    canvas.height = dimension
+    let ctx = canvas.getContext('2d')
+    if (must_clear)
+      clear(ctx, 'rgba(0, 0, 0, 0)')
+    return ctx
+  }
+
+  var resize_secondary_canvas = (old_ctx, dimension) => {
+    let new_ctx = new_canvas(dimension, true)
+    let offset = 0.5 * (dimension - old_ctx.canvas.width)
+    new_ctx.drawImage(old_ctx.canvas, offset, offset)
+    return new_ctx
+  }
+
   var resize_canvas = (old_ctx, new_canvas, new_size, old_max_index, new_max_index, i_data_for_new_pixel, callback) => {
     var offset_w, offset_h
     let new_context = new_canvas.getContext('2d')
@@ -54,23 +71,14 @@ var CanvasUtils = (() => {
       return new_context
   }
 
-  var new_canvas = (dimension, must_clear) => {
-    let canvas = document.createElement('canvas')
-    canvas.width = dimension
-    canvas.height = dimension
-    let ctx = canvas.getContext('2d')
-    if (must_clear)
-      clear(ctx, 'rgba(0, 0, 0, 0)')
-    return ctx
-  }
-  
   return {
     getContext: getContext,
     clear: clear,
     resize_canvas: resize_canvas,
     transparent_image_data: transparent_image_data,
     semitrans_image_data: semitrans_image_data,
-    new_canvas: new_canvas
+    new_canvas: new_canvas,
+    resize_secondary_canvas: resize_secondary_canvas
   }
 })()
 
