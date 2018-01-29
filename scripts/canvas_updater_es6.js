@@ -168,8 +168,9 @@ let start_watching = () => {
         console.error(error)
       else
         if (result.number > current_block) {
+          let last_processed_block = current_block
           process_new_block(result.number)
-          process_past_logs(current_block)
+          process_past_logs(last_processed_block)
         }
     })
   })
