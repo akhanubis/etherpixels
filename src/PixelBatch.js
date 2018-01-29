@@ -30,10 +30,11 @@ class PixelBatch extends Component {
             {
               this.props.batch.map((p, i) => {
                 return (
-                  <div className='batch-pixel-info' key={i}>
+                  <div className='batch-pixel-info' key={`${p.x}_${p.y}_${p.color}_${p.old_color}`}>
                     <PixelSquare color={p.old_color} />
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
+                    <span className='text'>({p.x}, {p.y})</span>
                     {this.props.on_batch_remove ?
                       <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
                         remove
