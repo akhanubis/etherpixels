@@ -38,8 +38,8 @@ class Canvas extends Component {
     this.clear_pattern = this.ctx.createPattern(clear_image, 'repeat')
   }
 
-  clear(use_pattern) {
-    if (use_pattern) {
+  clear() {
+    if (this.clear_pattern) {
       this.ctx.fillStyle = this.clear_pattern
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
     }

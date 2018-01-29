@@ -157,6 +157,7 @@ class App extends Component {
     clear_image.style.display = 'none'
     clear_image.onload = () => {
       this.main_canvas.set_clear_pattern(clear_image)
+      this.minimap_canvas.set_clear_pattern(clear_image)
       this.try_bootstrap()
     }
   }
@@ -185,7 +186,7 @@ class App extends Component {
   redraw(e){
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
-    this.main_canvas.clear(true)
+    this.main_canvas.clear()
     this.main_canvas.drawImage(this.pixel_buffer_ctx.canvas,
       0, 0,
       this.state.canvas_size.width, this.state.canvas_size.height,
