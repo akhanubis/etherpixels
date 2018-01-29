@@ -266,11 +266,12 @@ class App extends Component {
     })
     pusher.subscribe('main').bind('new_block', data => {
       this.update_block_number(data.new_block)
-      this.process_pixel_solds(data.events)
+      this.process_pixels_painted(data.events)
+      this.update_pending_txs(data.events)
     })    
   }
 
-  process_pixel_solds(pusher_events) {
+  process_pixels_painted(pusher_events) {
     var new_pixels = pusher_events.reduce((pixel_data, event) => {
       if (this.new_log(event.tx, event.log_index))
         pixel_data.push(Pixel.from_event(event))
@@ -575,8 +576,8 @@ class App extends Component {
     if (this.state.account) {
       let batch_length = this.state.batch_paint.length
       if (batch_length) {
-        let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
-        this.store_pending_tx(tx_promise)
+        (batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)).catch(error => console.log(error))
+        this.store_pending_tx()
         this.clear_batch()
       }
     }
@@ -584,23 +585,17 @@ class App extends Component {
       alert('No account detected, unlock metamask')
   }
 
-  store_pending_tx(tx_promise) {
+  store_pending_tx() {
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint }]
+      const temp = [...prev_state.pending_txs, { pixels: prev_state.batch_paint, caller: prev_state.account }]
       return { pending_txs: temp }
     })
-    tx_promise.then(result => {
-      this.process_pixel_solds(LogUtils.to_events(result.logs))
-      this.clear_pending_tx(tx_promise)
-    }).catch(error => console.log(error))
   }
 
-  clear_pending_tx(fulfilled_promise) {
-    let i = this.state.pending_txs.findIndex(e => e.promise === fulfilled_promise)
-    if (i !== -1)
-      this.setState(prev_state => {
-        return { pending_txs: prev_state.pending_txs.filter((_, index) => index !== i) }
-      })
+  update_pending_txs(pusher_events) {
+    this.setState(prev_state => {
+      return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, pusher_events) }
+    })
   }
 
   estimate_gas() {
