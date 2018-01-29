@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import PixelBatch from './PixelBatch'
 import PriceFormatter from './utils/PriceFormatter'
+import { FormGroup, Checkbox } from 'react-bootstrap'
 import './PendingTxList.css'
 
 class PendingTxList extends Component {
@@ -16,6 +17,9 @@ class PendingTxList extends Component {
       return (
         <div className='pending-txs-container'>
           <p>Pending txs (total without gas: {PriceFormatter.format(this.total_price())})</p>
+          <FormGroup>
+            <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
+          </FormGroup>
           <div className='pending-txs-inner-container'>
             {
               this.props.pending_txs.map((tx, i) => {

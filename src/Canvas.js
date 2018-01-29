@@ -41,10 +41,10 @@ class Canvas extends Component {
   clear() {
     if (this.clear_pattern) {
       this.ctx.fillStyle = this.clear_pattern
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      this.ctx.fillRect(0, 0, this.props.width, this.props.height)
     }
     else
-      CanvasUtils.clear(this.ctx, 'white', this.props)
+      CanvasUtils.clear(this.ctx, 'white')
   }
 
   drawImage(...args) {

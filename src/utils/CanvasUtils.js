@@ -25,9 +25,9 @@ var CanvasUtils = (() => {
     return ctx
   }
   
-  var clear = (ctx, color, canvas_size) => {
+  var clear = (ctx, color) => {
     ctx.fillStyle = color
-    ctx.fillRect(0, 0, canvas_size.width, canvas_size.height)
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   }
 
   var resize_canvas = (old_ctx, new_canvas, new_size, old_max_index, new_max_index, i_data_for_new_pixel, callback) => {
@@ -35,7 +35,7 @@ var CanvasUtils = (() => {
     let new_context = new_canvas.getContext('2d')
     new_canvas.width = new_size.width
     new_canvas.height = new_size.height
-    clear(new_context, 'rgba(0,0,0,0)', new_size)
+    clear(new_context, 'rgba(0,0,0,0)')
     if (old_ctx) {
       offset_w = 0.5 * (new_size.width - old_ctx.canvas.width)
       offset_h = 0.5 * (new_size.height - old_ctx.canvas.height)
@@ -53,13 +53,24 @@ var CanvasUtils = (() => {
     else
       return new_context
   }
+
+  var new_canvas = (dimension, must_clear) => {
+    let canvas = document.createElement('canvas')
+    canvas.width = dimension
+    canvas.height = dimension
+    let ctx = canvas.getContext('2d')
+    if (must_clear)
+      clear(ctx, 'rgba(0, 0, 0, 0)')
+    return ctx
+  }
   
   return {
     getContext: getContext,
     clear: clear,
     resize_canvas: resize_canvas,
     transparent_image_data: transparent_image_data,
-    semitrans_image_data: semitrans_image_data
+    semitrans_image_data: semitrans_image_data,
+    new_canvas: new_canvas
   }
 })()
 

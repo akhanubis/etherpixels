@@ -11,7 +11,6 @@ class Pixel {
     this.locked_until = locked_until
     this.old_color = old_color
     this.index = index
-    this.build_image_data()
   }
 
   static from_event(event) {
@@ -33,13 +32,12 @@ class Pixel {
   change_color(new_color) {
     this.old_color = this.color
     this.color = new_color
-    this.build_image_data()
     return this
   }
 
-  build_image_data() {
+  image_data() {
     var pixel_array = new Uint8ClampedArray(ColorUtils.hexToIntArray(this.color))
-    this.image_data = new ImageData(pixel_array, 1, 1)
+    return new ImageData(pixel_array, 1, 1)
   }
 
   rgba_color() {
