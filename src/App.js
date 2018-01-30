@@ -78,21 +78,9 @@ class App extends Component {
   }
 
   componentWillMount() {
-    // Get network provider and web3 instance.
-    // See utils/getWeb3 for more info.
-
     getWeb3
-    .then(result => {
-      this.setState({
-        web3: result
-      })
-
-      // Instantiate contract once web3 provided.
-      this.instantiateContract()
-    })
-    .catch(() => {
-      console.log('Error finding web3.')
-    })
+    .then(result => this.setState({ web3: result.web3, web3_watch_only: result.watch_only }, this.instantiate_contract))
+    .catch(() => console.log('Error finding web3.'))
   }
 
   bootstraping() {
@@ -499,7 +487,7 @@ class App extends Component {
     )
   }
 
-  instantiateContract() {
+  instantiate_contract() {
     const canvas_contract = contract(CanvasContract)
     canvas_contract.setProvider(this.state.web3.currentProvider)
     canvas_contract.deployed().then(instance => {
@@ -520,14 +508,17 @@ class App extends Component {
       instance.paint_fee.call().then(fee => this.update_settings({ paint_fee: fee }))
     })
 
-    /* metamask docs say this is the best way to go about this :shrugs: */
-    setInterval(() => {
-      if (this.state.web3.eth.accounts[0] !== this.state.account)
-        this.setState({ account: this.state.web3.eth.accounts[0] })
-    }, 1000)
+    if (!this.state.web3_watch_only) {
+      /* metamask docs say this is the best way to go about this :shrugs: */
+      setInterval(() => {
+        if (this.state.web3.eth.accounts[0] !== this.state.account)
+          this.setState({ account: this.state.web3.eth.accounts[0] })
+      }, 1000)
 
-    setInterval(this.fetch_gas_price.bind(this), 60000)
-    this.fetch_gas_price()
+      
+      setInterval(this.fetch_gas_price.bind(this), 60000)
+      this.fetch_gas_price()
+    }
   }
 
   fetch_gas_price() {
@@ -672,7 +663,7 @@ class App extends Component {
           <p>Genesis block: {this.state.genesis_block}</p>
           <p>Blocknumber: {this.state.current_block}</p>
           <p>Max index: {this.state.max_index}</p>
-          <p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>
+          { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
       )
     }

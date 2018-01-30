@@ -11,7 +11,7 @@ let getWeb3 = new Promise(function(resolve, reject) {
       web3 = new Web3(provider)
           
       console.log('Using development web3')
-      resolve(web3)
+      resolve({ web3: web3})
     }
     else {
       // Checking if Web3 has been injected by the browser (Mist/MetaMask)
@@ -19,12 +19,12 @@ let getWeb3 = new Promise(function(resolve, reject) {
         // Use Mist/MetaMask's provider.
         web3 = new Web3(web3.currentProvider)
         console.log('Using injected web3')
-        resolve(web3)
+        resolve({ web3: web3})
       }
       else {
         let infura = Infura.get()
         console.log('Using only Infura')
-        resolve(infura)
+        resolve({ web3: infura, watch_only: true})
       }
     }
   })
