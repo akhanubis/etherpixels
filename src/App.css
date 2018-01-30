@@ -13,3 +13,7 @@ button[disabled] {
 .canvas-container {
   overflow: hidden;
 }
+
+.navbar-right {
+  margin-right: 0;
+}

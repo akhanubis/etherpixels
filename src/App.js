@@ -39,20 +39,20 @@ class App extends Component {
 
     this.state = {
       initial_viewport_size: {
-        width: 1000,
+        width: 1350,
         height: 800
       },
       with_events_viewport_size: {
-        width: 700,
+        width: 1060,
         height: 800
       },
       minimap_size: {
-        width: 100,
-        height: 100
+        width: 150,
+        height: 150
       },
       zoom_size: {
-        width: 100,
-        height: 100
+        width: 150,
+        height: 150
       },
       canvas_size: {},
       web3: null,
@@ -675,8 +675,8 @@ class App extends Component {
   }
 
   render() {
-    let block_info = null
-    if (this.state.current_block) {
+    let block_info = null, events_panel = null
+    if (this.state.current_block)
       block_info = (
         <div>
           <p>Genesis block: {this.state.genesis_block}</p>
@@ -685,9 +685,12 @@ class App extends Component {
           { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
       )
-    }
-    else
-      block_info = ''
+    if (this.state.settings.show_events)
+      events_panel = (
+        <Col md={2}>
+          <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
+        </Col>
+        )
     return (
       <div className="App">
         <Helmet>
@@ -724,16 +727,14 @@ class App extends Component {
                     <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
                     <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
-                <Col md={7}>
+                <Col md={this.state.settings.show_events ? 7 : 9}>
                   <div className='canvas-container' style={this.state.viewport_size}>
                     <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
                     <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
                     <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
                   </div>
                 </Col>
-                <Col md={2}>
-                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
-                </Col>
+                {events_panel}
               <Footer pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
             </Grid>
           </main>
