@@ -6,10 +6,8 @@ import './PendingTxList.css'
 
 class PendingTxList extends Component {
   total_price() {
-    let total_pixels = this.props.pending_txs.reduce((total, tx) => {
-      return total + tx.pixels.length
-    }, 0)
-    return total_pixels * this.props.paint_fee
+    let total_pixels = this.props.pending_txs.reduce((total, tx) => total.concat(tx.pixels), [])
+    return this.props.gas_estimator.estimate_total(total_pixels)
   }
 
   render() {
@@ -23,7 +21,7 @@ class PendingTxList extends Component {
           <div className='pending-txs-inner-container'>
             {
               this.props.pending_txs.map((tx, i) => {
-                return <PixelBatch key={i} batch={tx.pixels} is_full_callback={() => false} paint_fee={this.props.paint_fee} />
+                return <PixelBatch key={i} batch={tx.pixels} is_full_callback={() => false} gas_estimator={this.props.gas_estimator} />
               })
             }
           </div>

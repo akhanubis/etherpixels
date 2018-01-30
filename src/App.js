@@ -23,12 +23,12 @@ import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
 import CooldownFormatter from './CooldownFormatter'
+import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
 
 import './css/oswald.css'
 import './css/open-sans.css'
-import './css/pure-min.css'
 import './truffle.css'
 import './App.css'
 
@@ -72,10 +72,6 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.click_timer_in_progress = true
-    this.gas_per_new_pixel = 60000
-    this.gas_per_pixel = 45000
-    this.gas_per_extra_new_pixel = 40000
-    this.gas_per_extra_pixel = 25000
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -533,7 +529,7 @@ class App extends Component {
         })
       })
 
-      instance.paint_fee.call().then(fee => this.setState({ paint_fee: fee }))
+      instance.paint_fee.call().then(fee => this.update_settings({ paint_fee: fee }))
     })
 
     /* metamask docs say this is the best way to go about this :shrugs: */
@@ -541,8 +537,12 @@ class App extends Component {
       if (this.state.web3.eth.accounts[0] !== this.state.account)
         this.setState({ account: this.state.web3.eth.accounts[0] })
     }, 1000)
+  }
 
-    canvasContract.deployed().then(instance => this.contract_instance = instance)
+  update_settings(new_settings, callback) {
+    this.setState(prev_state => {
+      return { settings: { ...prev_state.settings, ...new_settings}}
+    }, callback)
   }
 
   color_at(x, y) {
@@ -607,16 +607,7 @@ class App extends Component {
   }
 
   toggle_preview_pending_txs() {
-    this.setState(prev_state => {
-      return { settings: { ...prev_state.settings, preview_pending_txs: !prev_state.settings.preview_pending_txs } }
-    }, this.redraw)
-  }
-
-  estimate_gas() {
-    let gas = this.state.batch_paint[0].is_new() ? this.gas_per_new_pixel : this.gas_per_pixel
-    for(var j = 1; j < this.state.batch_paint.length; j++)
-      gas += this.state.batch_paint[j].is_new() ? this.gas_per_extra_new_pixel : this.gas_per_extra_pixel
-    return gas
+    this.update_settings({ preview_pending_txs: !this.state.settings.preview_pending_txs }, this.redraw)
   }
 
   paint_many(batch_length) {
@@ -625,11 +616,15 @@ class App extends Component {
       indexes.push(pixel.contract_index())
       return pixel.bytes3_color()
     })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, { from: this.state.account, value: this.state.paint_fee * batch_length, gas: this.estimate_gas() })
+    return this.contract_instance.BatchPaint(batch_length, indexes, colors, this.paint_options())
   }
 
   paint_one(pixel) {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), { from: this.state.account, value: this.state.paint_fee, gas: this.estimate_gas() })
+    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
+  }
+
+  paint_options() {
+    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint) }
   }
 
   clear_batch(e) {
@@ -695,6 +690,7 @@ class App extends Component {
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
+        <GasEstimator fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
           <Navbar>
             <Navbar.Header>
@@ -718,8 +714,8 @@ class App extends Component {
                     />
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
                     {block_info}
-                    <PendingTxList pending_txs={this.state.pending_txs} paint_fee={this.state.paint_fee} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
-                    <PixelBatch paint_fee={this.state.paint_fee} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
+                    <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
+                    <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
                 <Col md={7}>
                   <div className='canvas-container' style={this.state.viewport_size}>

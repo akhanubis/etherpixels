@@ -6,7 +6,7 @@ import PriceFormatter from './utils/PriceFormatter'
 
 class PixelBatch extends Component {
   total_price() {
-    return this.props.batch.length * this.props.paint_fee
+    return this.props.gas_estimator.estimate_total(this.props.batch)
   }
 
   remove_batch(i, e) {
@@ -25,7 +25,7 @@ class PixelBatch extends Component {
       return (
         <div className='batch-container'>
           {this.props.is_full_callback() ? <p>Batch full</p> : null }
-          <p>Batch (total without gas: {PriceFormatter.format(this.total_price())})</p>
+          <p>Batch (total including gas and fees: {PriceFormatter.format(this.total_price())})</p>
           <div className='batch-inner-container'>
             {
               this.props.batch.map((p, i) => {
