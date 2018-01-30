@@ -26,6 +26,7 @@ import CooldownFormatter from './CooldownFormatter'
 import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
+const contract = require('truffle-contract')
 
 import './css/oswald.css'
 import './css/open-sans.css'
@@ -81,10 +82,9 @@ class App extends Component {
     // See utils/getWeb3 for more info.
 
     getWeb3
-    .then(results => {
+    .then(result => {
       this.setState({
-        web3: results.web3,
-        infura: results.infura
+        web3: result
       })
 
       // Instantiate contract once web3 provided.
@@ -133,7 +133,7 @@ class App extends Component {
 
   load_cache_image(latest_block) {
     axios.get(this.bucket_url('init.json')).then(response => {
-      if (this.infura_contract_instance.address === response.data.contract_address) {
+      if (this.contract_instance.address === response.data.contract_address) {
         this.last_cache_block = response.data.last_cache_block
         let img = new Image()
         img.crossOrigin = ''
@@ -500,26 +500,14 @@ class App extends Component {
   }
 
   instantiateContract() {
-
-    /*
-     * SMART CONTRACT EXAMPLE
-     *
-     * Normally these functions would be called in the context of a
-     * state management library, but for convenience I've placed them here.
-     */
-
-    const contract = require('truffle-contract')
-    const canvasContract = contract(CanvasContract)
-    canvasContract.setProvider(this.state.web3.currentProvider)
-    
-    const canvasContract2 = contract(CanvasContract)
-    canvasContract2.setProvider(this.state.infura.currentProvider)
-    canvasContract2.deployed().then(instance => {
-      this.infura_contract_instance = instance
+    const canvas_contract = contract(CanvasContract)
+    canvas_contract.setProvider(this.state.web3.currentProvider)
+    canvas_contract.deployed().then(instance => {
+      this.contract_instance = instance
       
       instance.GenesisBlock.call().then(genesis_block => {
         let g_block = genesis_block.toNumber()
-        this.state.infura.eth.getBlockNumber((error, b_number) => {
+        this.state.web3.eth.getBlockNumber((error, b_number) => {
           if (error)
             console.error(error)
           else
