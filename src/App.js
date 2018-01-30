@@ -525,6 +525,13 @@ class App extends Component {
       if (this.state.web3.eth.accounts[0] !== this.state.account)
         this.setState({ account: this.state.web3.eth.accounts[0] })
     }, 1000)
+
+    setInterval(this.fetch_gas_price.bind(this), 60000)
+    this.fetch_gas_price()
+  }
+
+  fetch_gas_price() {
+    this.state.web3.eth.getGasPrice((_, result) => this.setState({ gas_price: result }))
   }
 
   update_settings(new_settings, callback) {
@@ -665,6 +672,7 @@ class App extends Component {
           <p>Genesis block: {this.state.genesis_block}</p>
           <p>Blocknumber: {this.state.current_block}</p>
           <p>Max index: {this.state.max_index}</p>
+          <p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>
         </div>
       )
     }
@@ -678,7 +686,7 @@ class App extends Component {
           <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
-        <GasEstimator fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
+        <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
           <Navbar>
             <Navbar.Header>

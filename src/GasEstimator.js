@@ -21,7 +21,7 @@ class GasEstimator extends Component {
   }
 
   estimate_total(pixels) {
-    return this.estimate_gas(pixels) + this.estimate_fee(pixels)
+    return this.props.gas_price.mul(this.estimate_gas(pixels)).add(this.estimate_fee(pixels))
   }
 
   render() {

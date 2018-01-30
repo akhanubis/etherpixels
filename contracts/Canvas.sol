@@ -10,7 +10,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
     /* 5 bytes unused*/
   }
 
-  uint public paint_fee = 100;
+  uint public paint_fee = 4 szabo; /* 4000 Gwei */
   uint public cooldown = 10;
 
   mapping(uint => Pixel) public pixels;
