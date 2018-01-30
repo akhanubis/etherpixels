@@ -4,7 +4,7 @@ import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
 import Pixel from './Pixel'
 import Footer from './Footer'
 import ColorUtils from './utils/ColorUtils'
@@ -38,8 +38,12 @@ class App extends Component {
     super(props)
 
     this.state = {
-      viewport_size: {
-        width: 800,
+      initial_viewport_size: {
+        width: 1000,
+        height: 800
+      },
+      with_events_viewport_size: {
+        width: 700,
         height: 800
       },
       minimap_size: {
@@ -78,6 +82,7 @@ class App extends Component {
   }
 
   componentWillMount() {
+    this.setState({ viewport_size: this.state.initial_viewport_size })
     getWeb3
     .then(result => this.setState({ web3: result.web3, web3_watch_only: result.watch_only }, this.instantiate_contract))
     .catch(() => console.log('Error finding web3.'))
@@ -221,7 +226,10 @@ class App extends Component {
   }
 
   whole_canvas_on_viewport_ratio() {
-    return this.state.viewport_size.width / this.state.canvas_size.width
+    if (this.state.viewport_size.width > this.state.viewport_size.height)
+      return this.state.viewport_size.height / this.state.canvas_size.height
+    else
+      return this.state.viewport_size.width / this.state.canvas_size.width
   }
 
   destination_top_left() {
@@ -655,6 +663,17 @@ class App extends Component {
     })
   }
 
+  toggle_events(e) {
+    e.preventDefault()
+    let new_size = this.state.settings.show_events ? this.state.initial_viewport_size : this.state.with_events_viewport_size
+    this.resize_viewport(new_size)
+    this.update_settings({ show_events: !this.state.settings.show_events })
+  }
+
+  resize_viewport(new_size) {
+    this.setState({ viewport_size: new_size }, this.redraw)
+  }
+
   render() {
     let block_info = null
     if (this.state.current_block) {
@@ -700,6 +719,7 @@ class App extends Component {
                       onChangeComplete={ this.handleColorChangeComplete.bind(this) }
                     />
                     <p>Tip: you can pick a color from the canvas with Alt + click</p>
+                    <Button bsClass="primary" onClick={this.toggle_events.bind(this)}>Show/hide events</Button>
                     {block_info}
                     <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
                     <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
@@ -708,7 +728,7 @@ class App extends Component {
                   <div className='canvas-container' style={this.state.viewport_size}>
                     <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
                     <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
-                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.viewport_size.width} height={this.state.viewport_size.height} ref={c => this.main_canvas = c} />
+                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
                   </div>
                 </Col>
                 <Col md={2}>

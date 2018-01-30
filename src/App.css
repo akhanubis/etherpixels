@@ -9,3 +9,7 @@ button[disabled] {
   padding: 0;
   width: 100%;
 }
+
+.canvas-container {
+  overflow: hidden;
+}
