@@ -26,6 +26,7 @@ import CooldownFormatter from './CooldownFormatter'
 import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
+import SlideoutPanel from './SlideoutPanel'
 const contract = require('truffle-contract')
 
 import './css/oswald.css'
@@ -695,7 +696,7 @@ class App extends Component {
   }
 
   render() {
-    let block_info = null, events_panel = null
+    let block_info = null
     if (this.state.current_block)
       block_info = (
         <div>
@@ -705,12 +706,6 @@ class App extends Component {
           { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
       )
-    if (this.state.settings.show_events)
-      events_panel = (
-        <Col md={2}>
-          <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
-        </Col>
-        )
     let advanced_color_picker = (
       <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
         <PhotoshopPicker
@@ -767,7 +762,6 @@ class App extends Component {
                     </Grid>
                   </div>
                   <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                  <Button bsClass="primary" onClick={this.toggle_events.bind(this)}>Show/hide events</Button>
                   {block_info}
                   <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
                   <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
@@ -780,7 +774,9 @@ class App extends Component {
                     <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                   </div>
                 </Col>
-                {events_panel}
+                <SlideoutPanel on_tab_click={this.toggle_events.bind(this)} expand={this.state.settings.show_events}>
+                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
+                </SlideoutPanel>
             </Grid>
           </main>
         </KeyListener>
