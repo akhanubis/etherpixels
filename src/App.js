@@ -2,9 +2,9 @@
 import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
-import { SketchPicker } from 'react-color'
+import { CirclePicker, MaterialPicker, PhotoshopPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem, Button, OverlayTrigger, Popover } from 'react-bootstrap'
 import Pixel from './Pixel'
 import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
@@ -68,7 +68,8 @@ class App extends Component {
       pending_txs: [],
       settings: {
         unit: 'gwei',
-        preview_pending_txs: true
+        preview_pending_txs: true,
+        custom_colors: []
       }
     }
     this.processed_logs = new Set()
@@ -77,6 +78,7 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.click_timer_in_progress = true
+    this.default_colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"]
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -647,7 +649,7 @@ class App extends Component {
     return this.state.thresholds.length
   }
   
-  handleColorChangeComplete(new_color) {
+  update_current_color(new_color) {
     this.setState({ current_color: new_color.rgb })
   }
  
@@ -674,6 +676,24 @@ class App extends Component {
     this.setState({ viewport_size: new_size }, this.redraw)
   }
 
+  hide_color_picker() {
+    this.color_picker_popover.hide()
+  }
+
+  update_current_custom_color(new_color) {
+    this.current_custom_color = new_color
+  }
+
+  save_custom_color() {
+    this.update_settings({ custom_colors: [...this.state.settings.custom_colors, this.current_custom_color.hex] })
+  }
+
+  add_custom_color() {
+    this.hide_color_picker()
+    this.save_custom_color()
+    this.update_current_color(this.current_custom_color)
+  }
+
   render() {
     let block_info = null, events_panel = null
     if (this.state.current_block)
@@ -691,6 +711,16 @@ class App extends Component {
           <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
         </Col>
         )
+    let advanced_color_picker = (
+      <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
+        <PhotoshopPicker
+          color={ this.state.current_color }
+          onChangeComplete={this.update_current_custom_color.bind(this)}
+          onAccept={this.add_custom_color.bind(this)}
+          onCancel={this.hide_color_picker.bind(this)}
+        />
+      </Popover>
+    )
     return (
       <div className="App">
         <Helmet>
@@ -717,15 +747,30 @@ class App extends Component {
           <main>
             <Grid fluid={true}>
                 <Col md={3}>
-                    <SketchPicker
-                      color={ this.state.current_color }
-                      onChangeComplete={ this.handleColorChangeComplete.bind(this) }
-                    />
-                    <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                    <Button bsClass="primary" onClick={this.toggle_events.bind(this)}>Show/hide events</Button>
-                    {block_info}
-                    <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
-                    <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
+                  <div className="color-picker-container">
+                    <Grid fluid={true}>
+                      <Col md={8}>
+                        <CirclePicker color={ this.state.current_color }
+                          onChangeComplete={ this.update_current_color.bind(this) }
+                          colors={[...this.default_colors, ...this.state.settings.custom_colors]}
+                        />
+                        <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
+                          <Button bsStyle="primary" block={true}>Add custom color</Button>
+                        </OverlayTrigger>
+                      </Col>
+                      <Col md={4}>
+                        <MaterialPicker
+                          color={ this.state.current_color }
+                          onChangeComplete={ this.update_current_color.bind(this) }
+                        />
+                      </Col>
+                    </Grid>
+                  </div>
+                  <p>Tip: you can pick a color from the canvas with Alt + click</p>
+                  <Button bsClass="primary" onClick={this.toggle_events.bind(this)}>Show/hide events</Button>
+                  {block_info}
+                  <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
+                  <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
                 <Col md={this.state.settings.show_events ? 7 : 9}>
                   <div className='canvas-container' style={this.state.viewport_size}>

@@ -5,7 +5,7 @@
 }
 
 .zoom-canvas {
-  z-index: 9999;
+  z-index: 2;
   position: absolute;
   border: solid 1px black;
   top: 0;
@@ -15,7 +15,7 @@
 }
 
 .minimap-canvas {
-  z-index: 9999;
+  z-index: 2;
   position: absolute;
   border: solid 1px black;
   bottom: 0;
