@@ -6,7 +6,7 @@ import { SketchPicker } from 'react-color'
 import {Helmet} from "react-helmet"
 import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
 import Pixel from './Pixel'
-import Footer from './Footer'
+import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
 import ContractToWorld from './utils/ContractToWorld'
 import WorldToCanvas from './utils/WorldToCanvas'
@@ -732,10 +732,10 @@ class App extends Component {
                     <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
                     <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
                     <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
+                    <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                   </div>
                 </Col>
                 {events_panel}
-              <Footer pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
             </Grid>
           </main>
         </KeyListener>

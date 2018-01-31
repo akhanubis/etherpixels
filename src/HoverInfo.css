@@ -6,9 +6,12 @@ body {
   margin-bottom: 40px;
 }
 
-.footer {
-  position: fixed;
-  bottom: 0;
+.hover-info {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-right: 2px;
+  margin-top: 2px;
   width: auto;
   height: 40px;
   line-height: 40px;
@@ -17,4 +20,8 @@ body {
 
 .pixel-status {
   text-align: left;
+}
+
+.hover-info .pixel-square {
+  float: left;
 }
