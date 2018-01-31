@@ -686,13 +686,20 @@ class App extends Component {
   }
 
   save_custom_color() {
-    this.update_settings({ custom_colors: [...this.state.settings.custom_colors, this.current_custom_color.hex] })
+    let new_colors = new Set(this.state.settings.custom_colors)
+    new_colors.add(this.current_custom_color.hex) /* IE 11: add doesnt return the Set instance :( */
+    this.update_settings({ custom_colors: [...new_colors] })
   }
 
   add_custom_color() {
     this.hide_color_picker()
     this.save_custom_color()
     this.update_current_color(this.current_custom_color)
+  }
+
+  clear_custom_colors(e) {
+    e.preventDefault()
+    this.update_settings({ custom_colors: []})
   }
 
   render() {
@@ -745,13 +752,25 @@ class App extends Component {
                   <div className="color-picker-container">
                     <Grid fluid={true}>
                       <Col md={8}>
-                        <CirclePicker color={ this.state.current_color }
-                          onChangeComplete={ this.update_current_color.bind(this) }
-                          colors={[...this.default_colors, ...this.state.settings.custom_colors]}
-                        />
-                        <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
-                          <Button bsStyle="primary" block={true}>Add custom color</Button>
-                        </OverlayTrigger>
+                        <Grid fluid={true}>
+                          <CirclePicker color={ this.state.current_color }
+                            onChangeComplete={ this.update_current_color.bind(this) }
+                            colors={this.default_colors}
+                          />
+                          <p>Custom colors</p>
+                          <CirclePicker color={ this.state.current_color }
+                            onChangeComplete={ this.update_current_color.bind(this) }
+                            colors={this.state.settings.custom_colors}
+                          />
+                          <Col md={6}>
+                            <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
+                              <Button bsStyle="primary" block={true}>Add</Button>
+                            </OverlayTrigger>
+                          </Col>
+                          <Col md={6}>
+                            <Button bsStyle="primary" block={true} onClick={this.clear_custom_colors.bind(this)}>Clear</Button>
+                          </Col>
+                        </Grid>
                       </Col>
                       <Col md={4}>
                         <MaterialPicker
