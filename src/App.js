@@ -414,7 +414,8 @@ class App extends Component {
   }
 
   pick_color(pixel_at_pointer) {
-    this.setState({ current_color: pixel_at_pointer.rgba_color() })
+    let data = this.main_canvas.getImageData(this.mouse_position.x, this.mouse_position.y, 1, 1).data
+    this.setState({ current_color: ColorUtils.intArrayToRgb(data) })
   }
 
   is_picking_color() {
@@ -548,12 +549,8 @@ class App extends Component {
   color_at(x, y) {
     let buffer_coords = WorldToCanvas.to_buffer(x, y, this.state.canvas_size)
     let color_data = this.pixel_buffer_ctx.getImageData(buffer_coords.x, buffer_coords.y, 1, 1).data
-    return ColorUtils.rgbToHex({
-      r: color_data[0],
-      g: color_data[1],
-      b: color_data[2],
-      a: 1
-    })
+    color_data[3] = 255
+    return ColorUtils.intArrayToHex(color_data)
   }
 
   pixel_to_paint(pixel_at_pointer) {

@@ -48,7 +48,11 @@ class Canvas extends Component {
   }
 
   drawImage(...args) {
-    this.ctx.drawImage(...args)
+    return this.ctx.drawImage(...args)
+  }
+
+  getImageData(...args) {
+    return this.ctx.getImageData(...args)
   }
 
   outline(x, y, width, height, soft_outline) {
