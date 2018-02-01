@@ -38,6 +38,11 @@ class App extends Component {
   constructor(props) {
     super(props)
 
+    this.default_settings = {
+      unit: 'gwei',
+      preview_pending_txs: true,
+      custom_colors: []
+    }
     this.state = {
       initial_viewport_size: {
         width: 1350,
@@ -67,11 +72,7 @@ class App extends Component {
       x: 0,
       y: 0,
       pending_txs: [],
-      settings: {
-        unit: 'gwei',
-        preview_pending_txs: true,
-        custom_colors: []
-      }
+      settings: this.default_settings
     }
     this.processed_logs = new Set()
     this.bootstrap_steps = 3
@@ -82,10 +83,13 @@ class App extends Component {
     this.default_colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"]
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
+
+    let stored_settings = localStorage.getItem('settings')
+    this.state.settings = stored_settings ? JSON.parse(stored_settings) : this.default_settings
   }
 
   componentWillMount() {
-    this.setState({ viewport_size: this.state.initial_viewport_size })
+    this.setState({ viewport_size: this.state.settings.show_events ? this.state.with_events_viewport_size : this.state.initial_viewport_size })
     getWeb3
     .then(result => this.setState({ web3: result.web3, web3_watch_only: result.watch_only }, this.instantiate_contract))
     .catch(() => console.log('Error finding web3.'))
@@ -537,9 +541,9 @@ class App extends Component {
   }
 
   update_settings(new_settings, callback) {
-    this.setState(prev_state => {
-      return { settings: { ...prev_state.settings, ...new_settings}}
-    }, callback)
+    let settings = { ...this.state.settings, ...new_settings }
+    localStorage.setItem('settings', JSON.stringify(settings))
+    this.setState({ settings: settings }, callback)
   }
 
   color_at(x, y) {
@@ -702,6 +706,11 @@ class App extends Component {
     this.update_settings({ custom_colors: []})
   }
 
+  clear_local_storage(e) {
+    e.preventDefault()
+    this.update_settings(this.default_settings)
+  }
+
   render() {
     let block_info = null
     if (this.state.current_block)
@@ -782,6 +791,7 @@ class App extends Component {
                   </div>
                   <p>Tip: you can pick a color from the canvas with Alt + click</p>
                   {block_info}
+                  <Button onClick={this.clear_local_storage.bind(this)}>temporal: limpiar local storage</Button>
                   <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
                   <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
                 </Col>
