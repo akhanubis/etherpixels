@@ -38,11 +38,13 @@ class App extends Component {
   constructor(props) {
     super(props)
 
+    let stored_settings = localStorage.getItem('settings')
     this.default_settings = {
       unit: 'gwei',
       preview_pending_txs: true,
       custom_colors: []
     }
+
     this.state = {
       initial_viewport_size: {
         width: 1350,
@@ -72,7 +74,7 @@ class App extends Component {
       x: 0,
       y: 0,
       pending_txs: [],
-      settings: this.default_settings
+      settings: stored_settings ? JSON.parse(stored_settings) : this.default_settings
     }
     this.processed_logs = new Set()
     this.bootstrap_steps = 3
@@ -83,9 +85,6 @@ class App extends Component {
     this.default_colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"]
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
-
-    let stored_settings = localStorage.getItem('settings')
-    this.state.settings = stored_settings ? JSON.parse(stored_settings) : this.default_settings
   }
 
   componentWillMount() {
@@ -320,7 +319,7 @@ class App extends Component {
     if (!(e || this.current_zoom))
       return
     if (e)
-      this.current_zoom = { x: e.layerX, y: e.layerY }
+      this.current_zoom = { x: e.offsetX, y: e.offsetY }
     this.zoom_canvas.drawImage(this.main_canvas.canvas,
                       Math.abs(this.current_zoom.x - 5),
                       Math.abs(this.current_zoom.y - 5),
@@ -332,7 +331,7 @@ class App extends Component {
   main_canvas_mouse_move(e) {
     if (!this.point_at_center)
       return
-    this.mouse_position = { x: e.layerX, y: e.layerY }
+    this.mouse_position = { x: e.offsetX, y: e.offsetY }
     if (this.dragging_canvas)
       this.drag(e)
     else
@@ -382,7 +381,7 @@ class App extends Component {
 
   start_dragging(e) {
     this.dragging_canvas = true
-    this.initial_drag_start = { x: e.layerX, y: e.layerY }
+    this.initial_drag_start = { x: e.offsetX, y: e.offsetY }
     this.drag_start = this.initial_drag_start
   }
 
@@ -391,7 +390,7 @@ class App extends Component {
   }
 
   may_be_a_click(e) {
-    return this.click_timer_in_progress && this.initial_drag_start.x === e.layerX && this.initial_drag_start.y === e.layerY
+    return this.click_timer_in_progress && this.initial_drag_start.x === e.offsetX && this.initial_drag_start.y === e.offsetY
   }
 
   main_canvas_mouse_up(e) {
@@ -411,7 +410,7 @@ class App extends Component {
 
   stop_dragging(e) {
     this.dragging_canvas = false
-    this.drag_end = { x: e.layerX, y: e.layerY }
+    this.drag_end = { x: e.offsetX, y: e.offsetY }
   }
 
   pick_color(pixel_at_pointer) {
@@ -433,8 +432,8 @@ class App extends Component {
   
   update_from_minimap(e) {
     this.point_at_center = {
-      x: (e.layerX / this.state.minimap_size.width) * this.state.canvas_size.width,
-      y: (e.layerY / this.state.minimap_size.height) * this.state.canvas_size.height
+      x: (e.offsetX / this.state.minimap_size.width) * this.state.canvas_size.width,
+      y: (e.offsetY / this.state.minimap_size.height) * this.state.canvas_size.height
     }
     this.redraw()
   }
