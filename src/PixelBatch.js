@@ -9,10 +9,6 @@ class PixelBatch extends Component {
     return this.props.gas_estimator.estimate_total(this.props.batch)
   }
 
-  remove_batch(i, e) {
-    e.preventDefault()
-    this.props.on_batch_remove(i)
-  }
 
   render() {
     if (this.props.batch.length) {
@@ -28,19 +24,13 @@ class PixelBatch extends Component {
           <p>Batch (total including gas and fees: {PriceFormatter.format(this.total_price())})</p>
           <div className='batch-inner-container'>
             {
-              this.props.batch.map((p, i) => {
+              this.props.batch.map(p => {
                 return (
                   <div className='batch-pixel-info' key={`${p.x}_${p.y}_${p.color}_${p.old_color}`}>
                     <PixelSquare color={p.old_color} />
                     <span className='text'>=></span>
                     <PixelSquare color={p.color} />
                     <span className='text'>({p.x}, {p.y})</span>
-                    {this.props.on_batch_remove ?
-                      <div className='batch-delete' onClick={this.remove_batch.bind(this, i)}>
-                        remove
-                      </div>
-                      : null
-                    }
                   </div>
                 )
               })

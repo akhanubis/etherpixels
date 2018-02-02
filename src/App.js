@@ -357,8 +357,10 @@ class App extends Component {
   main_canvas_mouse_down = e => {
     e.preventDefault()
     this.holding_click = true
-    this.start_dragging()
-    this.start_painting_and_picking()
+    if (this.tool_selected('move'))
+      this.start_dragging()
+    else
+      this.start_painting()
   }
 
   main_canvas_mouse_move = e => {
@@ -369,7 +371,7 @@ class App extends Component {
       this.drag()
     else
       if (this.holding_click)
-        this.start_painting_and_picking()
+        this.start_painting()
       this.update_zoom(e)
     this.update_hovering_pixel()
   }
@@ -394,7 +396,7 @@ class App extends Component {
       this.drag()
   }
 
-  start_painting_and_picking = () => {
+  start_painting = () => {
     let pap = this.pixel_at_pointer()
     if (this.pointer_inside_canvas(pap))
       if (this.tool_selected('paint'))
@@ -402,10 +404,8 @@ class App extends Component {
       else
         if (this.tool_selected('pick_color'))      
           this.pick_color(pap)
-        /* TODO
         else
-          erase
-        */
+          this.remove_from_batch(pap)
   }
 
   drag = () => {
@@ -559,7 +559,7 @@ class App extends Component {
 
   selected_pixel_in_batch = pixel_at_pointer => {
     pixel_at_pointer = pixel_at_pointer || this.pixel_at_pointer()
-    return this.state.batch_paint.findIndex(p => p.x === pixel_at_pointer.x && p.y === pixel_at_pointer.y)
+    return this.state.batch_paint.findIndex(p => p.same_coords(pixel_at_pointer))
   }
 
   batch_paint_full = pixel_at_pointer => {
@@ -568,11 +568,10 @@ class App extends Component {
     return this.selected_pixel_in_batch(pixel_at_pointer) === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
-  batch_remove = i => {
-    let removed_pixel = this.state.batch_paint[i]
-    this.remove_preview([removed_pixel])
+  remove_from_batch = pixel => {
+    this.remove_preview([pixel])
     this.setState(prev_state => {
-      return { batch_paint: prev_state.batch_paint.filter((_, index) => index !== i) }
+      return { batch_paint: prev_state.batch_paint.filter(p => !p.same_coords(pixel)) }
     })
   }
 
@@ -729,7 +728,7 @@ class App extends Component {
                 {block_info}
                 <Button onClick={this.clear_local_storage}>temporal: limpiar local storage</Button>
                 <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
-                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} on_batch_remove={this.batch_remove} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
+                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
               </Col>
               <Col md={this.state.settings.show_events ? 7 : 9}>
                 <div className='canvas-container' style={this.state.viewport_size}>

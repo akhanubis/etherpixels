@@ -59,6 +59,10 @@ class Pixel {
   is_new() {
     return this.owner === '0x0000000000000000000000000000000000000000'
   }
+
+  same_coords(p) {
+    return p.x === this.x && p.y === this.y
+  }
 }
 
 export default Pixel
