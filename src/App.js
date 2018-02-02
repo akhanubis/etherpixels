@@ -27,6 +27,7 @@ import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
 import SlideoutPanel from './SlideoutPanel'
 import Palette from './Palette'
+import ToolSelector from './ToolSelector'
 const contract = require('truffle-contract')
 
 import './css/oswald.css'
@@ -74,14 +75,14 @@ class App extends Component {
       x: 0,
       y: 0,
       pending_txs: [],
-      settings: stored_settings ? JSON.parse(stored_settings) : this.default_settings
+      settings: stored_settings ? JSON.parse(stored_settings) : this.default_settings,
+      current_tool: 'move'
     }
     this.processed_logs = new Set()
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 100
     this.max_batch_length = 20
-    this.click_timer_in_progress = true
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -97,7 +98,7 @@ class App extends Component {
     return this.bootstraped < this.bootstrap_steps
   }
 
-  try_bootstrap() {
+  try_bootstrap = () => {
     this.bootstraped++
     if (this.bootstraping())
       return
@@ -110,26 +111,26 @@ class App extends Component {
     this.update_pixels([])
   }
 
-  load_canvases(latest_block) {
+  load_canvases = latest_block => {
     this.load_cache_image(latest_block)
     this.load_clear_image()
     this.load_addresses_buffer()
   }
 
-  bucket_url(key) {
+  bucket_url = key => {
     return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
   }
 
-  load_addresses_buffer() {
+  load_addresses_buffer = () => {
     axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
       AddressBuffer.decompress_buffer(response.data)
       .then(result => this.address_buffer = new AddressBuffer(result.buffer))
       .catch(error => console.error("Error when inflating cache buffer"))
-      .then(this.try_bootstrap.bind(this))
+      .then(this.try_bootstrap)
     })
   }
 
-  load_cache_image(latest_block) {
+  load_cache_image = latest_block => {
     axios.get(this.bucket_url('init.json')).then(response => {
       if (this.contract_instance.address === response.data.contract_address) {
         this.last_cache_block = response.data.last_cache_block
@@ -146,7 +147,7 @@ class App extends Component {
     })
   }
 
-  load_clear_image() {
+  load_clear_image = () => {
     let clear_image = new Image()
     clear_image.src = 'pattern.png'
     clear_image.style.display = 'none'
@@ -157,22 +158,22 @@ class App extends Component {
     }
   }
 
-  load_buffer_data(img, latest_block) {
+  load_buffer_data = (img, latest_block) => {
     let new_max_index = ContractToWorld.max_index(this.state.genesis_block, latest_block)
     let dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.create_buffer_canvas(dimension)
     if (img)
       this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
-    this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap.bind(this))
+    this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap)
   }
 
-  create_buffer_canvas(dimension) {
+  create_buffer_canvas = dimension => {
     this.pixel_buffer_ctx = CanvasUtils.new_canvas(dimension)
     this.preview_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
     this.pending_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
   }
 
-  redraw_ctx(ctx, destination_top_left, destination_size) {
+  redraw_ctx = (ctx, destination_top_left, destination_size) => {
     this.main_canvas.drawImage(ctx.canvas,
       0, 0,
       this.state.canvas_size.width, this.state.canvas_size.height,
@@ -180,7 +181,7 @@ class App extends Component {
       destination_size.x, destination_size.y)
   }
 
-  redraw(e){
+  redraw = e => {
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
     this.main_canvas.clear()
@@ -192,7 +193,7 @@ class App extends Component {
     this.outline_hovering_pixel()
   }
   
-  put_pixels_in_buffer(pixels, ctx) {
+  put_pixels_in_buffer = (pixels, ctx) => {
     pixels.forEach(p => {
       let b_coords = WorldToCanvas.to_buffer(p.x, p.y, ctx.canvas)
       ctx.putImageData(p.image_data(), b_coords.x, b_coords.y)
@@ -200,18 +201,18 @@ class App extends Component {
     this.redraw()
   }
 
-  update_preview_buffer(pixel) {
+  update_preview_buffer = pixel => {
     this.put_pixels_in_buffer([pixel], this.preview_buffer_ctx)
   }
 
-  update_pending_buffer() {
+  update_pending_buffer = () => {
     CanvasUtils.clear(this.pending_buffer_ctx, 'rgba(0,0,0,0)')
     this.state.pending_txs.forEach(tx => {
       this.put_pixels_in_buffer(tx.pixels, this.pending_buffer_ctx)
     })
   }
   
-  remove_preview(pixels) {
+  remove_preview = pixels => {
     pixels.forEach(p => {
       let b_coords = WorldToCanvas.to_buffer(p.x, p.y, this.preview_buffer_ctx.canvas)
       this.preview_buffer_ctx.putImageData(CanvasUtils.transparent_image_data(ImageData), b_coords.x, b_coords.y)
@@ -219,32 +220,32 @@ class App extends Component {
     this.redraw()
   }
 
-  outline_pixel(world_pixel, soft) {
+  outline_pixel = (world_pixel, soft) => {
     let viewport_coords = WorldToCanvas.to_viewport(world_pixel, this.state.canvas_size, this.point_at_center, this.current_wheel_zoom, this.state.viewport_size)
     this.main_canvas.outline(viewport_coords.x, viewport_coords.y, this.current_wheel_zoom, this.current_wheel_zoom, soft)
   }
 
-  outline_hovering_pixel() {
+  outline_hovering_pixel = () => {
     if (this.state.hovering_pixel) {
       this.outline_pixel(this.state.hovering_pixel, true)
     }
   }
 
-  whole_canvas_on_viewport_ratio() {
+  whole_canvas_on_viewport_ratio = () => {
     if (this.state.viewport_size.width > this.state.viewport_size.height)
       return this.state.viewport_size.height / this.state.canvas_size.height
     else
       return this.state.viewport_size.width / this.state.canvas_size.width
   }
 
-  destination_top_left() {
+  destination_top_left = () => {
     return {
       x: this.state.viewport_size.width * 0.5 - this.point_at_center.x * this.current_wheel_zoom,
       y: this.state.viewport_size.height * 0.5 - this.point_at_center.y * this.current_wheel_zoom
     }
   }
 
-  destination_size() {
+  destination_size = () => {
     /*
     wheel_zoom / result
     1    => 2049
@@ -259,14 +260,14 @@ class App extends Component {
     }
   }
   
-  new_log(tx_hash, log_index) {
+  new_log = (tx_hash, log_index) => {
     let log_id = `${tx_hash}-${log_index}`
     let new_log = !this.processed_logs.has(log_id)
     this.processed_logs.add(log_id)
     return new_log
   }
   
-  start_watching() {
+  start_watching = () => {
     let pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
       encrypted: true
@@ -278,7 +279,7 @@ class App extends Component {
     })    
   }
 
-  process_pixels_painted(pusher_events) {
+  process_pixels_painted = pusher_events => {
     var new_pixels = pusher_events.reduce((pixel_data, event) => {
       if (this.new_log(event.tx, event.log_index))
         pixel_data.push(Pixel.from_event(event))
@@ -287,7 +288,7 @@ class App extends Component {
     this.update_pixels(new_pixels)
   }
   
-  update_pixels(new_pixels) {
+  update_pixels = new_pixels => {
     for(var i = 0; i < new_pixels.length; i++) {
       let new_pixel = new_pixels[i]
       new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
@@ -300,7 +301,7 @@ class App extends Component {
     this.update_minimap()
   }
   
-  push_event(event) {
+  push_event = event => {
     this.setState(prev_state => {
       let temp = [...prev_state.event_logs]
       temp.unshift(event) 
@@ -310,11 +311,11 @@ class App extends Component {
     })
   }
 
-  clear_logs() {
+  clear_logs = () => {
     this.setState({ event_logs: []})
   }
 
-  update_zoom(e) {
+  update_zoom = e => {
     if (!(e || this.current_zoom))
       return
     if (e)
@@ -327,35 +328,16 @@ class App extends Component {
                       this.state.zoom_size.width, this.state.zoom_size.height)
   }
   
-  main_canvas_mouse_move(e) {
-    if (!this.point_at_center)
-      return
-    this.mouse_position = { x: e.offsetX, y: e.offsetY }
-    if (this.dragging_canvas)
-      this.drag(e)
-    else
-      /* redraw to update_zoom */
-      this.redraw(e)
-    this.update_hovering_pixel()
-  }
-
-  drag(e) {
-    this.point_at_center.x = this.point_at_center.x - (this.mouse_position.x - this.drag_start.x) / this.current_wheel_zoom
-    this.point_at_center.y = this.point_at_center.y - (this.mouse_position.y - this.drag_start.y) / this.current_wheel_zoom
-    this.drag_start = this.mouse_position
-    this.redraw(e)
-  }
-
-  update_hovering_pixel() {
+  update_hovering_pixel = () => {
     let pap = this.pixel_at_pointer()
-    this.setState({ hovering_pixel: pap.index <= this.state.max_index ? pap : null })
+    this.setState({ hovering_pixel: pap.index <= this.state.max_index ? pap : null }, this.redraw)
   }
 
-  pointer_inside_canvas(pixel_at_pointer) {
+  pointer_inside_canvas = pixel_at_pointer => {
     return pixel_at_pointer.is_inside_canvas(this.state.max_index)
   }
 
-  pixel_at_pointer() {
+  pixel_at_pointer = () => {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     let i = new WorldToContract(x, y).get_index()
@@ -372,56 +354,76 @@ class App extends Component {
     )
   }
 
-  main_canvas_mouse_down(e) {
+  main_canvas_mouse_down = e => {
     e.preventDefault()
-    this.click_detection_timer = setTimeout(this.mouse_down_held_too_long.bind(this, e), 100)
-    this.start_dragging(e)
+    this.holding_click = true
+    this.start_dragging()
+    this.start_painting_and_picking()
   }
 
-  start_dragging(e) {
-    this.dragging_canvas = true
-    this.initial_drag_start = { x: e.offsetX, y: e.offsetY }
-    this.drag_start = this.initial_drag_start
+  main_canvas_mouse_move = e => {
+    if (!this.point_at_center)
+      return
+    this.mouse_position = { x: e.offsetX, y: e.offsetY }
+    if (this.dragging_canvas())
+      this.drag()
+    else
+      if (this.holding_click)
+        this.start_painting_and_picking()
+      this.update_zoom(e)
+    this.update_hovering_pixel()
   }
 
-  mouse_down_held_too_long(e) {
-    this.click_timer_in_progress = false
-  }
-
-  may_be_a_click(e) {
-    return this.click_timer_in_progress && this.initial_drag_start.x === e.offsetX && this.initial_drag_start.y === e.offsetY
-  }
-
-  main_canvas_mouse_up(e) {
+  main_canvas_mouse_up = e => {
     e.preventDefault()
-    clearTimeout(this.click_detection_timer)
-    if (this.may_be_a_click(e)) {
-      let pap = this.pixel_at_pointer()
-      if (this.pointer_inside_canvas(pap))
-        if (e.altKey)
+    this.holding_click = false
+    this.stop_dragging()
+  }
+
+  tool_selected = tool => this.state.current_tool === tool
+
+  dragging_canvas = () => this.tool_selected('move') && this.holding_click
+
+  start_dragging = () => {
+    if (this.tool_selected('move'))
+      this.drag_start = this.mouse_position
+  }
+
+  stop_dragging = () => {
+    if (this.tool_selected('move'))
+      this.drag()
+  }
+
+  start_painting_and_picking = () => {
+    let pap = this.pixel_at_pointer()
+    if (this.pointer_inside_canvas(pap))
+      if (this.tool_selected('paint'))
+        this.add_to_batch(pap)
+      else
+        if (this.tool_selected('pick_color'))      
           this.pick_color(pap)
+        /* TODO
         else
-          this.add_to_batch(pap)
-    }
-    this.stop_dragging(e)
-    this.click_timer_in_progress = true
+          erase
+        */
   }
 
-  stop_dragging(e) {
-    this.dragging_canvas = false
-    this.drag_end = { x: e.offsetX, y: e.offsetY }
+  drag = () => {
+    this.point_at_center.x = this.point_at_center.x - (this.mouse_position.x - this.drag_start.x) / this.current_wheel_zoom
+    this.point_at_center.y = this.point_at_center.y - (this.mouse_position.y - this.drag_start.y) / this.current_wheel_zoom
+    this.drag_start = this.mouse_position
   }
 
-  pick_color(pixel_at_pointer) {
+  pick_color = pixel_at_pointer => {
     let data = this.main_canvas.getImageData(this.mouse_position.x, this.mouse_position.y, 1, 1).data
     this.setState({ current_color: ColorUtils.intArrayToRgb(data) })
   }
 
-  is_picking_color() {
+  is_picking_color = () => {
     return this.state.keys_down.alt
   }
 
-  update_minimap() {
+  update_minimap = () => {
     this.minimap_canvas.clear()
     this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
@@ -430,7 +432,7 @@ class App extends Component {
                       this.state.minimap_size.width, this.state.minimap_size.height)
   }
   
-  update_from_minimap(e) {
+  update_from_minimap = e => {
     this.point_at_center = {
       x: (e.offsetX / this.state.minimap_size.width) * this.state.canvas_size.width,
       y: (e.offsetY / this.state.minimap_size.height) * this.state.canvas_size.height
@@ -438,23 +440,23 @@ class App extends Component {
     this.redraw()
   }
 
-  hold_minimap(e) {
+  hold_minimap = e => {
     if (e.button === 0)
       this.dragging_minimap = true
   }
 
-  move_on_minimap(e) {
+  move_on_minimap = e => {
     if (this.dragging_minimap)
       this.update_from_minimap(e)
   }
   
-  release_minimap(e) {
+  release_minimap = e => {
     e.preventDefault()
     this.dragging_minimap = false
     this.update_from_minimap(e)
   }
 
-  wheel_zoom(e) {
+  wheel_zoom = e => {
     e.preventDefault()
     /* Check whether the wheel event is supported. */
     if (e.type === "wheel") this.wheel_even_supported = true
@@ -463,10 +465,9 @@ class App extends Component {
     var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
     this.current_wheel_zoom = this.current_wheel_zoom * (delta > 0 ? 0.8 : 1.25)
     this.update_hovering_pixel()
-    this.redraw()
   }
 
-  update_block_number(block_number) {
+  update_block_number = block_number => {
     let old_max_index = this.state.max_index
     let new_max_index = ContractToWorld.max_index(this.state.genesis_block, block_number)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
@@ -474,11 +475,11 @@ class App extends Component {
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
   }
 
-  resize_secondary_buffer(ctx, dimension) {
+  resize_secondary_buffer = (ctx, dimension) => {
     return CanvasUtils.resize_secondary_canvas(ctx, dimension)
   }
 
-  resize_pixel_buffer(new_size, old_max_index, new_max_index) {
+  resize_pixel_buffer = (new_size, old_max_index, new_max_index) => {
     this.preview_buffer_ctx = this.resize_secondary_buffer(this.preview_buffer_ctx, new_size.width)
     this.pending_buffer_ctx = this.resize_secondary_buffer(this.pending_buffer_ctx, new_size.width)
     CanvasUtils.resize_canvas(
@@ -501,7 +502,7 @@ class App extends Component {
     )
   }
 
-  instantiate_contract() {
+  instantiate_contract = () => {
     const canvas_contract = contract(CanvasContract)
     canvas_contract.setProvider(this.state.web3.currentProvider)
     canvas_contract.deployed().then(instance => {
@@ -530,44 +531,44 @@ class App extends Component {
       }, 1000)
 
       
-      setInterval(this.fetch_gas_price.bind(this), 60000)
+      setInterval(this.fetch_gas_price, 60000)
       this.fetch_gas_price()
     }
   }
 
-  fetch_gas_price() {
+  fetch_gas_price = () => {
     this.state.web3.eth.getGasPrice((_, result) => this.setState({ gas_price: result }))
   }
 
-  update_settings(new_settings, callback) {
+  update_settings = (new_settings, callback) => {
     let settings = { ...this.state.settings, ...new_settings }
     localStorage.setItem('settings', JSON.stringify(settings))
     this.setState({ settings: settings }, callback)
   }
 
-  color_at(x, y) {
+  color_at = (x, y) => {
     let buffer_coords = WorldToCanvas.to_buffer(x, y, this.state.canvas_size)
     let color_data = this.pixel_buffer_ctx.getImageData(buffer_coords.x, buffer_coords.y, 1, 1).data
     color_data[3] = 255
     return ColorUtils.intArrayToHex(color_data)
   }
 
-  pixel_to_paint(pixel_at_pointer) {
+  pixel_to_paint = pixel_at_pointer => {
     return pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
   }
 
-  selected_pixel_in_batch(pixel_at_pointer) {
+  selected_pixel_in_batch = pixel_at_pointer => {
     pixel_at_pointer = pixel_at_pointer || this.pixel_at_pointer()
     return this.state.batch_paint.findIndex(p => p.x === pixel_at_pointer.x && p.y === pixel_at_pointer.y)
   }
 
-  batch_paint_full(pixel_at_pointer) {
+  batch_paint_full = pixel_at_pointer => {
     if (!this.state.batch_paint.length)
       return false
     return this.selected_pixel_in_batch(pixel_at_pointer) === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
-  batch_remove(i) {
+  batch_remove = i => {
     let removed_pixel = this.state.batch_paint[i]
     this.remove_preview([removed_pixel])
     this.setState(prev_state => {
@@ -575,7 +576,7 @@ class App extends Component {
     })
   }
 
-  paint(e) {
+  paint = e => {
     e.preventDefault()
     if (this.state.account) {
       let batch_length = this.state.batch_paint.length
@@ -589,24 +590,24 @@ class App extends Component {
       alert('No account detected, unlock metamask')
   }
 
-  store_pending_tx() {
+  store_pending_tx = () => {
     this.setState(prev_state => {
       const temp = [...prev_state.pending_txs, { pixels: prev_state.batch_paint, caller: prev_state.account }]
       return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
 
-  update_pending_txs(pusher_events) {
+  update_pending_txs = pusher_events => {
     this.setState(prev_state => {
       return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, pusher_events) }
     }, this.update_pending_buffer)
   }
 
-  toggle_preview_pending_txs() {
+  toggle_preview_pending_txs = () => {
     this.update_settings({ preview_pending_txs: !this.state.settings.preview_pending_txs }, this.redraw)
   }
 
-  paint_many(batch_length) {
+  paint_many = batch_length => {
     let indexes = []
     let colors = this.state.batch_paint.map((pixel) => {
       indexes.push(pixel.contract_index())
@@ -615,22 +616,22 @@ class App extends Component {
     return this.contract_instance.BatchPaint(batch_length, indexes, colors, this.paint_options())
   }
 
-  paint_one(pixel) {
+  paint_one = pixel => {
     return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
   }
 
-  paint_options() {
+  paint_options = () => {
     return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint) }
   }
 
-  clear_batch(e) {
+  clear_batch = e => {
     if (e)
       e.preventDefault()
     this.remove_preview(this.state.batch_paint)
     this.setState({ batch_paint: []})
   }
 
-  add_to_batch(pixel_at_pointer) {
+  add_to_batch = pixel_at_pointer => {
     let p = this.pixel_to_paint(pixel_at_pointer)
     if (this.batch_paint_full(pixel_at_pointer))
       return
@@ -645,40 +646,45 @@ class App extends Component {
     })
   }
   
-  thresholds_fetched() {
+  thresholds_fetched = () => {
     return this.state.thresholds.length
   }
   
-  update_current_color(new_color) {
+  update_current_color = new_color => {
     this.setState({ current_color: new_color.rgb })
   }
  
-  on_alt_down() {
+  on_alt_down = () => {
     this.setState(prev_state => {
       return { keys_down: { ...prev_state.keys_down, alt: true } }
     })
   }
 
-  on_alt_up() {
+  on_alt_up = () => {
     this.setState(prev_state => {
       return { keys_down: { ...prev_state.keys_down, alt: false } }
     })
   }
 
-  toggle_events(e) {
+  toggle_events = e => {
     e.preventDefault()
     let new_size = this.state.settings.show_events ? this.state.initial_viewport_size : this.state.with_events_viewport_size
     this.resize_viewport(new_size)
     this.update_settings({ show_events: !this.state.settings.show_events })
   }
 
-  resize_viewport(new_size) {
+  resize_viewport = new_size => {
     this.setState({ viewport_size: new_size }, this.redraw)
   }
 
-  clear_local_storage(e) {
+  clear_local_storage = e => {
     e.preventDefault()
     this.update_settings(this.default_settings)
+  }
+
+  select_tool = (tool) => {
+    this.holding_click = false
+    this.setState({ current_tool: tool })
   }
 
   render() {
@@ -701,7 +707,7 @@ class App extends Component {
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
-        <KeyListener on_alt_down={this.on_alt_down.bind(this)} on_alt_up={this.on_alt_up.bind(this)}>
+        <KeyListener on_alt_down={this.on_alt_down} on_alt_up={this.on_alt_up}>
           <Navbar>
             <Navbar.Header>
               <Navbar.Brand>
@@ -718,23 +724,24 @@ class App extends Component {
           <main>
             <Grid fluid={true}>
               <Col md={3}>
-                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings.bind(this)} on_color_update={this.update_current_color.bind(this)} />
+                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
+                <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} />
                 <p>Tip: you can pick a color from the canvas with Alt + click</p>
                 {block_info}
-                <Button onClick={this.clear_local_storage.bind(this)}>temporal: limpiar local storage</Button>
-                <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
-                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
+                <Button onClick={this.clear_local_storage}>temporal: limpiar local storage</Button>
+                <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
+                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} on_batch_remove={this.batch_remove} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
               </Col>
               <Col md={this.state.settings.show_events ? 7 : 9}>
                 <div className='canvas-container' style={this.state.viewport_size}>
                   <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
-                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
-                  <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
+                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
+                  <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
                   <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                 </div>
               </Col>
-              <SlideoutPanel on_tab_click={this.toggle_events.bind(this)} expand={this.state.settings.show_events}>
-                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
+              <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events}>
+                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
               </SlideoutPanel>
             </Grid>
           </main>
