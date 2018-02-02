@@ -1,0 +1,28 @@
+.material-picker {
+  padding: 0;
+  margin: 16px;
+}
+
+.color-picker-container {
+  border: 1px solid #000000;
+}
+
+.popover-color-picker {
+  width: 540px;
+  max-width: none !important;
+}
+
+.popover-color-picker .photoshop-picker {
+  box-shadow: none !important;
+  background: none !important;
+  border: none !important;
+}
+
+.popover-color-picker .photoshop-picker .flexbox-fix .flexbox-fix div {
+  box-shadow: none !important;
+}
+
+/* hide color picker title div */
+.popover-color-picker .photoshop-picker > div:first-child {
+  display: none !important;
+}

@@ -2,9 +2,8 @@
 import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
-import { CirclePicker, MaterialPicker, PhotoshopPicker } from 'react-color'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem, Button, OverlayTrigger, Popover } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
 import Pixel from './Pixel'
 import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
@@ -27,6 +26,7 @@ import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
 import SlideoutPanel from './SlideoutPanel'
+import Palette from './Palette'
 const contract = require('truffle-contract')
 
 import './css/oswald.css'
@@ -82,7 +82,6 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.click_timer_in_progress = true
-    this.default_colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"]
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -677,31 +676,6 @@ class App extends Component {
     this.setState({ viewport_size: new_size }, this.redraw)
   }
 
-  hide_color_picker() {
-    this.color_picker_popover.hide()
-  }
-
-  update_current_custom_color(new_color) {
-    this.current_custom_color = new_color
-  }
-
-  save_custom_color() {
-    let new_colors = new Set(this.state.settings.custom_colors)
-    new_colors.add(this.current_custom_color.hex) /* IE 11: add doesnt return the Set instance :( */
-    this.update_settings({ custom_colors: [...new_colors] })
-  }
-
-  add_custom_color() {
-    this.hide_color_picker()
-    this.save_custom_color()
-    this.update_current_color(this.current_custom_color)
-  }
-
-  clear_custom_colors(e) {
-    e.preventDefault()
-    this.update_settings({ custom_colors: []})
-  }
-
   clear_local_storage(e) {
     e.preventDefault()
     this.update_settings(this.default_settings)
@@ -718,16 +692,6 @@ class App extends Component {
           { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
       )
-    let advanced_color_picker = (
-      <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
-        <PhotoshopPicker
-          color={ this.state.current_color }
-          onChangeComplete={this.update_current_custom_color.bind(this)}
-          onAccept={this.add_custom_color.bind(this)}
-          onCancel={this.hide_color_picker.bind(this)}
-        />
-      </Popover>
-    )
     return (
       <div className="App">
         <Helmet>
@@ -753,55 +717,25 @@ class App extends Component {
 
           <main>
             <Grid fluid={true}>
-                <Col md={3}>
-                  <div className="color-picker-container">
-                    <Grid fluid={true}>
-                      <Col md={8}>
-                        <Grid fluid={true}>
-                          <CirclePicker color={ this.state.current_color }
-                            onChangeComplete={ this.update_current_color.bind(this) }
-                            colors={this.default_colors}
-                          />
-                          <p>Custom colors</p>
-                          <CirclePicker color={ this.state.current_color }
-                            onChangeComplete={ this.update_current_color.bind(this) }
-                            colors={this.state.settings.custom_colors}
-                          />
-                          <Col md={6}>
-                            <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
-                              <Button bsStyle="primary" block={true}>Add</Button>
-                            </OverlayTrigger>
-                          </Col>
-                          <Col md={6}>
-                            <Button bsStyle="primary" block={true} onClick={this.clear_custom_colors.bind(this)}>Clear</Button>
-                          </Col>
-                        </Grid>
-                      </Col>
-                      <Col md={4}>
-                        <MaterialPicker
-                          color={ this.state.current_color }
-                          onChangeComplete={ this.update_current_color.bind(this) }
-                        />
-                      </Col>
-                    </Grid>
-                  </div>
-                  <p>Tip: you can pick a color from the canvas with Alt + click</p>
-                  {block_info}
-                  <Button onClick={this.clear_local_storage.bind(this)}>temporal: limpiar local storage</Button>
-                  <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
-                  <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
-                </Col>
-                <Col md={this.state.settings.show_events ? 7 : 9}>
-                  <div className='canvas-container' style={this.state.viewport_size}>
-                    <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
-                    <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
-                    <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
-                    <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
-                  </div>
-                </Col>
-                <SlideoutPanel on_tab_click={this.toggle_events.bind(this)} expand={this.state.settings.show_events}>
-                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
-                </SlideoutPanel>
+              <Col md={3}>
+                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings.bind(this)} on_color_update={this.update_current_color.bind(this)} />
+                <p>Tip: you can pick a color from the canvas with Alt + click</p>
+                {block_info}
+                <Button onClick={this.clear_local_storage.bind(this)}>temporal: limpiar local storage</Button>
+                <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs.bind(this)} />
+                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint.bind(this)} on_batch_clear={this.clear_batch.bind(this)} on_batch_remove={this.batch_remove.bind(this)} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full.bind(this)} />
+              </Col>
+              <Col md={this.state.settings.show_events ? 7 : 9}>
+                <div className='canvas-container' style={this.state.viewport_size}>
+                  <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
+                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap.bind(this)} on_mouse_move={this.move_on_minimap.bind(this)} on_mouse_down={this.hold_minimap.bind(this)} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
+                  <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom.bind(this)} on_mouse_down={this.main_canvas_mouse_down.bind(this)} on_mouse_up={this.main_canvas_mouse_up.bind(this)} on_mouse_move={this.main_canvas_mouse_move.bind(this)} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
+                  <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+                </div>
+              </Col>
+              <SlideoutPanel on_tab_click={this.toggle_events.bind(this)} expand={this.state.settings.show_events}>
+                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs.bind(this)} cooldown_formatter={this.cooldown_formatter} />
+              </SlideoutPanel>
             </Grid>
           </main>
         </KeyListener>
