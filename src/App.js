@@ -726,7 +726,6 @@ class App extends Component {
               <Col md={3}>
                 <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
                 <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} />
-                <p>Tip: you can pick a color from the canvas with Alt + click</p>
                 {block_info}
                 <Button onClick={this.clear_local_storage}>temporal: limpiar local storage</Button>
                 <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
