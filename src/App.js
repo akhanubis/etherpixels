@@ -29,10 +29,9 @@ import SlideoutPanel from './SlideoutPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
 const contract = require('truffle-contract')
+import { ElementQueries, ResizeSensor } from 'css-element-queries'
 
-import './css/oswald.css'
-import './css/open-sans.css'
-import './truffle.css'
+import './css/bootstrap.min.css'
 import './App.css'
 
 class App extends Component {
@@ -53,14 +52,6 @@ class App extends Component {
     }
 
     this.state = {
-      initial_viewport_size: {
-        width: 1350,
-        height: 800
-      },
-      with_events_viewport_size: {
-        width: 1060,
-        height: 800
-      },
       minimap_size: {
         width: 150,
         height: 150
@@ -89,15 +80,19 @@ class App extends Component {
     this.bootstraped = 0
     this.max_event_logs_size = 100
     this.max_batch_length = 20
+    this.events_panel_width = 290
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
 
   componentWillMount() {
-    this.setState({ viewport_size: this.state.settings.show_events ? this.state.with_events_viewport_size : this.state.initial_viewport_size })
     getWeb3
     .then(result => this.setState({ web3: result.web3, web3_watch_only: result.watch_only }, this.instantiate_contract))
     .catch(() => console.log('Error finding web3.'))
+  }
+
+  componentDidMount() {
+    ElementQueries.init()
   }
 
   bootstraping() {
@@ -108,15 +103,21 @@ class App extends Component {
     this.bootstraped++
     if (this.bootstraping())
       return
-    this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
-    this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-    let last_cache_index = ContractToWorld.max_index(this.state.genesis_block, this.last_cache_block)
-    this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
-    this.clear_logs()
-    this.start_watching()
-    this.update_pixels([])
+    this.main_canvas.resize(this.continue_bootstrap)
   }
 
+  continue_bootstrap = new_canvas_size => {
+    new ResizeSensor(this.canvas_resize_sensor, this.redraw)
+    this.setState({ viewport_size: new_canvas_size }, () => {
+      this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
+      this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
+      let last_cache_index = ContractToWorld.max_index(this.state.genesis_block, this.last_cache_block)
+      this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
+      this.clear_logs()
+      this.start_watching()
+      this.update_pixels([])  
+    })
+  }
   load_canvases = latest_block => {
     this.load_cache_image(latest_block)
     this.load_clear_image()
@@ -190,6 +191,7 @@ class App extends Component {
   redraw = e => {
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
+    this.main_canvas.resize()
     this.main_canvas.clear()
     this.redraw_ctx(this.pixel_buffer_ctx, destination_top_left, destination_size)
     if (this.state.settings.preview_pending_txs)
@@ -326,6 +328,7 @@ class App extends Component {
       return
     if (e)
       this.current_zoom = { x: e.offsetX, y: e.offsetY }
+    this.zoom_canvas.resize()
     this.zoom_canvas.drawImage(this.main_canvas.canvas,
                       Math.abs(this.current_zoom.x - 5),
                       Math.abs(this.current_zoom.y - 5),
@@ -430,6 +433,7 @@ class App extends Component {
   }
 
   update_minimap = () => {
+    this.minimap_canvas.resize()
     this.minimap_canvas.clear()
     this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
@@ -676,20 +680,12 @@ class App extends Component {
     }
   }
 
-  toggle_events = e => {
-    e.preventDefault()
-    let new_size = this.state.settings.show_events ? this.state.initial_viewport_size : this.state.with_events_viewport_size
-    this.resize_viewport(new_size)
+  toggle_events = () => {
     this.update_settings({ show_events: !this.state.settings.show_events })
   }
 
-  resize_viewport = new_size => {
+  resize_viewport = (new_size) => {
     this.setState({ viewport_size: new_size }, this.redraw)
-  }
-
-  clear_local_storage = e => {
-    e.preventDefault()
-    this.update_settings(this.default_settings)
   }
 
   select_tool = (tool) => {
@@ -698,7 +694,7 @@ class App extends Component {
   }
 
   render() {
-    let block_info = null
+    let block_info = null, canvases = null
     if (this.state.current_block)
       block_info = (
         <div>
@@ -713,45 +709,52 @@ class App extends Component {
         <Helmet>
           <meta charSet="utf-8" />
           <title>Pavlito clabo un clabito</title>
-          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css"></link>
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <KeyListener on_key_update={this.update_key} >
-          <Navbar>
-            <Navbar.Header>
-              <Navbar.Brand>
-                ETHPaint
-              </Navbar.Brand>
-            </Navbar.Header>
-            <Nav pullRight>
-              <NavItem>
-                <AccountStatus account={this.state.account} />
-              </NavItem>
-            </Nav>
-          </Navbar>
-
+          <div ref={n => this.navbar = n}>
+            <Navbar>
+              <Navbar.Header>
+                <Navbar.Brand>
+                  ETHPaint
+                </Navbar.Brand>
+              </Navbar.Header>
+              <Nav pullRight>
+                <NavItem>
+                  <AccountStatus account={this.state.account} />
+                </NavItem>
+              </Nav>
+            </Navbar>
+          </div>
           <main>
-            <Grid fluid={true}>
+            <Grid fluid={true} className='main-container'>
               <Col md={3}>
                 <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
                 <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
                 {block_info}
-                <Button onClick={this.clear_local_storage}>temporal: limpiar local storage</Button>
                 <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
                 <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
               </Col>
-              <Col md={this.state.settings.show_events ? 7 : 9}>
-                <div className='canvas-container' style={this.state.viewport_size}>
-                  <Canvas className='zoom-canvas' aliasing={false} width={this.state.zoom_size.width} height={this.state.zoom_size.height} ref={c => this.zoom_canvas = c} />
-                  <Canvas className='minimap-canvas' on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} width={this.state.minimap_size.width} height={this.state.minimap_size.height} ref={c => this.minimap_canvas = c} />
-                  <Canvas className={`canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} width={this.state.initial_viewport_size.width} height={this.state.initial_viewport_size.height} ref={c => this.main_canvas = c} />
-                  <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+              <Col md={9} className='canvas-col'>
+                <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
+                  <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
+                    <div className='zoom-canvas' style={this.state.zoom_size}>
+                      <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
+                    </div>
+                    <div className='minimap-canvas' style={this.state.minimap_size}>
+                      <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
+                    </div>
+                    <div className='resize-sensor' ref={rs => this.canvas_resize_sensor = rs}>
+                    <Canvas className={`main-canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
+                    </div>
+                    <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+                  </div>
+                  <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width}>
+                    <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
+                  </SlideoutPanel>
                 </div>
               </Col>
-              <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events}>
-                <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
-              </SlideoutPanel>
             </Grid>
           </main>
         </KeyListener>

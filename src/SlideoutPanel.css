@@ -1,13 +1,13 @@
 .slideout-tab-text {
-  transform: rotate(-90deg) translate(-2px, -5px);
+  transform: rotate(-90deg) translate(-40px, 0px);
 }
 
 .slideout {
   cursor: pointer;
   position: fixed;
-  top: 80px;
+  top: calc(50% - 0.5 * 52px);
   width: 45px;
-  padding: 40px 0;
+  height: 100px;
   text-align: center;
   background: #aaaaaa;
   -webkit-transition-duration: 0.3s;
@@ -22,9 +22,10 @@
 .slideout-inner {
   cursor: auto;
   position: fixed;
-  top: 80px;
+  top: 52px;
   background: #aaaaaa;
   width: 290px;
+  height: 100%;
   padding: 25px;
   -webkit-transition-duration: 0.3s;
   -moz-transition-duration: 0.3s;

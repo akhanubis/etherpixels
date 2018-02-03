@@ -10,10 +10,34 @@ button[disabled] {
   width: 100%;
 }
 
-.canvas-container {
-  overflow: hidden;
+.navbar {
+  margin-bottom: 0 !important;
 }
 
 .navbar-right {
   margin-right: 0 !important;
+}
+
+.main-container {
+  padding-right: 0 !important;
+}
+
+.canvas-col {
+  padding: 0;
+}
+
+main {
+  height: calc(100% - 52px); /* navbar */
+}
+
+html, body, #root, .App, .key-wrapper, .main-container, .canvas-col, .resize-sensor {
+  height: 100%;
+}
+
+.canvas-container {
+  margin-right: 0;
+}
+
+.canvas-container.with-events {
+  margin-right: 290px;
 }

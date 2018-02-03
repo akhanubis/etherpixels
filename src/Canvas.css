@@ -1,11 +1,16 @@
+.canvas-outer-container {
+  width: 100%;
+  height: 100%;
+}
+
 .canvas-container {
+  height: 100%;
   position: relative;
-  border: none;
-  border: solid 1px black;
+  overflow: hidden;
   -webkit-transition-duration: 0.3s;
-      -moz-transition-duration: 0.3s;
-      -o-transition-duration: 0.3s;
-      transition-duration: 0.3s;
+  -moz-transition-duration: 0.3s;
+  -o-transition-duration: 0.3s;
+  transition-duration: 0.3s;
 }
 
 .zoom-canvas {
@@ -20,12 +25,17 @@
 
 .minimap-canvas {
   z-index: 2;
-  position: absolute;
+  position: fixed;
   border: solid 1px black;
   bottom: 0;
   right: 0;
   margin-right: 2px;
   margin-bottom: 2px;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
 }
 
 .picking-color {

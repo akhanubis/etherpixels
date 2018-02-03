@@ -34,7 +34,7 @@ var CanvasUtils = (() => {
     let canvas = document.createElement('canvas')
     canvas.width = dimension
     canvas.height = dimension
-    let ctx = canvas.getContext('2d')
+    let ctx = getContext(canvas, false)
     if (must_clear)
       clear(ctx, 'rgba(0, 0, 0, 0)')
     return ctx
@@ -49,7 +49,7 @@ var CanvasUtils = (() => {
 
   var resize_canvas = (old_ctx, new_canvas, new_size, old_max_index, new_max_index, i_data_for_new_pixel, callback) => {
     var offset_w, offset_h
-    let new_context = new_canvas.getContext('2d')
+    let new_context = getContext(new_canvas, old_ctx.imageSmoothingEnabled) /* preserve aliasing */
     new_canvas.width = new_size.width
     new_canvas.height = new_size.height
     clear(new_context, 'rgba(0,0,0,0)')

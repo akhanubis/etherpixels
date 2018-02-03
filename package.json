@@ -55,6 +55,7 @@
     "axios": "^0.17.1",
     "babel-preset-es2015": "^6.24.1",
     "canvas": "^1.6.9",
+    "css-element-queries": "^1.0.1",
     "dotenv": "^2.0.0",
     "left-pad": "^1.2.0",
     "pusher": "^1.5.1",

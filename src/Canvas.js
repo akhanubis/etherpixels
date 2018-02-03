@@ -38,10 +38,27 @@ class Canvas extends Component {
     this.clear_pattern = this.ctx.createPattern(clear_image, 'repeat')
   }
 
+  resize(callback) {
+    let new_size = {
+      width: this.canvas.clientWidth,
+      height: this.canvas.clientHeight
+    }
+    if (this.canvas.width !== new_size.width || this.canvas.height !== new_size.height) {
+     this.canvas.width = new_size.width
+     this.canvas.height = new_size.height
+     /* for some reason I have to reset this after resizing */
+      this.ctx.imageSmoothingEnabled = false
+      if (callback)
+        callback(new_size)
+      else if (this.props.on_resize)
+        this.props.on_resize(new_size)
+    }
+  }
+
   clear() {
     if (this.clear_pattern) {
       this.ctx.fillStyle = this.clear_pattern
-      this.ctx.fillRect(0, 0, this.props.width, this.props.height)
+      this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight)
     }
     else
       CanvasUtils.clear(this.ctx, 'white')
@@ -91,7 +108,7 @@ class Canvas extends Component {
   
   render() {
     return (
-      <canvas className={this.props.className} width={this.props.width} height={this.props.height} ref={(c) => {this.canvas = c}}></canvas>
+      <canvas ref={(c) => {this.canvas = c}}></canvas>
     )
   }
 }
