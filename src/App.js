@@ -43,7 +43,13 @@ class App extends Component {
     this.default_settings = {
       unit: 'gwei',
       preview_pending_txs: true,
-      custom_colors: []
+      custom_colors: [],
+      shortcuts: {
+        paint: 'a',
+        move: 's',
+        erase: 'd',
+        pick_color: 'f'
+      }
     }
 
     this.state = {
@@ -75,7 +81,7 @@ class App extends Component {
       x: 0,
       y: 0,
       pending_txs: [],
-      settings: stored_settings ? JSON.parse(stored_settings) : this.default_settings,
+      settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'move'
     }
     this.processed_logs = new Set()
@@ -420,7 +426,7 @@ class App extends Component {
   }
 
   is_picking_color = () => {
-    return this.state.keys_down.alt
+    return this.state.current_tool === 'pick_color'
   }
 
   update_minimap = () => {
@@ -653,16 +659,21 @@ class App extends Component {
     this.setState({ current_color: new_color.rgb })
   }
  
-  on_alt_down = () => {
+  update_key = key_state => {
     this.setState(prev_state => {
-      return { keys_down: { ...prev_state.keys_down, alt: true } }
-    })
+      return { keys_down: { ...prev_state.keys_down, ...key_state } }
+    }, this.check_for_shortcuts)
   }
 
-  on_alt_up = () => {
-    this.setState(prev_state => {
-      return { keys_down: { ...prev_state.keys_down, alt: false } }
-    })
+  check_for_shortcuts = () => {
+    for (var tool in this.state.settings.shortcuts) {
+      if (!this.state.settings.shortcuts.hasOwnProperty(tool)) continue
+      let shortcut = this.state.settings.shortcuts[tool]
+      if (this.state.keys_down[shortcut]) {
+        this.select_tool(tool)
+        break
+      }
+    }
   }
 
   toggle_events = e => {
@@ -706,7 +717,7 @@ class App extends Component {
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
-        <KeyListener on_alt_down={this.on_alt_down} on_alt_up={this.on_alt_up}>
+        <KeyListener on_key_update={this.update_key} >
           <Navbar>
             <Navbar.Header>
               <Navbar.Brand>
@@ -724,7 +735,7 @@ class App extends Component {
             <Grid fluid={true}>
               <Col md={3}>
                 <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
-                <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} />
+                <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
                 {block_info}
                 <Button onClick={this.clear_local_storage}>temporal: limpiar local storage</Button>
                 <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />

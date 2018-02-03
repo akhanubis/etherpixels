@@ -11,18 +11,17 @@ class KeyListener extends Component {
     window.removeEventListener('keyup', this.key_up)
   }
 
+  update_key = (e, state) => {
+    e.preventDefault()
+    this.props.on_key_update({ [e.key]: state })
+  }
+
   key_down = e => {
-    if (e.key === 'Alt') {
-      e.preventDefault()
-      this.props.on_alt_down()
-    }
+    this.update_key(e, true)
   }
 
   key_up = e => {
-    if (e.key === 'Alt') {
-      e.preventDefault()
-      this.props.on_alt_up()
-    }
+    this.update_key(e, false)
   }
 
   render() {
