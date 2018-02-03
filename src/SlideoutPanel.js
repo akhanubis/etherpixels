@@ -46,8 +46,10 @@ class SlideoutPanel extends Component {
 
   render() {
     return (
-      <div className="slideout" onClick={this.click_tab} onMouseEnter={this.start_hover_events_tab} onMouseLeave={this.stop_hover_events_tab} style={this.tab_style()}>
-        <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
+      <div>
+        <div className="slideout" onClick={this.click_tab} onMouseEnter={this.start_hover_events_tab} onMouseLeave={this.stop_hover_events_tab} style={this.tab_style()}>
+          <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
+        </div>
         <div className="slideout-inner" style={this.inner_style()}>
           {this.props.children}
         </div>
