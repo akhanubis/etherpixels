@@ -28,6 +28,7 @@ import AccountStatus from './AccountStatus'
 import SlideoutPanel from './SlideoutPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
+import LastUpdatedTimer from './LastUpdatedTimer'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
 
@@ -118,6 +119,7 @@ class App extends Component {
       this.update_pixels([])  
     })
   }
+
   load_canvases = latest_block => {
     this.load_cache_image(latest_block)
     this.load_clear_image()
@@ -481,7 +483,7 @@ class App extends Component {
     let old_max_index = this.state.max_index
     let new_max_index = ContractToWorld.max_index(this.state.genesis_block, block_number)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
-    this.setState({ current_block: block_number, max_index: new_max_index })
+    this.setState({ current_block: block_number, max_index: new_max_index, last_updated: new Date() })
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
   }
 
@@ -699,7 +701,10 @@ class App extends Component {
       block_info = (
         <div>
           <p>Genesis block: {this.state.genesis_block}</p>
-          <p>Blocknumber: {this.state.current_block}</p>
+          <p>
+            Blocknumber: {this.state.current_block}
+            <LastUpdatedTimer last_updated={this.state.last_updated} />
+          </p>
           <p>Max index: {this.state.max_index}</p>
           { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
