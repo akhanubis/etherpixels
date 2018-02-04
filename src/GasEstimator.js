@@ -1,4 +1,5 @@
 import { PureComponent } from 'react'
+import BigNumber from 'bignumber.js'
 
 class GasEstimator extends PureComponent {
   constructor(props) {
@@ -7,6 +8,10 @@ class GasEstimator extends PureComponent {
     this.gas_per_pixel = 45000
     this.gas_per_extra_new_pixel = 40000
     this.gas_per_extra_pixel = 25000
+  }
+
+  gas_price() {
+    return new BigNumber(this.props.gas_price)
   }
 
   estimate_gas(pixels) {
@@ -21,7 +26,7 @@ class GasEstimator extends PureComponent {
   }
 
   estimate_total(pixels) {
-    return this.props.gas_price.mul(this.estimate_gas(pixels)).add(this.estimate_fee(pixels))
+    return this.gas_price().mul(this.estimate_gas(pixels)).add(this.estimate_fee(pixels))
   }
 
   render() {

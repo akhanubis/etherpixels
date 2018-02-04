@@ -29,6 +29,7 @@ import SlideoutPanel from './SlideoutPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
 import LastUpdatedTimer from './LastUpdatedTimer'
+import BigNumber from 'bignumber.js'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
 
@@ -42,6 +43,7 @@ class App extends Component {
     let stored_settings = localStorage.getItem('settings')
     this.default_settings = {
       unit: 'gwei',
+      gas_price: new BigNumber(1000000000) /* 1 gwei */,
       preview_pending_txs: true,
       custom_colors: [],
       shortcuts: {
@@ -531,15 +533,7 @@ class App extends Component {
         if (this.state.web3.eth.accounts[0] !== this.state.account)
           this.setState({ account: this.state.web3.eth.accounts[0] })
       }, 1000)
-
-      
-      setInterval(this.fetch_gas_price, 60000)
-      this.fetch_gas_price()
     }
-  }
-
-  fetch_gas_price = () => {
-    this.state.web3.eth.getGasPrice((_, result) => this.setState({ gas_price: result }))
   }
 
   update_settings = (new_settings, callback) => {
@@ -692,7 +686,6 @@ class App extends Component {
             <LastUpdatedTimer last_updated={this.state.last_updated} />
           </p>
           <p>Max index: {this.state.max_index}</p>
-          { this.state.gas_price ? (<p>Current gas price: {PriceFormatter.format(this.state.gas_price)}</p>) : null}
         </div>
       )
     return (
@@ -702,7 +695,7 @@ class App extends Component {
           <title>Pavlito clabo un clabito</title>
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
-        <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
+        <GasEstimator gas_price={this.state.settings.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <div ref={n => this.navbar = n}>
           <Navbar>
             <Navbar.Header>

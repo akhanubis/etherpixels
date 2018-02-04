@@ -21,7 +21,7 @@ class PixelBatch extends Component {
       return (
         <div className='batch-container'>
           {this.props.is_full_callback() ? <p>Batch full</p> : null }
-          <p>Batch (total including gas and fees: {PriceFormatter.format(this.total_price())})</p>
+          <p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>
           <div className='batch-inner-container'>
             {
               this.props.batch.map(p => {

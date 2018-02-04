@@ -35,16 +35,16 @@ class PriceFormatter {
     })
   }
 
-  static current_unit_exp() {
-    return this.unit_exps[this.unit]
+  static unit_exp(unit) {
+    return this.unit_exps[unit]
   }
 
   static ether_exp() {
     return this.unit_exps['ether']
   }
 
-  static current_unit_label() {
-    return this.unit_labels[this.unit]
+  static unit_label(unit) {
+    return this.unit_labels[unit]
   }
 
   static set_unit(new_unit) {
@@ -56,8 +56,12 @@ class PriceFormatter {
   }
 
   static format(wei_value) {
+    return this.format_to_unit(wei_value, this.unit)
+  }
+
+  static format_to_unit(wei_value, unit) {
     wei_value = new BigNumber(wei_value)
-    return `${ wei_value.mul(this.current_unit_exp()).toString() } ${ this.current_unit_label() } ($${ this.format_usd_price(wei_value).toFixed(2) })`
+    return `${ wei_value.mul(this.unit_exp(unit)).toString() } ${ this.unit_label(unit) } ($${ this.format_usd_price(wei_value).toFixed(2) })`
   }
 }
 
