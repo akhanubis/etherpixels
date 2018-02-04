@@ -35,6 +35,9 @@ import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import './css/bootstrap.min.css'
 import './App.css'
 
+import LogRocket from 'logrocket'
+LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
+
 class App extends Component {
   constructor(props) {
     super(props)
@@ -531,8 +534,11 @@ class App extends Component {
     if (!this.state.web3_watch_only) {
       /* metamask docs say this is the best way to go about this :shrugs: */
       setInterval(() => {
-        if (this.state.web3.eth.accounts[0] !== this.state.account)
+        if (this.state.web3.eth.accounts[0] !== this.state.account) {
+          if (this.state.web3.eth.accounts[0])
+            LogRocket.identify(this.state.web3.eth.accounts[0])
           this.setState({ account: this.state.web3.eth.accounts[0] })
+        }
       }, 1000)
     }
   }
