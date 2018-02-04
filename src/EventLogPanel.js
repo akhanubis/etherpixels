@@ -1,7 +1,8 @@
-import React, { Component } from 'react'
-import './SlideoutPanel.css'
+import React, { PureComponent } from 'react'
+import EventLog from './EventLog'
+import './EventLogPanel.css'
 
-class SlideoutPanel extends Component {
+class EventLogPanel extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {
@@ -51,11 +52,11 @@ class SlideoutPanel extends Component {
           <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
         </div>
         <div className="slideout-inner" style={this.inner_style()}>
-          {this.props.children}
+          <EventLog event_logs={this.props.event_logs} on_clear={this.props.on_clear} cooldown_formatter={this.props.cooldown_formatter} />
         </div>
       </div>
     )
   }
 }
 
-export default SlideoutPanel
+export default EventLogPanel

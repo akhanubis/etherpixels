@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import './PixelSquare.css'
 
-class PixelSquare extends Component {
+class PixelSquare extends PureComponent {
   render() {
     return <div className="pixel-square" style={{ backgroundColor: this.props.color}}></div>
   }

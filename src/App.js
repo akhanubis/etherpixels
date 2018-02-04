@@ -13,7 +13,6 @@ import WorldToContract from './utils/WorldToContract'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
-import EventLog from './EventLog'
 import PixelPaintedEvent from './PixelPaintedEvent'
 import KeyListener from './KeyListener'
 import axios from 'axios'
@@ -25,7 +24,7 @@ import CooldownFormatter from './CooldownFormatter'
 import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
-import SlideoutPanel from './SlideoutPanel'
+import EventLogPanel from './EventLogPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
 import LastUpdatedTimer from './LastUpdatedTimer'
@@ -292,24 +291,26 @@ class App extends Component {
   }
   
   update_pixels = new_pixels => {
-    for(var i = 0; i < new_pixels.length; i++) {
-      let new_pixel = new_pixels[i]
+    let events_to_push = new_pixels.map(new_pixel => {
       new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
       let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data(), buffer_coords.x, buffer_coords.y)
       this.address_buffer.update_pixel(new_pixel)
-      this.push_event(React.createElement(PixelPaintedEvent, { pixel: new_pixel, cooldown_formatter: this.cooldown_formatter, key: new_pixel.to_key() }))
-    }
+      return React.createElement(PixelPaintedEvent, { pixel: new_pixel, cooldown_formatter: this.cooldown_formatter, key: new_pixel.to_key() })
+    })
+    this.push_events(events_to_push)
     this.redraw()
     this.update_minimap()
   }
   
-  push_event = event => {
+  push_events = events => {
+    if (!events.length)
+      return
     this.setState(prev_state => {
       let temp = [...prev_state.event_logs]
-      temp.unshift(event) 
+      temp.unshift(...events)
       if (temp.length > this.max_event_logs_size)
-        temp.pop()
+        temp = temp.slice(0, this.max_event_logs_size)
       return { event_logs: temp }
     })
   }
@@ -630,11 +631,13 @@ class App extends Component {
     let p = this.pixel_to_paint(pixel_at_pointer)
     if (this.batch_paint_full(pixel_at_pointer))
       return
+    let index_to_insert = this.selected_pixel_in_batch(p)
+    if (index_to_insert === -1)
+      index_to_insert = this.state.batch_paint.length
+    else if (this.state.batch_paint[index_to_insert].color === p.color)
+      return
     this.update_preview_buffer(p)
     this.setState(prev_state => {
-      let index_to_insert = this.selected_pixel_in_batch(p)
-      if (index_to_insert === -1)
-        index_to_insert = prev_state.batch_paint.length
       const temp = [...prev_state.batch_paint]
       temp[index_to_insert] = p
       return { batch_paint: temp }
@@ -733,9 +736,7 @@ class App extends Component {
                   </div>
                   <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                 </div>
-                <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width}>
-                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
-                </SlideoutPanel>
+                <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} cooldown_formatter={this.cooldown_formatter} />
               </div>
             </Col>
           </Grid>

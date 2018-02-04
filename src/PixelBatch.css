@@ -1,25 +1,3 @@
-.batch-pixel-info:after {
-  content:'';
-  display: block;
-  clear: both;
-}
-
-.batch-pixel-info .pixel-square {
-  float: left;
-  margin-top: 0px;
-}
-
-.batch-pixel-info .text {
-  float: left;
-}
-
-.batch-pixel-info .batch-delete {
-  float: right;
-  cursor: pointer;
-  text-decoration: underline;
-  margin-right: 5px;
-}
-
 .batch-container {
   border: 1px solid black;
   border-radius: 5px;

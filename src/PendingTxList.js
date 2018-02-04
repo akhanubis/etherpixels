@@ -1,10 +1,10 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
 import PriceFormatter from './utils/PriceFormatter'
 import { FormGroup, Checkbox } from 'react-bootstrap'
 import './PendingTxList.css'
 
-class PendingTxList extends Component {
+class PendingTxList extends PureComponent {
   constructor(props) {
     super(props)
     this.weak_map_for_keys = new WeakMap()
@@ -16,10 +16,14 @@ class PendingTxList extends Component {
     return this.props.gas_estimator.estimate_total(total_pixels)
   }
 
-  key_for_tx(tx) {
+  key_for_tx = tx => {
     if (!this.weak_map_for_keys.has(tx))
       this.weak_map_for_keys.set(tx, ++this.weak_map_count)
     return this.weak_map_for_keys.get(tx)
+  }
+
+  txs_list = () => {
+    return this.props.pending_txs.map(tx => React.createElement(PixelBatch, { key: this.key_for_tx(tx), batch: tx.pixels, is_full_callback: false, gas_estimator: this.props.gas_estimator }))
   }
 
   render() {
@@ -31,11 +35,7 @@ class PendingTxList extends Component {
             <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
           </FormGroup>
           <div className='pending-txs-inner-container'>
-            {
-              this.props.pending_txs.map(tx => {
-                return <PixelBatch key={this.key_for_tx(tx)} batch={tx.pixels} is_full_callback={() => false} gas_estimator={this.props.gas_estimator} />
-              })
-            }
+            {this.txs_list}
           </div>
         </div>
       )
