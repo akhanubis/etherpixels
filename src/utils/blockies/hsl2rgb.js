@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 // https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
 /**
  * Converts an HSL color value to RGB. Conversion formula

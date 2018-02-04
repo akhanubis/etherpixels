@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 /**
 * A handy class to calculate color values.
 *

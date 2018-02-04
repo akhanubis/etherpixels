@@ -1,3 +1,4 @@
+/* eslint-disable */
 import PNG from './png'
 import hsl2rgb from './hsl2rgb'
 
