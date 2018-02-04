@@ -3,7 +3,7 @@ import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem } from 'react-bootstrap'
 import Pixel from './Pixel'
 import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
@@ -694,7 +694,7 @@ class App extends Component {
   }
 
   render() {
-    let block_info = null, canvases = null
+    let block_info = null
     if (this.state.current_block)
       block_info = (
         <div>
@@ -721,7 +721,7 @@ class App extends Component {
                 </Navbar.Brand>
               </Navbar.Header>
               <Nav pullRight>
-                <NavItem>
+                <NavItem className='account-status'>
                   <AccountStatus account={this.state.account} />
                 </NavItem>
               </Nav>

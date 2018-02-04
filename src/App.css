@@ -27,7 +27,7 @@ button[disabled] {
 }
 
 main {
-  height: calc(100% - 52px); /* navbar */
+  height: calc(100% - 54px); /* navbar */
 }
 
 html, body, #root, .App, .key-wrapper, .main-container, .canvas-col, .resize-sensor {
@@ -40,4 +40,8 @@ html, body, #root, .App, .key-wrapper, .main-container, .canvas-col, .resize-sen
 
 .canvas-container.with-events {
   margin-right: 290px;
+}
+
+.icon-2x {
+  font-size: 2em;
 }

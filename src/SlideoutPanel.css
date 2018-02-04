@@ -5,7 +5,7 @@
 .slideout {
   cursor: pointer;
   position: fixed;
-  top: calc(50% - 0.5 * 52px);
+  top: calc(50% - 0.5 * 54px);
   width: 45px;
   height: 100px;
   text-align: center;
@@ -22,7 +22,7 @@
 .slideout-inner {
   cursor: auto;
   position: fixed;
-  top: 52px;
+  top: 54px;
   background: #aaaaaa;
   width: 290px;
   height: 100%;
