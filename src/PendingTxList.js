@@ -35,7 +35,7 @@ class PendingTxList extends PureComponent {
             <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
           </FormGroup>
           <div className='pending-txs-inner-container'>
-            {this.txs_list}
+            {this.txs_list()}
           </div>
         </div>
       )
