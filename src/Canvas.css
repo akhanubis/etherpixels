@@ -21,6 +21,8 @@
   left: 0;
   margin-left: 2px;
   margin-top: 2px;
+  width: 150px;
+  height: 150px;
 }
 
 .minimap-canvas {
@@ -31,6 +33,8 @@
   right: 0;
   margin-right: 2px;
   margin-bottom: 2px;
+  width: 150px;
+  height: 150px;
 }
 
 canvas {

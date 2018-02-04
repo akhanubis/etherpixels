@@ -63,6 +63,10 @@ class Pixel {
   same_coords(p) {
     return p.x === this.x && p.y === this.y
   }
+
+  to_key() {
+    return `${this.tx}_${this.x}_${this.y}`
+  }
 }
 
 export default Pixel

@@ -3,6 +3,9 @@ import PixelSquare from './PixelSquare'
 import './HoverInfo.css'
 
 class HoverInfo extends Component {
+  /* diff and (one of them is undefined or they don't have the same coords */
+  shouldComponentUpdate = next_props => next_props.pixel !== this.props.pixel && (!next_props.pixel || !this.props.pixel || !next_props.pixel.same_coords(this.props.pixel))
+
   render() {
     if (this.props.pixel) {
       let ownage = this.props.pixel.is_new() ? '' : ` painted by ${this.props.pixel.owner}`

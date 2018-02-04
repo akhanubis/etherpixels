@@ -1,6 +1,6 @@
-import { Component } from 'react'
+import { PureComponent } from 'react'
 
-class GasEstimator extends Component {
+class GasEstimator extends PureComponent {
   constructor(props) {
     super(props)
     this.gas_per_new_pixel = 60000

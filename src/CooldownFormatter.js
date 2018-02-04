@@ -1,6 +1,6 @@
-import { Component } from 'react'
+import { PureComponent } from 'react'
 
-class CooldownFormatter extends Component {
+class CooldownFormatter extends PureComponent {
   format(locked_until) {
     if (locked_until <= this.props.current_block)
       return 'available now'

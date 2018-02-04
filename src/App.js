@@ -14,7 +14,7 @@ import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
 import EventLog from './EventLog'
-import { PixelPaintedEvent, NewPixelEvent } from './CustomEvents'
+import PixelPaintedEvent from './PixelPaintedEvent'
 import KeyListener from './KeyListener'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
@@ -53,17 +53,8 @@ class App extends Component {
     }
 
     this.state = {
-      minimap_size: {
-        width: 150,
-        height: 150
-      },
-      zoom_size: {
-        width: 150,
-        height: 150
-      },
       canvas_size: {},
       web3: null,
-      thresholds: [],
       genesis_block: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
@@ -305,7 +296,7 @@ class App extends Component {
       let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
       this.pixel_buffer_ctx.putImageData(new_pixel.image_data(), buffer_coords.x, buffer_coords.y)
       this.address_buffer.update_pixel(new_pixel)
-      this.push_event(new PixelPaintedEvent(new_pixel))
+      this.push_event(React.createElement(PixelPaintedEvent, { pixel: new_pixel, cooldown_formatter: this.cooldown_formatter, key: new_pixel.to_key() }))
     }
     this.redraw()
     this.update_minimap()
@@ -336,7 +327,7 @@ class App extends Component {
                       Math.abs(this.current_zoom.y - 5),
                       10, 10,
                       0, 0,
-                      this.state.zoom_size.width, this.state.zoom_size.height)
+                      this.zoom_canvas.canvas.width, this.zoom_canvas.canvas.height)
   }
   
   update_hovering_pixel = () => {
@@ -441,13 +432,13 @@ class App extends Component {
                       0, 0,
                       this.state.canvas_size.width, this.state.canvas_size.height,
                       0, 0,
-                      this.state.minimap_size.width, this.state.minimap_size.height)
+                      this.minimap_canvas.canvas.width, this.minimap_canvas.canvas.height)
   }
   
   update_from_minimap = e => {
     this.point_at_center = {
-      x: (e.offsetX / this.state.minimap_size.width) * this.state.canvas_size.width,
-      y: (e.offsetY / this.state.minimap_size.height) * this.state.canvas_size.height
+      x: (e.offsetX / this.minimap_canvas.canvas.width) * this.state.canvas_size.width,
+      y: (e.offsetY / this.minimap_canvas.canvas.height) * this.state.canvas_size.height
     }
     this.redraw()
   }
@@ -501,9 +492,8 @@ class App extends Component {
       old_max_index,
       new_max_index,
       CanvasUtils.semitrans_image_data(ImageData),
-      (new_ctx, new_pixels_world_coords, delta_w, delta_h) => {
+      (new_ctx, delta_w, delta_h) => {
         this.pixel_buffer_ctx = new_ctx
-        new_pixels_world_coords.forEach(w_coords => this.push_event(new NewPixelEvent(w_coords)))
         this.setState({ canvas_size: new_size }, () => {
           this.point_at_center.x = this.point_at_center.x + delta_w
           this.point_at_center.y = this.point_at_center.y + delta_h
@@ -657,10 +647,6 @@ class App extends Component {
     })
   }
   
-  thresholds_fetched = () => {
-    return this.state.thresholds.length
-  }
-  
   update_current_color = new_color => {
     this.setState({ current_color: new_color.rgb })
   }
@@ -744,14 +730,14 @@ class App extends Component {
               <Col md={9} className='canvas-col'>
                 <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
                   <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
-                    <div className='zoom-canvas' style={this.state.zoom_size}>
+                    <div className='zoom-canvas'>
                       <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
                     </div>
-                    <div className='minimap-canvas' style={this.state.minimap_size}>
+                    <div className='minimap-canvas'>
                       <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
                     </div>
-                    <div className='resize-sensor' ref={rs => this.canvas_resize_sensor = rs}>
-                    <Canvas className={`main-canvas ${ this.is_picking_color() ? 'picking-color' : ''}`} on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
+                    <div className={`resize-sensor ${ this.is_picking_color() ? 'picking-color' : ''}`} ref={rs => this.canvas_resize_sensor = rs}>
+                      <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
                     </div>
                     <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                   </div>

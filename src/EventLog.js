@@ -1,13 +1,9 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import './EventLog.css'
 
-class EventLog extends Component {
+class EventLog extends PureComponent {
   render() {
-    let logs = null
-    if (this.props.event_logs.length)
-      logs = this.props.event_logs.map(event => event.render(this.props.cooldown_formatter))
-    else
-      logs = "Listening for new events..."
+    let logs = this.props.event_logs.length ? this.props.event_logs : 'Listening for new events...'
     return (
       <div className="events-container">
         <h4>

@@ -1,9 +1,9 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import CanvasUtils from './utils/CanvasUtils'
 import WheelUtils from './utils/WheelUtils'
 import './Canvas.css'
 
-class Canvas extends Component {
+class Canvas extends PureComponent {
   componentDidMount() {
     this.soft_gradient = ["white", "black", "white", "black"]
     this.hard_gradient = ["white", "green", "blue", "red"]
@@ -18,7 +18,7 @@ class Canvas extends Component {
     if (this.props.on_mouse_click)
       this.canvas.addEventListener('click', this.props.on_mouse_click)
     if (this.props.on_mouse_wheel)
-      WheelUtils.events.forEach((e) => { this.canvas.addEventListener(e, this.props.on_mouse_wheel) })
+      WheelUtils.events.forEach(e => this.canvas.addEventListener(e, this.props.on_mouse_wheel))
   }
   
   componentWillUnmount() {
@@ -31,7 +31,7 @@ class Canvas extends Component {
     if (this.props.on_mouse_click)
       this.canvas.removeEventListener('click', this.props.on_mouse_click)
     if (this.props.on_mouse_wheel)
-      WheelUtils.events.forEach((e) => { this.canvas.removeEventListener(e, this.props.on_mouse_wheel) })
+      WheelUtils.events.forEach(e => this.canvas.removeEventListener(e, this.props.on_mouse_wheel))
   }
   
   set_clear_pattern(clear_image) {
@@ -44,9 +44,9 @@ class Canvas extends Component {
       height: this.canvas.clientHeight
     }
     if (this.canvas.width !== new_size.width || this.canvas.height !== new_size.height) {
-     this.canvas.width = new_size.width
-     this.canvas.height = new_size.height
-     /* for some reason I have to reset this after resizing */
+      this.canvas.width = new_size.width
+      this.canvas.height = new_size.height
+      /* for some reason I have to reset this after resizing */
       this.ctx.imageSmoothingEnabled = false
       if (callback)
         callback(new_size)
