@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 
-class KeyListener extends Component {
+class KeyListener extends PureComponent {
   componentDidMount() {
     window.addEventListener('keydown', this.key_down)
     window.addEventListener('keyup', this.key_up)
@@ -12,7 +12,6 @@ class KeyListener extends Component {
   }
 
   update_key = (e, state) => {
-    e.preventDefault()
     this.props.on_key_update({ [e.key]: state })
   }
 
@@ -25,11 +24,7 @@ class KeyListener extends Component {
   }
 
   render() {
-    return (
-      <div className='key-wrapper'>
-        {this.props.children}
-      </div>
-    )
+    return null
   }
 }
 

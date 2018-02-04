@@ -703,52 +703,51 @@ class App extends Component {
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
-        <KeyListener on_key_update={this.update_key} >
-          <div ref={n => this.navbar = n}>
-            <Navbar>
-              <Navbar.Header>
-                <Navbar.Brand>
-                  ETHPaint
-                </Navbar.Brand>
-              </Navbar.Header>
-              <Nav pullRight>
-                <NavItem className='account-status'>
-                  <AccountStatus account={this.state.account} />
-                </NavItem>
-              </Nav>
-            </Navbar>
-          </div>
-          <main>
-            <Grid fluid={true} className='main-container'>
-              <Col md={3}>
-                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
-                <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-                {block_info}
-                <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
-                <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
-              </Col>
-              <Col md={9} className='canvas-col'>
-                <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
-                  <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
-                    <div className='zoom-canvas'>
-                      <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
-                    </div>
-                    <div className='minimap-canvas'>
-                      <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
-                    </div>
-                    <div className={`resize-sensor ${ this.is_picking_color() ? 'picking-color' : ''}`} ref={rs => this.canvas_resize_sensor = rs}>
-                      <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
-                    </div>
-                    <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+        <div ref={n => this.navbar = n}>
+          <Navbar>
+            <Navbar.Header>
+              <Navbar.Brand>
+                ETHPaint
+              </Navbar.Brand>
+            </Navbar.Header>
+            <Nav pullRight>
+              <NavItem className='account-status'>
+                <AccountStatus account={this.state.account} />
+              </NavItem>
+            </Nav>
+          </Navbar>
+        </div>
+        <main>
+          <Grid fluid={true} className='main-container'>
+            <Col md={3}>
+              <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
+              <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+              {block_info}
+              <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
+              <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
+            </Col>
+            <Col md={9} className='canvas-col'>
+              <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
+                <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
+                  <div className='zoom-canvas'>
+                    <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
                   </div>
-                  <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width}>
-                    <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
-                  </SlideoutPanel>
+                  <div className='minimap-canvas'>
+                    <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
+                  </div>
+                  <div className={`resize-sensor ${ this.is_picking_color() ? 'picking-color' : ''}`} ref={rs => this.canvas_resize_sensor = rs}>
+                    <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
+                  </div>
+                  <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
                 </div>
-              </Col>
-            </Grid>
-          </main>
-        </KeyListener>
+                <SlideoutPanel on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width}>
+                  <EventLog event_logs={this.state.event_logs} on_clear={this.clear_logs} cooldown_formatter={this.cooldown_formatter} />
+                </SlideoutPanel>
+              </div>
+            </Col>
+          </Grid>
+        </main>
+        <KeyListener on_key_update={this.update_key} />
       </div>
     )
   }

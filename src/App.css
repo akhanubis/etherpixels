@@ -30,7 +30,7 @@ main {
   height: calc(100% - 54px); /* navbar */
 }
 
-html, body, #root, .App, .key-wrapper, .main-container, .canvas-col, .resize-sensor {
+html, body, #root, .App, .main-container, .canvas-col, .resize-sensor {
   height: 100%;
 }
 

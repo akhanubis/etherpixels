@@ -1,14 +1,11 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { CirclePicker, MaterialPicker, PhotoshopPicker } from 'react-color'
 import { Col, Grid, Button, OverlayTrigger, Popover } from 'react-bootstrap'
 import './Palette.css'
 
-class Palette extends Component {
+class Palette extends PureComponent {
   constructor(props) {
     super(props)
-    this.state = {
-      events_tab_hovered: false
-    }
     this.default_colors = ["#f44336", "#e91e63", "#9c27b0", "#673ab7", "#3f51b5", "#2196f3", "#03a9f4", "#00bcd4", "#009688", "#4caf50", "#8bc34a", "#cddc39", "#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#795548", "#607d8b"]
   }
 
