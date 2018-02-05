@@ -271,13 +271,13 @@ class App extends Component {
     })
     pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
     pusher.subscribe('main').bind('new_tx', data => {
-      this.process_pixels_painted(data.events)
-      this.update_pending_txs(data.events)
+      this.process_pixels_painted(data)
+      this.update_pending_txs(data)
     })    
   }
 
-  process_pixels_painted = (pusher_events) => {
-    var new_pixels = pusher_events.map(event => Pixel.from_event(event))
+  process_pixels_painted = (pusher_tx) => {
+    var new_pixels = pusher_tx.pixels.map(p => Pixel.from_event(pusher_tx.tx, pusher_tx.owner, pusher_tx.locked_until, p))
     this.update_pixels(new_pixels)
   }
   
@@ -596,9 +596,9 @@ class App extends Component {
     }, this.update_pending_buffer)
   }
 
-  update_pending_txs = pusher_events => {
+  update_pending_txs = tx_info => {
     this.setState(prev_state => {
-      return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, pusher_events) }
+      return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, tx_info) }
     }, this.update_pending_buffer)
   }
 

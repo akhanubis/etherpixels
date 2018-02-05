@@ -13,19 +13,19 @@ class Pixel {
     this.index = index
   }
 
-  static from_event(event) {
+  static from_event(tx, owner, locked_until, event) {
     let i = event.i
     let coords = new ContractToWorld(i).get_coords()
     let p = new this(
       coords.x,
       coords.y,
       ColorUtils.bytes3ToHex(event.color),
-      event.owner,
-      event.locked_until,
+      owner,
+      locked_until,
       null,
       i
     )
-    p.tx = event.tx
+    p.tx = tx
     return p
   }
 
