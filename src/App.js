@@ -226,7 +226,7 @@ class App extends Component {
 
   outline_pixel = (world_pixel, soft) => {
     let viewport_coords = WorldToCanvas.to_viewport(world_pixel, this.state.canvas_size, this.point_at_center, this.current_wheel_zoom, this.state.viewport_size)
-    this.main_canvas.outline(viewport_coords.x, viewport_coords.y, this.current_wheel_zoom, this.current_wheel_zoom, soft)
+    this.main_canvas.outline(viewport_coords.x - 2, viewport_coords.y - 2, this.current_wheel_zoom + 4, this.current_wheel_zoom + 4, soft)
   }
 
   outline_hovering_pixel = () => {
