@@ -364,8 +364,7 @@ class App extends Component {
 
   main_canvas_mouse_down = e => {
     e.preventDefault()
-    this.holding_click = true
-    if (this.tool_selected('move'))
+    if (this.dragging_canvas(e))
       this.start_dragging()
     else
       this.start_painting()
@@ -375,10 +374,10 @@ class App extends Component {
     if (!this.point_at_center)
       return
     this.mouse_position = { x: e.offsetX, y: e.offsetY }
-    if (this.dragging_canvas())
+    if (this.dragging_canvas(e))
       this.drag()
     else
-      if (this.holding_click)
+      if (this.left_click_pressed(e))
         this.start_painting()
       this.update_zoom(e)
     this.update_hovering_pixel()
@@ -386,22 +385,20 @@ class App extends Component {
 
   main_canvas_mouse_up = e => {
     e.preventDefault()
-    this.holding_click = false
-    this.stop_dragging()
+    if (this.dragging_canvas(e))
+      this.drag()
   }
 
   tool_selected = tool => this.state.current_tool === tool
 
-  dragging_canvas = () => this.tool_selected('move') && this.holding_click
+  wheel_pressed = e => e.buttons & 4
+
+  left_click_pressed = e => e.buttons & 1
+
+  dragging_canvas = e => this.wheel_pressed(e) || (this.tool_selected('move') && this.left_click_pressed(e))
 
   start_dragging = () => {
-    if (this.tool_selected('move'))
-      this.drag_start = this.mouse_position
-  }
-
-  stop_dragging = () => {
-    if (this.tool_selected('move'))
-      this.drag()
+    this.drag_start = this.mouse_position
   }
 
   start_painting = () => {
