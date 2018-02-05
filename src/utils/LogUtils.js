@@ -1,39 +1,25 @@
 var LogUtils = (() => {
-  var to_event = log => {
-    return {
+  var to_sorted_event = (sorted, log) => {
+    sorted[log.transactionHash] = sorted[log.transactionHash] || []
+    sorted[log.transactionHash].push({
       i: log.args.i.toNumber(),
       owner: log.args.new_owner,
       color: log.args.new_color,
       locked_until: log.args.locked_until.toNumber(),
-      tx: log.transactionHash,
-      log_index: log.logIndex
-    }
+      tx: log.transactionHash
+    })
   }
   
-  var to_events = logs => {
-    return logs.map(l => to_event(l))
-  }
-
   var remaining_txs = (pending_txs, pusher_events) => {
-    let events_per_tx = pusher_events.reduce((grouped, e) => {
-      grouped[e.tx] = grouped[e.tx] || {}
-      grouped[e.tx].indexes = grouped[e.tx].indexes || []
-      grouped[e.tx].indexes.push(e.i)
-      grouped[e.tx].caller = e.owner
-      return grouped
-    }, {})
-    events_per_tx = Object.keys(events_per_tx).map(key => events_per_tx[key])
+    let indexes = pusher_events.map(e => e.i)
     return pending_txs.filter(pending_tx => {
-      /* take out the txs that were sent by the same account and referencing the same pixels than one of the pusher txs */
-      return !events_per_tx.some(event_tx => {
-        return event_tx.caller === pending_tx.caller && event_tx.indexes.length === pending_tx.pixels.length && event_tx.indexes.every(i => pending_tx.pixels.find(p => p.index === i))
-      })
+      /* take out the tx that was sent by the same account and referencing the same pixels than the one given */
+      return !(pusher_events[0].owner === pending_tx.caller && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i))) 
     })
   }
   
   return {
-    to_events: to_events,
-    to_event: to_event,
+    to_sorted_event: to_sorted_event,
     remaining_txs: remaining_txs
   }
 })()

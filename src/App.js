@@ -71,7 +71,6 @@ class App extends Component {
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'move'
     }
-    this.processed_logs = new Set()
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 100
@@ -265,31 +264,20 @@ class App extends Component {
     }
   }
   
-  new_log = (tx_hash, log_index) => {
-    let log_id = `${tx_hash}-${log_index}`
-    let new_log = !this.processed_logs.has(log_id)
-    this.processed_logs.add(log_id)
-    return new_log
-  }
-  
   start_watching = () => {
     let pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
       encrypted: true
     })
-    pusher.subscribe('main').bind('new_block', data => {
-      this.update_block_number(data.new_block)
+    pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
+    pusher.subscribe('main').bind('new_tx', data => {
       this.process_pixels_painted(data.events)
       this.update_pending_txs(data.events)
     })    
   }
 
-  process_pixels_painted = pusher_events => {
-    var new_pixels = pusher_events.reduce((pixel_data, event) => {
-      if (this.new_log(event.tx, event.log_index))
-        pixel_data.push(Pixel.from_event(event))
-      return pixel_data
-    }, [])
+  process_pixels_painted = (pusher_events) => {
+    var new_pixels = pusher_events.map(event => Pixel.from_event(event))
     this.update_pixels(new_pixels)
   }
   
