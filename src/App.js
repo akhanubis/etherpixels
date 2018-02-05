@@ -632,7 +632,7 @@ class App extends Component {
   }
 
   paint_options = () => {
-    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint), gas_price: this.gas_estimator.gas_price() }
+    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint), gasPrice: this.gas_estimator.gas_price() }
   }
 
   clear_batch = e => {
