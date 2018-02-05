@@ -10,29 +10,38 @@ class Tool extends PureComponent {
 
   selected = () => this.props.current_tool === this.props.id
 
+  labels = {
+      paint: 'Paint',
+      move: 'Move',
+      erase: 'Erase',
+      pick_color: 'Pick color'
+  }
+
+  label = () => this.labels[this.props.id]
+
   tooltip = (
     <Tooltip id="tooltip">
-      Shortcut {this.props.shortcuts[this.props.id]}
+      {this.label()} ({this.props.shortcuts[this.props.id]})
     </Tooltip>
   )
 
   render() {
     return (
       <OverlayTrigger placement="top" overlay={this.tooltip}>
-        <Button bsStyle="primary" active={this.selected()} onClick={this.select} >{this.props.label}</Button>
+        <Button bsStyle="primary" active={this.selected()} onClick={this.select} >{this.label()}</Button>
       </OverlayTrigger>
     )
   }
 }
 
 class ToolSelector extends PureComponent {
+  tools = () => {
+    return this.props.tools.map(t => React.createElement(Tool, { key: t, current_tool: this.props.current_tool, shortcuts: this.props.shortcuts, id: t, on_tool_selected: this.props.on_tool_selected }))
+  }
   render() {
     return (
-      <ButtonToolbar>
-        <Tool current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} label='Paint' id='paint' on_tool_selected={this.props.on_tool_selected} />
-        <Tool current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} label='Move' id='move' on_tool_selected={this.props.on_tool_selected} />
-        <Tool current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} label='Erase' id='erase' on_tool_selected={this.props.on_tool_selected} />
-        <Tool current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} label='Pick color' id='pick_color' on_tool_selected={this.props.on_tool_selected} />
+      <ButtonToolbar className='tools'>
+        {this.tools()}
       </ButtonToolbar>
     )
   }

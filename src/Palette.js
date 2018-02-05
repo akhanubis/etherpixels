@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react'
 import { CirclePicker, MaterialPicker, PhotoshopPicker } from 'react-color'
 import { Col, Grid, Button, OverlayTrigger, Popover } from 'react-bootstrap'
+import ToolSelector from './ToolSelector'
 import './Palette.css'
 
 class Palette extends PureComponent {
@@ -18,9 +19,7 @@ class Palette extends PureComponent {
   }
 
   save_custom_color() {
-    let new_colors = new Set(this.props.custom_colors)
-    new_colors.add(this.current_custom_color.hex) /* IE 11: add doesnt return the Set instance :( */
-    this.props.on_custom_colors_update({ custom_colors: [...new_colors] })
+    this.props.on_custom_color_save(this.current_custom_color.hex)
   }
 
   add_custom_color() {
@@ -29,11 +28,6 @@ class Palette extends PureComponent {
     this.props.on_color_update(this.current_custom_color)
   }
 
-  clear_custom_colors(e) {
-    e.preventDefault()
-    this.props.on_custom_colors_update({ custom_colors: []})
-  }
-  
   render() {
     let advanced_color_picker = (
       <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
@@ -59,13 +53,16 @@ class Palette extends PureComponent {
                 onChangeComplete={ this.props.on_color_update }
                 colors={this.props.custom_colors}
               />
-              <Col md={6}>
+              <Col md={4}>
                 <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
                   <Button bsStyle="primary" block={true}>Add</Button>
                 </OverlayTrigger>
               </Col>
-              <Col md={6}>
-                <Button bsStyle="primary" block={true} onClick={this.clear_custom_colors.bind(this)}>Clear</Button>
+              <Col md={4}>
+                <Button bsStyle="primary" block={true} onClick={this.props.on_custom_colors_clear}>Clear</Button>
+              </Col>
+              <Col md={4}>
+                <ToolSelector tools={this.props.tools} on_tool_selected={this.props.on_tool_selected} current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} />
               </Col>
             </Grid>
           </Col>

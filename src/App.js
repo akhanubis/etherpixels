@@ -425,10 +425,22 @@ class App extends Component {
   pick_color = pixel_at_pointer => {
     let data = this.main_canvas.getImageData(this.mouse_position.x, this.mouse_position.y, 1, 1).data
     this.setState({ current_color: ColorUtils.intArrayToRgb(data) })
+    this.save_custom_color(ColorUtils.intArrayToHex(data))
   }
 
   is_picking_color = () => {
     return this.state.current_tool === 'pick_color'
+  }
+
+  save_custom_color = color => {
+    let new_colors = new Set(this.state.settings.custom_colors)
+    new_colors.add(color) /* IE 11: add doesnt return the Set instance :( */
+    this.update_settings({ custom_colors: [...new_colors] })
+  }
+
+  clear_custom_colors = e => {
+    e.preventDefault()
+    this.update_settings({ custom_colors: []})
   }
 
   update_minimap = () => {
@@ -623,7 +635,7 @@ class App extends Component {
   }
 
   paint_options = () => {
-    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint) }
+    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint), gas_price: this.gas_estimator.gas_price() }
   }
 
   clear_batch = e => {
@@ -694,7 +706,7 @@ class App extends Component {
             Blocknumber: {this.state.current_block}
             <LastUpdatedTimer last_updated={this.state.last_updated} />
           </p>
-          <p>Max index: {this.state.max_index}</p>
+          <p>Pixel supply: {this.state.max_index + 1}</p>
         </div>
       )
     return (
@@ -722,8 +734,8 @@ class App extends Component {
         <main>
           <Grid fluid={true} className='main-container'>
             <Col md={3}>
-              <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_colors_update={this.update_settings} on_color_update={this.update_current_color} />
-              <ToolSelector on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+              <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_colors_clear={this.clear_custom_colors} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+              <ToolSelector tools={['paint', 'move', 'erase']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
               {block_info}
               <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs} />
               <PixelBatch gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} is_full_callback={this.batch_paint_full} />
