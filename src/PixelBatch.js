@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PixelBatchItem from './PixelBatchItem'
-import { Button } from 'react-bootstrap'
+import { Button, Panel, Grid, Col } from 'react-bootstrap'
 import './PixelBatch.css'
 import PriceFormatter from './utils/PriceFormatter'
 
@@ -22,16 +22,34 @@ class PixelBatch extends PureComponent {
   }
 
   render() {
-    if (this.props.batch.length) {
+    let batch_length = this.props.batch.length
+    if (batch_length) {
       return (
-        <div className='batch-container'>
-          {this.props.is_full_callback && this.props.is_full_callback() ? <p>Batch full</p> : null }
-          <p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>
-          <div className='batch-inner-container'>
-            {this.batch_list()}
-          </div>
-          {this.submit_buttons()}
-        </div>
+        <Panel id={this.props.panel_key} eventKey={this.props.panel_key}>
+          <Panel.Heading>
+            <Panel.Title>
+              <Grid fluid>
+                <Col md={9}>
+                  {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_batch_size && batch_length >= this.props.max_batch_size ? ', max reached' : ''})
+                </Col>
+                <Col md={3}>
+                  <Panel.Toggle>
+                    arrow
+                  </Panel.Toggle>
+                </Col>
+              </Grid>
+            </Panel.Title>
+          </Panel.Heading>
+          <Panel.Body collapsible>
+            <div className='batch-container'>
+              <p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>
+              <div className='batch-inner-container'>
+                {this.batch_list()}
+              </div>
+              {this.submit_buttons()}
+            </div>
+          </Panel.Body>
+        </Panel>
       )
     }
     else

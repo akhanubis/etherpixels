@@ -1,7 +1,6 @@
 import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
-import PriceFormatter from './utils/PriceFormatter'
-import { FormGroup, Checkbox } from 'react-bootstrap'
+import { FormGroup, Checkbox, PanelGroup } from 'react-bootstrap'
 import './PendingTxList.css'
 
 class PendingTxList extends PureComponent {
@@ -9,9 +8,14 @@ class PendingTxList extends PureComponent {
     super(props)
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
+    this.state = {
+      active_key: 'draft'
+    }
   }
 
-  total_price() {
+  handle_select = new_key => this.setState({ active_key: new_key })
+
+  total_price = () => {
     let total_pixels = this.props.pending_txs.reduce((total, tx) => total.concat(tx.pixels), [])
     return this.props.gas_estimator.estimate_total(total_pixels)
   }
@@ -23,24 +27,24 @@ class PendingTxList extends PureComponent {
   }
 
   txs_list = () => {
-    return this.props.pending_txs.map(tx => React.createElement(PixelBatch, { key: this.key_for_tx(tx), batch: tx.pixels, is_full_callback: false, gas_estimator: this.props.gas_estimator }))
+    return this.props.pending_txs.map(tx => {
+      let key = this.key_for_tx(tx)
+      return React.createElement(PixelBatch, { current_panel: this.state.active_key /* trigger a render so collapsing works*/, key: key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas_estimator: this.props.gas_estimator })
+    }).reverse()
   }
 
   render() {
-    if (this.props.pending_txs.length)
-      return (
-        <div className='pending-txs-container'>
-          <p>Pending txs (total without gas: {PriceFormatter.format(this.total_price())})</p>
-          <FormGroup>
-            <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
-          </FormGroup>
-          <div className='pending-txs-inner-container'>
-            {this.txs_list()}
-          </div>
-        </div>
-      )
-    else
-      return null
+    return (
+      <div className='pending-txs-container'>
+        <FormGroup>
+          <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
+        </FormGroup>
+        <PanelGroup accordion id="pending_txs" activeKey={this.state.active_key} onSelect={this.handle_select}>
+          {React.cloneElement(this.props.children, { current_panel: this.state.active_key })}
+          {this.txs_list()}
+        </PanelGroup>
+      </div>
+    )
   }
 }
 

@@ -18,12 +18,7 @@
 }
 
 .pending-txs-container {
-  border: 1px solid black;
   border-radius: 5px;
-}
-
-.pending-txs-container .batch-container .batch-inner-container {
-  position: relative;
+  height: calc(100% - 210px - 40px - 90px);
   overflow-y: auto;
-  height: auto; 
 }
