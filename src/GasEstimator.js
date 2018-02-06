@@ -26,7 +26,10 @@ class GasEstimator extends PureComponent {
   }
 
   estimate_total(pixels) {
-    return this.gas_price().mul(this.estimate_gas(pixels)).add(this.estimate_fee(pixels))
+    if (pixels.length)
+      return this.gas_price().mul(this.estimate_gas(pixels)).add(this.estimate_fee(pixels))
+    else
+      return 0
   }
 
   render() {
