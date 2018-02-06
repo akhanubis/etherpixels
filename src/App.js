@@ -585,8 +585,8 @@ class App extends Component {
     if (this.state.account) {
       let batch_length = this.state.batch_paint.length
       if (batch_length) {
-        (batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)).catch(error => console.log(error))
-        this.store_pending_tx()
+        let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
+        this.store_pending_tx(tx_promise)
         this.clear_batch()
       }
     }
@@ -594,9 +594,10 @@ class App extends Component {
       alert('No account detected, unlock metamask')
   }
 
-  store_pending_tx = () => {
+  store_pending_tx = tx_promise => {
+    tx_promise.catch(() => this.remove_failed_tx(tx_promise))
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { pixels: prev_state.batch_paint, caller: prev_state.account }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, caller: prev_state.account }]
       return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
@@ -604,6 +605,13 @@ class App extends Component {
   update_pending_txs = tx_info => {
     this.setState(prev_state => {
       return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, tx_info) }
+    }, this.update_pending_buffer)
+  }
+
+  remove_failed_tx = tx_promise => {
+    console.log("Tx failed")
+    this.setState(prev_state => {
+      return { pending_txs: prev_state.pending_txs.filter(tx => tx.promise !== tx_promise) }
     }, this.update_pending_buffer)
   }
 
