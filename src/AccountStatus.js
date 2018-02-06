@@ -15,7 +15,7 @@ class AccountStatus extends PureComponent {
   account_tooltip = () => {
     return (
       <Tooltip id="tooltip">
-        Using {this.props.account.substr(0, 10)}...
+        Using {this.props.account.substr(0, 7)}...{this.props.account.substr(37, 5)}
       </Tooltip> 
     )
   }
