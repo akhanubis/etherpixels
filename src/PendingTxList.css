@@ -19,6 +19,5 @@
 
 .pending-txs-container {
   border-radius: 5px;
-  height: calc(100% - 210px - 40px - 90px);
   overflow-y: auto;
 }

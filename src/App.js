@@ -90,6 +90,8 @@ class App extends Component {
     ElementQueries.init()
   }
 
+  update_palette_height = new_height => this.setState({ current_palette_height: new_height })
+
   bootstraping() {
     return this.bootstraped < this.bootstrap_steps
   }
@@ -688,7 +690,7 @@ class App extends Component {
     let block_info = null
     if (this.state.current_block)
       block_info = (
-        <div>
+        <div className="block-info">
           <p>Genesis block: {this.state.genesis_block}</p>
           <p>
             Blocknumber: {this.state.current_block}
@@ -722,10 +724,12 @@ class App extends Component {
         <main>
           <Grid fluid={true} className='main-container'>
             <Col md={3} className='side-col'>
-              <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_colors_clear={this.clear_custom_colors} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+              <div className='palette-container' style={{height: this.state.current_palette_height}}>
+                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_colors_clear={this.clear_custom_colors} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
+              </div>
               <ToolSelector tools={['paint', 'move', 'erase']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
               {block_info}
-              <PendingTxList pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
+              <PendingTxList palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
                 <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
               </PendingTxList>
             </Col>

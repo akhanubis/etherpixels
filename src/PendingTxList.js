@@ -33,9 +33,13 @@ class PendingTxList extends PureComponent {
     }).reverse()
   }
 
+  custom_height = () => {
+    return { height: `calc(100% - ${this.props.palette_height}px - 40px - 90px)`}
+  }
+
   render() {
     return (
-      <div className='pending-txs-container'>
+      <div className='pending-txs-container' style={this.custom_height()}>
         <FormGroup>
           <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
         </FormGroup>

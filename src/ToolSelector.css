@@ -1,3 +1,7 @@
+.tools {
+  height: 40px;
+}
+
 .tools button:focus {
   background-color: #337ab7;
 }
