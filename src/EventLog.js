@@ -32,14 +32,8 @@ class EventLog extends PureComponent {
   render() {
     let logs = this.rendered_txs.length ? this.rendered_txs : 'Listening for new transactions...'
     return (
-      <div className="events-container">
-        <h4>
-          <span>Latest events</span>
-          <div className='clear' onClick={this.props.on_clear}>clear</div>
-        </h4>
-        <div className="tx-panel-container">
-            {logs}
-        </div>
+      <div className="tx-panel-container">
+          {logs}
       </div>
     )
   }

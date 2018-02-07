@@ -1,12 +1,14 @@
 import React, { PureComponent } from 'react'
 import EventLog from './EventLog'
+import { FormGroup, Checkbox } from 'react-bootstrap'
 import './EventLogPanel.css'
 
 class EventLogPanel extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {
-      events_tab_hovered: false
+      events_tab_hovered: false,
+      filtered: false
     }
     this.hover_distance = 10
   }
@@ -45,14 +47,41 @@ class EventLogPanel extends PureComponent {
     this.props.on_tab_click()
   }
 
+  account_label = () => `${this.props.account.substr(0, 7)}...${this.props.account.substr(37, 5)}`
+
+  toggle_filter = () => this.setState(prev_state => ({ filtered: !prev_state.filtered }))
+
+  dummy_fn = _ => true
+
+  filter_fn = l => l.owner === this.props.account
+
+  filtered_logs = () => {
+    let filter_fn = this.state.filtered ? this.filter_fn : this.dummy_fn
+    return this.props.event_logs.filter(filter_fn)
+  }
+
   render() {
+    let filter_html = null
+    if (this.props.account)
+      filter_html = (
+        <FormGroup>
+          <Checkbox inline checked={this.state.filtered} onChange={this.toggle_filter}> Limit to {this.account_label()} </Checkbox>
+        </FormGroup>
+      )
     return (
       <div>
         <div className="slideout" onClick={this.click_tab} onMouseEnter={this.start_hover_events_tab} onMouseLeave={this.stop_hover_events_tab} style={this.tab_style()}>
           <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
         </div>
         <div className="slideout-inner" style={this.inner_style()}>
-          <EventLog txs={this.props.event_logs} on_clear={this.props.on_clear} cooldown_formatter={this.props.cooldown_formatter} />
+          <div className="events-container">
+            <h4>
+              <span>Latest events</span>
+              <div className='clear' onClick={this.props.on_clear}>clear</div>
+              {filter_html}
+            </h4>
+            <EventLog txs={this.filtered_logs()} />
+          </div>          
         </div>
       </div>
     )
