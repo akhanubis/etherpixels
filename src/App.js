@@ -181,6 +181,7 @@ class App extends Component {
     this.pixel_buffer_ctx = CanvasUtils.new_canvas(dimension)
     this.preview_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
     this.pending_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
+    this.empty_canvas_ctx = CanvasUtils.new_canvas(dimension, true)
   }
 
   redraw_ctx = (ctx, destination_top_left, destination_size) => {
@@ -197,14 +198,16 @@ class App extends Component {
     this.main_canvas.resize()
     this.main_canvas.clear()
     this.redraw_ctx(this.pixel_buffer_ctx, destination_top_left, destination_size)
-    if (this.state.settings.preview_pending_txs)
+    if (this.state.settings.preview_pending_txs) {
       this.redraw_ctx(this.pending_buffer_ctx, destination_top_left, destination_size)
-    this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
+      this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
+    }
     this.update_zoom(e)
     this.outline_hovering_pixel()
   }
   
   put_pixels_in_buffer = (pixels, ctx) => {
+    ctx.putImageData(this.empty_canvas_data, 0, 0)
     pixels.forEach(p => {
       let b_coords = WorldToCanvas.to_buffer(p.x, p.y, ctx.canvas)
       ctx.putImageData(p.image_data(), b_coords.x, b_coords.y)
@@ -212,23 +215,13 @@ class App extends Component {
     this.redraw()
   }
 
-  update_preview_buffer = pixel => {
-    this.put_pixels_in_buffer([pixel], this.preview_buffer_ctx)
+  update_preview_buffer = () => {
+    this.put_pixels_in_buffer(this.state.batch_paint, this.preview_buffer_ctx)
   }
 
   update_pending_buffer = () => {
-    CanvasUtils.clear(this.pending_buffer_ctx, 'rgba(0,0,0,0)')
-    this.state.pending_txs.forEach(tx => {
-      this.put_pixels_in_buffer(tx.pixels, this.pending_buffer_ctx)
-    })
-  }
-  
-  remove_preview = pixels => {
-    pixels.forEach(p => {
-      let b_coords = WorldToCanvas.to_buffer(p.x, p.y, this.preview_buffer_ctx.canvas)
-      this.preview_buffer_ctx.putImageData(CanvasUtils.transparent_image_data(ImageData), b_coords.x, b_coords.y)
-    })
-    this.redraw()
+    let pixels = this.state.pending_txs.reduce((a, tx) => a.concat(tx.pixels), [])
+    this.put_pixels_in_buffer(pixels, this.pending_buffer_ctx)
   }
 
   outline_pixel = (world_pixel, soft) => {
@@ -498,6 +491,8 @@ class App extends Component {
   resize_pixel_buffer = (new_size, old_max_index, new_max_index) => {
     this.preview_buffer_ctx = this.resize_secondary_buffer(this.preview_buffer_ctx, new_size.width)
     this.pending_buffer_ctx = this.resize_secondary_buffer(this.pending_buffer_ctx, new_size.width)
+    this.empty_canvas_ctx = this.resize_secondary_buffer(this.empty_canvas_ctx, new_size.width)
+    this.empty_canvas_data = this.empty_canvas_ctx.getImageData(0, 0, new_size.width, new_size.height)
     CanvasUtils.resize_canvas(
       this.pixel_buffer_ctx,
       document.createElement('canvas'),
@@ -596,10 +591,9 @@ class App extends Component {
 
   remove_from_batch = pixel => {
     this.pending_tx_list.expand_draft()
-    this.remove_preview([pixel])
     this.setState(prev_state => {
       return { batch_paint: prev_state.batch_paint.filter(p => !p.same_coords(pixel)) }
-    })
+    }, this.update_preview_buffer)
   }
 
   paint = e => {
@@ -623,7 +617,7 @@ class App extends Component {
   }
 
   store_pending_tx = tx_promise => {
-    tx_promise.catch((e) => this.remove_failed_tx(tx_promise))
+    tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
     this.setState(prev_state => {
       const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), caller: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
@@ -676,8 +670,7 @@ class App extends Component {
   clear_batch = e => {
     if (e)
       e.preventDefault()
-    this.remove_preview(this.state.batch_paint)
-    this.setState({ batch_paint: []})
+    this.setState({ batch_paint: []}, this.update_preview_buffer)
   }
 
   add_to_batch = pixel_at_pointer => {
@@ -690,12 +683,11 @@ class App extends Component {
     else if (this.state.batch_paint[index_to_insert].color === p.color)
       return
     this.pending_tx_list.expand_draft()
-    this.update_preview_buffer(p)
     this.setState(prev_state => {
       const temp = [...prev_state.batch_paint]
       temp[index_to_insert] = p
       return { batch_paint: temp }
-    })
+    }, this.update_preview_buffer)
   }
   
   update_current_color = new_color => {
