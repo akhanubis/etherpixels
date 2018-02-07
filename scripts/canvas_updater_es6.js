@@ -199,7 +199,7 @@ async function process_past_fails(start, end, mined_txs) {
       if (instance.address === tx.to)
         /* not mined transaction present in block => fail */
         if (!mined_txs.includes(tx.hash)) {
-          pusher.trigger(tx.from, 'failed_tx', { hash: tx.hash, gas: tx.gas })
+          pusher.trigger(tx.from, 'failed_tx', { hash: tx.hash, owner: tx.from, gas: tx.gas })
           console.log(`Failed transaction pushed: ${tx.hash}`)
         }
     })

@@ -15,11 +15,11 @@ var LogUtils = (() => {
   var mined_tx_index = (pending_txs, tx_info) => {
     let indexes = tx_info.pixels.map(p => p.i)
     /* find the tx that was sent referencing the same pixels than the one given */
-    return pending_txs.findIndex(pending_tx => indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i)))
+    return pending_txs.findIndex(pending_tx => pending_tx.owner === tx_info.owner && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i)))
   }
 
   var matching_tx_with_gas_index = (pending_txs, tx_info) => {
-    return pending_txs.findIndex(pending_tx => pending_tx.gas === tx_info.gas)
+    return pending_txs.findIndex(pending_tx => pending_tx.owner === tx_info.owner && pending_tx.gas === tx_info.gas)
   }
   
   return {

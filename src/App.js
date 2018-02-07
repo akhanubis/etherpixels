@@ -81,6 +81,7 @@ class App extends Component {
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
+    this.subscribed_accs = new Set()
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -540,12 +541,13 @@ class App extends Component {
       let new_acc = this.state.web3.eth.accounts[0]
       if (new_acc) {
         LogRocket.identify(new_acc)
-        this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
-        this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
-        this.clear_batch()
+        let already_subs = this.subscribed_accs.has(new_acc)
+        if (!already_subs) {
+          this.subscribed_accs.add(new_acc)
+          this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
+          this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
+        }
       }
-      if (this.state.account)
-        this.pusher.unsubscribe(this.state.account)
       this.setState({ account: new_acc })
     }
   }
@@ -620,7 +622,7 @@ class App extends Component {
   store_pending_tx = tx_promise => {
     tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), caller: prev_state.account, key: this.tx_number(tx_promise) }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), owner: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
