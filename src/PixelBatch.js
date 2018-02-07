@@ -31,7 +31,7 @@ class PixelBatch extends PureComponent {
       let price_info = this.props.gas_estimator ? (<p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>) : null
       let link = this.props.link ? (<a target="_blank" href={`https://etherscan.io/tx/${this.props.panel_key}`}>link</a>) : null
       return (
-        <Panel id={this.props.panel_key} eventKey={this.props.panel_key} expanded={this.props.expanded} onToggle={this.handle_toggle}>
+        <Panel id={this.props.panel_key} expanded={this.props.expanded} onToggle={this.handle_toggle}>
           <Panel.Heading>
             <Panel.Title>
               <Grid fluid>

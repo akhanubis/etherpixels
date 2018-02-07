@@ -17,3 +17,7 @@
   bottom: 5px;
   right: 20px;
 }
+
+.tx-panel-container .panel, .draft-panel-container .panel {
+  margin-bottom: 0;
+}

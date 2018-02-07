@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
-import { FormGroup, Checkbox, PanelGroup } from 'react-bootstrap'
+import { FormGroup, Checkbox } from 'react-bootstrap'
 import {TransitionMotion, spring } from 'react-motion'
 import './PendingTxList.css'
 
@@ -12,9 +12,11 @@ class PendingTxList extends PureComponent {
     }
   }
 
-  expand_draft = () => this.handle_select('draft')
+  expand_draft = () => this.on_toggle('draft', true)
 
-  handle_select = new_key => this.setState({ active_key: new_key })
+  on_toggle = (toggled_key, expand) => {
+    this.setState({ active_key: expand ? toggled_key : null })
+  }
 
   total_price = () => {
     let total_pixels = this.props.pending_txs.reduce((total, tx) => total.concat(tx.pixels), [])
@@ -48,7 +50,11 @@ class PendingTxList extends PureComponent {
   active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
 
   tx_element = (key, tx) => {
-    return React.createElement(PixelBatch, { current_panel: this.state.active_key /* trigger a render so collapsing works*/, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas_estimator: this.props.gas_estimator })
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas_estimator: this.props.gas_estimator })
+  }
+
+  draft_element = () => {
+    return React.cloneElement(this.props.children, { on_toggle: this.on_toggle, expanded: this.state.active_key === 'draft' })
   }
 
   interpolated_to_css = style => ({ opacity: style.opacity, marginLeft: style.left + '%' })
@@ -59,25 +65,25 @@ class PendingTxList extends PureComponent {
         <FormGroup>
           <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
         </FormGroup>
-        <PanelGroup accordion id="pending_txs" activeKey={this.state.active_key} onSelect={this.handle_select}>
-          {React.cloneElement(this.props.children, { current_panel: this.state.active_key })}
-          <TransitionMotion
-            defaultStyle={this.on_start_style()}
-            willLeave={this.willLeave}
-            willEnter={this.willEnter}
-            styles={this.active_style()}
-          >
-            {interpolatedStyles => (
-              <div>
-                {interpolatedStyles.reverse().map(config => (
-                  <div key={config.key} className="tx-panel-container" style={this.interpolated_to_css(config.style)}>
-                    {this.tx_element(config.key, config.data)}
-                  </div>
-                ))}
-              </div>
-            )}
-          </TransitionMotion>
-        </PanelGroup>
+        <div className="draft-panel-container">
+          {this.draft_element()}
+        </div>
+        <TransitionMotion
+          defaultStyle={this.on_start_style()}
+          willLeave={this.willLeave}
+          willEnter={this.willEnter}
+          styles={this.active_style()}
+        >
+          {interpolatedStyles => (
+            <div>
+              {interpolatedStyles.reverse().map(config => (
+                <div key={config.key} className="tx-panel-container" style={this.interpolated_to_css(config.style)}>
+                  {this.tx_element(config.key, config.data)}
+                </div>
+              ))}
+            </div>
+          )}
+        </TransitionMotion>
       </div>
     )
   }

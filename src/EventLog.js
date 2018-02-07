@@ -37,7 +37,7 @@ class EventLog extends PureComponent {
           <span>Latest events</span>
           <div className='clear' onClick={this.props.on_clear}>clear</div>
         </h4>
-        <div className="events-list">
+        <div className="tx-panel-container">
             {logs}
         </div>
       </div>
