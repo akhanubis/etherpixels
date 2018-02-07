@@ -272,15 +272,18 @@ class App extends Component {
   }
   
   start_watching = () => {
-    let pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
+    this.pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
       encrypted: true
     })
-    pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
-    pusher.subscribe('main').bind('new_tx', data => {
-      this.process_pixels_painted(data)
-      this.remove_mined_tx(data)
-    })    
+    this.pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
+    this.pusher.subscribe('main').bind('mined_tx', this.process_pixels_painted)
+    
+    if (!this.state.web3_watch_only) {
+      /* metamask docs say this is the best way to go about this :shrugs: */
+      setInterval(this.fetch_account, 1000)
+      this.fetch_account()
+    }
   }
 
   process_pixels_painted = (pusher_tx) => {
@@ -534,20 +537,33 @@ class App extends Component {
 
       instance.paint_fee.call().then(fee => this.update_settings({ paint_fee: fee }))
     })
-
-    if (!this.state.web3_watch_only) {
-      /* metamask docs say this is the best way to go about this :shrugs: */
-      setInterval(this.fetch_account, 1000)
-      this.fetch_account()
-    }
   }
 
   fetch_account = () => {
     if (this.state.web3.eth.accounts[0] !== this.state.account) {
-      if (this.state.web3.eth.accounts[0])
-        LogRocket.identify(this.state.web3.eth.accounts[0])
-      this.setState({ account: this.state.web3.eth.accounts[0] })
+      let new_acc = this.state.web3.eth.accounts[0]
+      if (new_acc) {
+        LogRocket.identify(new_acc)
+        this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
+        this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
+        this.clear_batch()
+      }
+      if (this.state.account)
+        this.pusher.unsubscribe(this.state.account)
+      this.setState({ account: new_acc })
     }
+  }
+
+  alert_and_remove_index = i => {
+    if (i !== -1) {
+      Alert.error(`Tx #${this.state.pending_txs[i].key} has failed`)
+      this.remove_pending_tx(i)
+    }
+  }
+
+  handle_failed_tx = data => {
+    let failed_tx_index = LogUtils.matching_tx_with_gas_index(this.state.pending_txs, data)
+    this.alert_and_remove_index(failed_tx_index)
   }
 
   update_settings = (new_settings, callback) => {
@@ -607,9 +623,9 @@ class App extends Component {
   }
 
   store_pending_tx = tx_promise => {
-    tx_promise.catch(() => this.remove_failed_tx(tx_promise))
+    tx_promise.catch((e) => this.remove_failed_tx(tx_promise))
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, caller: prev_state.account, key: this.tx_number(tx_promise) }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), caller: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
@@ -630,12 +646,10 @@ class App extends Component {
     }
   }
 
+  /* handle metamask reject */
   remove_failed_tx = tx_promise => {
     let failed_tx_index = this.state.pending_txs.findIndex(tx => tx.promise === tx_promise)
-    if (failed_tx_index !== -1) {
-      Alert.error(`Tx #${this.state.pending_txs[failed_tx_index].key} has failed`)
-      this.remove_pending_tx(failed_tx_index)
-    }
+    this.alert_and_remove_index(failed_tx_index)
   }
 
   toggle_preview_pending_txs = () => {

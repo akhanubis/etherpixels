@@ -101,10 +101,12 @@ let process_pixel_solds = pixel_solds => {
   update_cache()
   pusher.trigger('main', 'new_block', { new_block: current_block })
   console.log('New block pushed')
-  Object.keys(pusher_events).forEach(tx_hash => {
-    pusher.trigger('main', 'new_tx', pusher_events[tx_hash])
+  let tx_hashes = Object.keys(pusher_events)
+  tx_hashes.forEach(tx_hash => {
+    pusher.trigger(['main', pusher_events[tx_hash].owner], 'mined_tx', pusher_events[tx_hash])
     console.log(`Transaction pushed: ${tx_hash}`)
   })
+  return tx_hashes
 }
 
 let update_pixel = log => {
@@ -123,11 +125,9 @@ let update_buffer = log => {
   address_buffer.fill(entry, offset, offset + buffer_entry_size, 'hex')
 }
 
-let pixel_sold_handler = (error, result) => {
-  if (error)
-    console.error(error)
-  else
-    process_pixel_solds(result)
+let pixel_sold_handler = (start, end, result) => {
+  let mined_txs = process_pixel_solds(result)
+  process_past_fails(start, end, mined_txs)
 }
 
 let store_new_index = b_number => {
@@ -163,25 +163,52 @@ let resize_assets = old_i => {
 }
 
 let start_watching = () => {
-  process_past_logs(last_cache_block)
+  process_past_logs(last_cache_block, current_block)
   
   web3.eth.filter("latest").watch((error, block_hash) => {
-    web3.eth.getBlock(block_hash, (error, result) => {
+    web3.eth.getBlock(block_hash, true, (error, result) => {
       if (error)
         console.error(error)
-      else
-        if (result.number > current_block) {
+      else {
+        let safe_number = result.number - process.env.CONFIRMATIONS_NEEDED
+        if (safe_number > current_block) {
           let last_processed_block = current_block
-          process_new_block(result.number)
-          process_past_logs(last_processed_block)
+          process_new_block(safe_number)
+          process_past_logs(last_processed_block + 1, safe_number)
         }
+      }
     })
   })
 }
 
-let process_past_logs = last_processed_block => {
-  console.log(`Fetching events from ${last_processed_block + 1} to ${current_block}`)
-  instance.PixelPainted({}, { fromBlock: last_processed_block + 1, toBlock: current_block }).get(pixel_sold_handler)
+let fetch_block_and_txs = (bn) => {
+  return new Promise(resolve => {
+    console.log(`Fetching txs from block ${bn}...`)
+    web3.eth.getBlock(bn, true, (_, block) => resolve(block))
+  })
+}
+
+/* fetching some blocks behind to make sure I don't get null, related issue: https://github.com/INFURA/infura/issues/43 */
+async function process_past_fails(start, end, mined_txs) {
+  if (end - start > 10)
+    return
+  console.log(`Fetching fails from ${start} to ${end}`)
+  for(var bn = start; bn <= end; bn++) {
+    let block = await fetch_block_and_txs(bn)
+    block.transactions.forEach(tx => {
+      if (instance.address === tx.to)
+        /* not mined transaction present in block => fail */
+        if (!mined_txs.includes(tx.hash)) {
+          pusher.trigger(tx.from, 'failed_tx', { hash: tx.hash, gas: tx.gas })
+          console.log(`Failed transaction pushed: ${tx.hash}`)
+        }
+    })
+  }
+}
+
+let process_past_logs = (start, end) => {
+  console.log(`Fetching events from ${start} to ${end}`)
+  instance.PixelPainted({}, { fromBlock: start, toBlock: end }).get((_, result) => pixel_sold_handler(start, end, result))
 }
 
 let reset_cache = b_number => {
@@ -257,11 +284,12 @@ canvasContract.deployed().then((contract_instance) => {
         if (error)
           throw error
         else {
+          let safe_number = b_number - process.env.CONFIRMATIONS_NEEDED
           if (matching_contract)
-            fetch_pixels(b_number)
+            fetch_pixels(safe_number)
           else {
             console.log('Last cache files point to older contract version, resetting cache...')
-            reset_cache(b_number)
+            reset_cache(safe_number)
           }
           setInterval(() => { console.log("Listening for events...") }, 60000)
         }

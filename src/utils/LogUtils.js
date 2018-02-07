@@ -14,15 +14,18 @@ var LogUtils = (() => {
   
   var mined_tx_index = (pending_txs, tx_info) => {
     let indexes = tx_info.pixels.map(p => p.i)
-    return pending_txs.findIndex(pending_tx => {
-      /* find the tx that was sent by the same account and referencing the same pixels than the one given */
-      return tx_info.owner === pending_tx.caller && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i))
-    })
+    /* find the tx that was sent referencing the same pixels than the one given */
+    return pending_txs.findIndex(pending_tx => indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i)))
+  }
+
+  var matching_tx_with_gas_index = (pending_txs, tx_info) => {
+    return pending_txs.findIndex(pending_tx => pending_tx.gas === tx_info.gas)
   }
   
   return {
     to_sorted_event: to_sorted_event,
-    mined_tx_index: mined_tx_index
+    mined_tx_index: mined_tx_index,
+    matching_tx_with_gas_index: matching_tx_with_gas_index
   }
 })()
 
