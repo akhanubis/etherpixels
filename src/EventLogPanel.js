@@ -52,7 +52,7 @@ class EventLogPanel extends PureComponent {
           <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
         </div>
         <div className="slideout-inner" style={this.inner_style()}>
-          <EventLog event_logs={this.props.event_logs} on_clear={this.props.on_clear} cooldown_formatter={this.props.cooldown_formatter} />
+          <EventLog txs={this.props.event_logs} on_clear={this.props.on_clear} cooldown_formatter={this.props.cooldown_formatter} />
         </div>
       </div>
     )

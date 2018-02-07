@@ -21,11 +21,17 @@ class PixelBatch extends PureComponent {
     return this.props.batch.map(p => React.createElement(PixelBatchItem, { pixel: p, key: `${p.x}_${p.y}_${p.color}_${p.old_color}` }))
   }
 
+  handle_toggle = (expand) => {
+    this.props.on_toggle(this.props.panel_key, expand)
+  }
+
   render() {
     let batch_length = this.props.batch.length
     if (batch_length) {
+      let price_info = this.props.gas_estimator ? (<p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>) : null
+      let link = this.props.link ? (<a target="_blank" href={`https://etherscan.io/tx/${this.props.panel_key}`}>link</a>) : null
       return (
-        <Panel id={this.props.panel_key} eventKey={this.props.panel_key}>
+        <Panel id={this.props.panel_key} eventKey={this.props.panel_key} expanded={this.props.expanded} onToggle={this.handle_toggle}>
           <Panel.Heading>
             <Panel.Title>
               <Grid fluid>
@@ -33,6 +39,7 @@ class PixelBatch extends PureComponent {
                   {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_batch_size && batch_length >= this.props.max_batch_size ? ', max reached' : ''})
                 </Col>
                 <Col md={3}>
+                  {link}
                   <Panel.Toggle>
                     arrow
                   </Panel.Toggle>
@@ -42,7 +49,7 @@ class PixelBatch extends PureComponent {
           </Panel.Heading>
           <Panel.Body collapsible>
             <div className='batch-container'>
-              <p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>
+              {price_info}
               <div className='batch-inner-container'>
                 {this.batch_list()}
               </div>

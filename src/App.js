@@ -76,7 +76,7 @@ class App extends Component {
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
-    this.max_event_logs_size = 100
+    this.max_event_logs_size = 10
     this.max_batch_length = 20
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
@@ -117,7 +117,8 @@ class App extends Component {
       this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
       this.clear_logs()
       this.start_watching()
-      this.update_pixels([])  
+      this.redraw()
+      this.update_minimap()
     })
   }
 
@@ -270,7 +271,7 @@ class App extends Component {
       encrypted: true
     })
     this.pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
-    this.pusher.subscribe('main').bind('mined_tx', this.process_pixels_painted)
+    this.pusher.subscribe('main').bind('mined_tx', this.process_new_tx)
     
     if (!this.state.web3_watch_only) {
       /* metamask docs say this is the best way to go about this :shrugs: */
@@ -279,30 +280,30 @@ class App extends Component {
     }
   }
 
-  process_pixels_painted = (pusher_tx) => {
-    var new_pixels = pusher_tx.pixels.map(p => Pixel.from_event(pusher_tx.tx, pusher_tx.owner, pusher_tx.locked_until, p))
-    this.update_pixels(new_pixels)
+  process_new_tx = pusher_tx => {
+    let event_pixels = this.paint_pixels_from_tx(pusher_tx)
+    pusher_tx.pixels = event_pixels
+    this.add_tx_to_events(pusher_tx)
   }
   
-  update_pixels = new_pixels => {
-    let events_to_push = new_pixels.map(new_pixel => {
-      new_pixel.old_color = this.color_at(new_pixel.x, new_pixel.y)
-      let buffer_coords = WorldToCanvas.to_buffer(new_pixel.x, new_pixel.y, this.state.canvas_size)
-      this.pixel_buffer_ctx.putImageData(new_pixel.image_data(), buffer_coords.x, buffer_coords.y)
-      this.address_buffer.update_pixel(new_pixel)
-      return React.createElement(PixelPaintedEvent, { pixel: new_pixel, cooldown_formatter: this.cooldown_formatter, key: new_pixel.to_key() })
+  paint_pixels_from_tx = tx => {
+    let event_pixels = tx.pixels.map(new_pixel => {
+      let p = Pixel.from_event(tx.owner, tx.locked_until, new_pixel)
+      p.old_color = this.color_at(p.x, p.y)
+      let buffer_coords = WorldToCanvas.to_buffer(p.x, p.y, this.state.canvas_size)
+      this.pixel_buffer_ctx.putImageData(p.image_data(), buffer_coords.x, buffer_coords.y)
+      this.address_buffer.update_pixel(p)
+      return p
     })
-    this.push_events(events_to_push)
     this.redraw()
     this.update_minimap()
+    return event_pixels
   }
   
-  push_events = events => {
-    if (!events.length)
-      return
+  add_tx_to_events = tx => {
     this.setState(prev_state => {
       let temp = [...prev_state.event_logs]
-      temp.unshift(...events)
+      temp.unshift(tx)
       if (temp.length > this.max_event_logs_size)
         temp = temp.slice(0, this.max_event_logs_size)
       return { event_logs: temp }
