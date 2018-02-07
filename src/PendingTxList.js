@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
 import { FormGroup, Checkbox, PanelGroup } from 'react-bootstrap'
-import {TransitionMotion, spring, presets } from 'react-motion'
+import {TransitionMotion, spring } from 'react-motion'
 import './PendingTxList.css'
 
 class PendingTxList extends PureComponent {
@@ -14,6 +14,8 @@ class PendingTxList extends PureComponent {
     }
   }
 
+  expand_draft = () => this.handle_select('draft')
+
   handle_select = new_key => this.setState({ active_key: new_key })
 
   total_price = () => {
@@ -25,13 +27,6 @@ class PendingTxList extends PureComponent {
     if (!this.weak_map_for_keys.has(tx))
       this.weak_map_for_keys.set(tx, ++this.weak_map_count)
     return this.weak_map_for_keys.get(tx) + '' /* JS */
-  }
-
-  txs_list = () => {
-    return this.props.pending_txs.map(tx => {
-      let key = this.key_for_tx(tx)
-      
-    }).reverse()
   }
 
   custom_height = () => {

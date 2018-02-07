@@ -574,6 +574,7 @@ class App extends Component {
   }
 
   remove_from_batch = pixel => {
+    this.pending_tx_list.expand_draft()
     this.remove_preview([pixel])
     this.setState(prev_state => {
       return { batch_paint: prev_state.batch_paint.filter(p => !p.same_coords(pixel)) }
@@ -652,6 +653,7 @@ class App extends Component {
       index_to_insert = this.state.batch_paint.length
     else if (this.state.batch_paint[index_to_insert].color === p.color)
       return
+    this.pending_tx_list.expand_draft()
     this.update_preview_buffer(p)
     this.setState(prev_state => {
       const temp = [...prev_state.batch_paint]
@@ -737,7 +739,7 @@ class App extends Component {
               </div>
               <ToolSelector tools={['paint', 'move', 'erase']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
               {block_info}
-              <PendingTxList palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
+              <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
                 <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
               </PendingTxList>
             </Col>
