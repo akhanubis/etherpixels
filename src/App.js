@@ -31,9 +31,12 @@ import LastUpdatedTimer from './LastUpdatedTimer'
 import BigNumber from 'bignumber.js'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
+import Alert from 'react-s-alert'
 
 import './css/bootstrap.min.css'
 import './App.css'
+import 'react-s-alert/dist/s-alert-default.css'
+import 'react-s-alert/dist/s-alert-css-effects/slide.css'
 
 import LogRocket from 'logrocket'
 LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
@@ -76,6 +79,8 @@ class App extends Component {
     this.max_event_logs_size = 100
     this.max_batch_length = 20
     this.events_panel_width = 290
+    this.weak_map_for_keys = new WeakMap()
+    this.weak_map_count = 0
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -274,7 +279,7 @@ class App extends Component {
     pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
     pusher.subscribe('main').bind('new_tx', data => {
       this.process_pixels_painted(data)
-      this.update_pending_txs(data)
+      this.remove_mined_tx(data)
     })    
   }
 
@@ -595,25 +600,42 @@ class App extends Component {
       alert('No account detected, unlock metamask')
   }
 
+  tx_number = tx => {
+    if (!this.weak_map_for_keys.has(tx))
+      this.weak_map_for_keys.set(tx, ++this.weak_map_count)
+    return this.weak_map_for_keys.get(tx) + '' /* JS */
+  }
+
   store_pending_tx = tx_promise => {
     tx_promise.catch(() => this.remove_failed_tx(tx_promise))
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, caller: prev_state.account }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, caller: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
 
-  update_pending_txs = tx_info => {
+  remove_pending_tx = i => {
     this.setState(prev_state => {
-      return { pending_txs: LogUtils.remaining_txs(prev_state.pending_txs, tx_info) }
+      const temp = [...prev_state.pending_txs]
+      temp.splice(i, 1)
+      return { pending_txs: temp }
     }, this.update_pending_buffer)
   }
 
+  remove_mined_tx = tx_info => {
+    let mined_tx_index = LogUtils.mined_tx_index(this.state.pending_txs, tx_info)
+    if (mined_tx_index !== -1) {
+      Alert.success(`Tx #${this.state.pending_txs[mined_tx_index].key} has been mined`)
+      this.remove_pending_tx(mined_tx_index)
+    }
+  }
+
   remove_failed_tx = tx_promise => {
-    console.log("Tx failed")
-    this.setState(prev_state => {
-      return { pending_txs: prev_state.pending_txs.filter(tx => tx.promise !== tx_promise) }
-    }, this.update_pending_buffer)
+    let failed_tx_index = this.state.pending_txs.findIndex(tx => tx.promise === tx_promise)
+    if (failed_tx_index !== -1) {
+      Alert.error(`Tx #${this.state.pending_txs[failed_tx_index].key} has failed`)
+      this.remove_pending_tx(failed_tx_index)
+    }
   }
 
   toggle_preview_pending_txs = () => {
@@ -762,6 +784,7 @@ class App extends Component {
             </Col>
           </Grid>
         </main>
+        <Alert stack={{limit: 3}} position="top-right" effect="slide" html={false} />
         <KeyListener on_key_update={this.update_key} />
       </div>
     )

@@ -12,17 +12,17 @@ var LogUtils = (() => {
     })
   }
   
-  var remaining_txs = (pending_txs, tx_info) => {
+  var mined_tx_index = (pending_txs, tx_info) => {
     let indexes = tx_info.pixels.map(p => p.i)
-    return pending_txs.filter(pending_tx => {
-      /* take out the tx that was sent by the same account and referencing the same pixels than the one given */
-      return !(tx_info.owner === pending_tx.caller && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i))) 
+    return pending_txs.findIndex(pending_tx => {
+      /* find the tx that was sent by the same account and referencing the same pixels than the one given */
+      return tx_info.owner === pending_tx.caller && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i))
     })
   }
   
   return {
     to_sorted_event: to_sorted_event,
-    remaining_txs: remaining_txs
+    mined_tx_index: mined_tx_index
   }
 })()
 

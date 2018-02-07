@@ -7,8 +7,6 @@ import './PendingTxList.css'
 class PendingTxList extends PureComponent {
   constructor(props) {
     super(props)
-    this.weak_map_for_keys = new WeakMap()
-    this.weak_map_count = 0
     this.state = {
       active_key: 'draft'
     }
@@ -21,12 +19,6 @@ class PendingTxList extends PureComponent {
   total_price = () => {
     let total_pixels = this.props.pending_txs.reduce((total, tx) => total.concat(tx.pixels), [])
     return this.props.gas_estimator.estimate_total(total_pixels)
-  }
-
-  key_for_tx = tx => {
-    if (!this.weak_map_for_keys.has(tx))
-      this.weak_map_for_keys.set(tx, ++this.weak_map_count)
-    return this.weak_map_for_keys.get(tx) + '' /* JS */
   }
 
   custom_height = () => {
@@ -49,11 +41,11 @@ class PendingTxList extends PureComponent {
   }
 
   on_start_style = () => {
-    return this.props.pending_txs.map(tx => ({ data: tx, key: this.key_for_tx(tx), style: { opacity: 0 } }))
+    return this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 0 } }))
   }
 
   /* end of enter anim */
-  active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: this.key_for_tx(tx), style: { opacity: 1, left: spring(0, {stiffness: 66, damping: 14}) } }))
+  active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
 
   tx_element = (key, tx) => {
     return React.createElement(PixelBatch, { current_panel: this.state.active_key /* trigger a render so collapsing works*/, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas_estimator: this.props.gas_estimator })
