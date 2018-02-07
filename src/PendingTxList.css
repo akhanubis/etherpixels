@@ -21,3 +21,7 @@
   border-radius: 5px;
   overflow-y: auto;
 }
+
+.tx-panel-container {
+  width: 100%;
+}
