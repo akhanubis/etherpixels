@@ -1,3 +1,4 @@
+/* heroku usage: heroku run --app app "npm run send_server_message -- --type=type 'message with spaces'" */
 require('dotenv').config({silent: true})
 const Pusher = require('pusher')
 let pusher = new Pusher({
