@@ -1,6 +1,6 @@
 {
   "name": "react-box",
-  "homepage": "http://ethpaint.herokuapp.com",
+  "homepage": "http://ethpaint.firebaseapp.com",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {

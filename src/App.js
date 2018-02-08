@@ -3,7 +3,7 @@ import React, { Component } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem } from 'react-bootstrap'
+import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
 import Pixel from './Pixel'
 import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
@@ -13,7 +13,6 @@ import WorldToContract from './utils/WorldToContract'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
 import PixelBatch from './PixelBatch'
-import PixelPaintedEvent from './PixelPaintedEvent'
 import KeyListener from './KeyListener'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
@@ -32,6 +31,7 @@ import BigNumber from 'bignumber.js'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import Alert from 'react-s-alert'
+import NameUtils from './utils/NameUtils'
 
 import './css/bootstrap.min.css'
 import './App.css'
@@ -131,6 +131,11 @@ class App extends Component {
 
   bucket_url = key => {
     return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
+  }
+
+  submit_name = e => {
+    e.preventDefault()
+    NameUtils.submit_name("my new name", this.state.account, this.state.web3.currentProvider)
   }
 
   load_addresses_buffer = () => {
@@ -761,6 +766,9 @@ class App extends Component {
               </Navbar.Brand>
             </Navbar.Header>
             <Nav pullRight>
+              <NavItem className='submit-name-button'>
+                <Button onClick={this.submit_name}>set name</Button>
+              </NavItem>
               <NavItem className='account-status'>
                 <AccountStatus account={this.state.account} />
               </NavItem>

@@ -27,7 +27,7 @@
 
 .minimap-canvas {
   z-index: 2;
-  position: fixed;
+  position: absolute;
   border: solid 1px black;
   bottom: 0;
   right: 0;

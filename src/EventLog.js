@@ -1,5 +1,4 @@
 import React, { PureComponent } from 'react'
-import { PanelGroup } from 'react-bootstrap'
 import PixelBatch from './PixelBatch'
 import './EventLog.css'
 
