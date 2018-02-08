@@ -3,19 +3,12 @@ import "./UsingMortal.sol";
 import "./UsingCanvasBoundaries.sol";
 
 contract Canvas is usingMortal, usingCanvasBoundaries {
-  struct Pixel {
-    uint32 locked_until;
-    address owner;
-    bytes3 color;
-    /* 5 bytes unused*/
-  }
-
   uint public paint_fee = 4 szabo; /* 4000 Gwei */
   uint public cooldown = 10;
 
-  mapping(uint => Pixel) public pixels;
+  uint32[50000000] public availability;
   
-  event PixelPainted(uint i, address old_owner, address new_owner, uint32 locked_until, bytes3 new_color);
+  event PixelPainted(uint i, address new_owner, uint32 locked_until, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     require(msg.value >= paint_fee);
@@ -30,11 +23,8 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   
   function paint_pixel(uint _index, bytes3 _color) private {
     check_coordinates(_index);
-    Pixel storage pixel = pixels[_index];
-    require(block.number >= pixel.locked_until);
-    pixel.locked_until = uint32(block.number + cooldown); /* will break after block 4294967295 */
-    pixel.color = _color;
-    PixelPainted(_index, pixel.owner, msg.sender, pixel.locked_until, _color);
-    pixel.owner = msg.sender;
+    require(block.number >= availability[_index]);
+    availability[_index] = uint32(block.number + cooldown); /* will break after block 4294967295 */
+    PixelPainted(_index, msg.sender, availability[_index], _color);
 	}
 }
