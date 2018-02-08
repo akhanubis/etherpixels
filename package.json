@@ -51,16 +51,16 @@
     "webpack": "1.14.0",
     "webpack-dev-server": "1.16.2",
     "webpack-manifest-plugin": "1.1.0",
-    "whatwg-fetch": "1.0.0"
+    "aws-sdk": "^2.183.0",
+    "whatwg-fetch": "1.0.0",
+    "pusher": "^1.5.1"
   },
   "dependencies": {
-    "aws-sdk": "^2.183.0",
     "axios": "^0.17.1",
     "css-element-queries": "^1.0.1",
     "dotenv": "^2.0.0",
     "left-pad": "^1.2.0",
     "logrocket": "^0.6.3",
-    "pusher": "^1.5.1",
     "pusher-js": "^4.2.2",
     "react": "^16.0.0",
     "react-bootstrap": "^0.32.1",
