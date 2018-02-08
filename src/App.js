@@ -271,7 +271,8 @@ class App extends Component {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
       encrypted: true
     })
-    this.pusher.subscribe('main').bind('new_block', data => this.update_block_number(data.new_block))
+    this.pusher.subscribe('main').bind('new_block', this.update_block_number)
+    this.pusher.subscribe('main').bind('server_message', this.show_server_message)
     this.pusher.subscribe('main').bind('mined_tx', this.process_new_tx)
     
     if (!this.state.web3_watch_only) {
@@ -279,6 +280,10 @@ class App extends Component {
       setInterval(this.fetch_account, 1000)
       this.fetch_account()
     }
+  }
+
+  show_server_message = ({ type, message}) => {
+    Alert[type](message)
   }
 
   process_new_tx = pusher_tx => {
@@ -478,11 +483,11 @@ class App extends Component {
     this.update_hovering_pixel()
   }
 
-  update_block_number = block_number => {
+  update_block_number = ({ new_block }) => {
     let old_max_index = this.state.max_index
-    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, block_number)
+    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, new_block)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
-    this.setState({ current_block: block_number, max_index: new_max_index, last_updated: new Date() })
+    this.setState({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
   }
 
