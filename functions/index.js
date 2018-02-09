@@ -28,15 +28,15 @@ exports.set_name = functions.https.onRequest((req, res) => {
       }
     ];
     let recovered = sig_utils.recoverTypedSignature({ data: typed_data, sig: signature})
-    if (recovered === address && Math.random() > 0.5) {
+    if (recovered === address) {
       console.log('SigUtil Successfully verified signer as ' + address)
+      admin.database().ref('usernames/' + address).set(name)
       res.sendStatus(200)
     }
     else {
+      res.sendStatus(403)
       console.dir(recovered)
       console.log('SigUtil Failed to verify signer when comparing ' + recovered.result + ' to ' + address)
-      console.log('Failed, comparing %s to %s', recovered, address)
-      res.sendStatus(403)
     }
   })
 })

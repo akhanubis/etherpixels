@@ -1,8 +1,22 @@
 import Alert from 'react-s-alert'
 import axios from 'axios'
+import * as firebase from 'firebase/app'
+import 'firebase/database'
 
-var NameUtils = (() => {
-  var submit_name = (name, account, provider) => {
+class NameUtils {
+  static init() {
+    firebase.initializeApp({
+      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+      databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
+    })
+    firebase.database().ref('usernames').on('value', snapshot => {
+      console.log(snapshot.val())
+    }, errorObject => {
+      console.log("The read failed: " + errorObject.code)
+    })
+  }
+
+  static submit_name(name, account, provider) {
     if (!(account && name && provider)) return
     let timestamp = new Date().getTime().toString()
     let sign_msg_params = [
@@ -41,10 +55,6 @@ var NameUtils = (() => {
       .catch(_ => Alert.error('Name update failed'))
     })
   }
-
-  return {
-    submit_name: submit_name
-  }
-})()
+}
 
 export default NameUtils
