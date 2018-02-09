@@ -110,7 +110,7 @@ let process_pixel_solds = pixel_solds => {
 }
 
 let update_pixel = log => {
-  let world_coords = new ContractToWorld(log.args.i.toNumber()).get_coords()
+  let world_coords = ContractToWorld.index_to_coords(log.args.i.toNumber())
   let canvas_coords = WorldToCanvas.to_buffer(world_coords.x, world_coords.y, { width: canvas_dimension, height: canvas_dimension })
   let pixel_array = new Uint8ClampedArray(ColorUtils.bytes3ToIntArray(log.args.new_color))
   let image_data = new Canvas.ImageData(pixel_array, 1, 1)
@@ -133,7 +133,7 @@ let pixel_sold_handler = (start, end, result) => {
 let store_new_index = b_number => {
   let old_index = max_index
   current_block = b_number
-  max_index = ContractToWorld.max_index(genesis_block, current_block)
+  max_index = ContractToWorld.max_index(current_block)
   canvas_dimension = ContractToWorld.canvas_dimension(max_index)
   return old_index
 }
@@ -230,7 +230,7 @@ let continue_cache = (b_number, pixels_data, buffer_data) => {
   pixel_buffer_ctx.drawImage(img, 0, 0)
   /* init the buffer with the last cached buffer */
   address_buffer = zlib.inflateRawSync(buffer_data)
-  max_index = ContractToWorld.max_index(genesis_block, last_cache_block) /* temp set mat_index to old_index to set old_index to the right value */
+  max_index = ContractToWorld.max_index(last_cache_block) /* temp set mat_index to old_index to set old_index to the right value */
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
   start_watching()
@@ -266,33 +266,37 @@ canvasContract.deployed().then((contract_instance) => {
   var matching_contract = false
   instance = contract_instance
   console.log(`Contract deployed\nFetching genesis block...`)
-  instance.GenesisBlock.call().then((g_block) => {
+  instance.GenesisBlock.call().then(g_block => {
     genesis_block = g_block
-    console.log(`Genesis block: ${ g_block }\nFetching init.json...`)
-    s3.getObject({ Bucket: bucket, Key: init_key }, (error, data) => {
-      if (error)
-        console.log('File init.json not found')
-      else {
-        let json_data = JSON.parse(data.Body.toString())
-        last_cache_block = json_data.last_cache_block
-        console.log(`Last block cached: ${ last_cache_block }`)
-        let cache_address = json_data.contract_address
-        matching_contract = cache_address === instance.address
-      }
-      console.log('Fetching current block...')
-      web3.eth.getBlockNumber((error, b_number) => {
+    console.log(`Genesis block: ${ g_block }\nFetching halving array...`)
+    instance.HalvingArray.call().then(halving_array => {
+      ContractToWorld.init(g_block, halving_array)
+      console.log(`Halving array: ${ halving_array }\nFetching init.json...`)
+      s3.getObject({ Bucket: bucket, Key: init_key }, (error, data) => {
         if (error)
-          throw error
+          console.log('File init.json not found')
         else {
-          let safe_number = b_number - process.env.CONFIRMATIONS_NEEDED
-          if (matching_contract)
-            fetch_pixels(safe_number)
-          else {
-            console.log('Last cache files point to older contract version, resetting cache...')
-            reset_cache(safe_number)
-          }
-          setInterval(() => { console.log("Listening for events...") }, 60000)
+          let json_data = JSON.parse(data.Body.toString())
+          last_cache_block = json_data.last_cache_block
+          console.log(`Last block cached: ${ last_cache_block }`)
+          let cache_address = json_data.contract_address
+          matching_contract = cache_address === instance.address
         }
+        console.log('Fetching current block...')
+        web3.eth.getBlockNumber((error, b_number) => {
+          if (error)
+            throw error
+          else {
+            let safe_number = b_number - process.env.CONFIRMATIONS_NEEDED
+            if (matching_contract)
+              fetch_pixels(safe_number)
+            else {
+              console.log('Last cache files point to older contract version, resetting cache...')
+              reset_cache(safe_number)
+            }
+            setInterval(() => { console.log("Listening for events...") }, 60000)
+          }
+        })
       })
     })
   })

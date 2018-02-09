@@ -51,6 +51,7 @@ class App extends Component {
       gas_price: new BigNumber(1000000000) /* 1 gwei */,
       preview_pending_txs: true,
       custom_colors: [],
+      paint_fee: 0, /* TODOOOOO*/
       shortcuts: {
         paint: 'a',
         move: 's',
@@ -114,7 +115,7 @@ class App extends Component {
     this.setState({ viewport_size: new_canvas_size }, () => {
       this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
       this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
-      let last_cache_index = ContractToWorld.max_index(this.state.genesis_block, this.last_cache_block)
+      let last_cache_index = ContractToWorld.max_index(this.last_cache_block)
       this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
       this.clear_logs()
       this.start_watching()
@@ -123,8 +124,8 @@ class App extends Component {
     })
   }
 
-  load_canvases = latest_block => {
-    this.load_cache_image(latest_block)
+  load_canvases = () => {
+    this.load_cache_image()
     this.load_clear_image()
     this.load_addresses_buffer()
   }
@@ -147,7 +148,7 @@ class App extends Component {
     })
   }
 
-  load_cache_image = latest_block => {
+  load_cache_image = () => {
     axios.get(this.bucket_url('init.json')).then(response => {
       if (this.contract_instance.address === response.data.contract_address) {
         this.last_cache_block = response.data.last_cache_block
@@ -155,11 +156,7 @@ class App extends Component {
         img.crossOrigin = ''
         img.src = this.bucket_url('pixels.png')
         img.style.display = 'none'
-        img.onload = this.load_buffer_data.bind(this, img, latest_block)
-      }
-      else {
-        this.last_cache_block = this.state.genesis_block - 2
-        this.load_buffer_data(null, latest_block)
+        img.onload = this.load_buffer_data.bind(this, img, this.last_cache_block)
       }
     })
   }
@@ -176,7 +173,7 @@ class App extends Component {
   }
 
   load_buffer_data = (img, latest_block) => {
-    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, latest_block)
+    let new_max_index = ContractToWorld.max_index(latest_block)
     let dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.create_buffer_canvas(dimension)
     if (img)
@@ -490,7 +487,7 @@ class App extends Component {
 
   update_block_number = ({ new_block }) => {
     let old_max_index = this.state.max_index
-    let new_max_index = ContractToWorld.max_index(this.state.genesis_block, new_block)
+    let new_max_index = ContractToWorld.max_index(new_block)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.setState({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
@@ -532,17 +529,13 @@ class App extends Component {
       
       instance.GenesisBlock.call().then(genesis_block => {
         let g_block = genesis_block.toNumber()
-        this.state.web3.eth.getBlockNumber((error, b_number) => {
-          if (error)
-            console.error(error)
-          else
-            this.setState({ genesis_block: g_block }, () => {
-              this.load_canvases(b_number)
-            })
+        instance.HalvingArray.call().then(halving_array => {
+          ContractToWorld.init(g_block, halving_array)
+          this.setState({ genesis_block: g_block }, this.load_canvases)
         })
       })
 
-      instance.paint_fee.call().then(fee => this.update_settings({ paint_fee: fee }))
+      instance.wei_per_block_cooldown.call().then(wei_per_block => this.wei_per_block = wei_per_block)
     })
   }
 

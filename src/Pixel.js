@@ -15,7 +15,7 @@ class Pixel {
 
   static from_event(owner, locked_until, event) {
     let i = event.i
-    let coords = new ContractToWorld(i).get_coords()
+    let coords = ContractToWorld.index_to_coords(i)
     let p = new this(
       coords.x,
       coords.y,

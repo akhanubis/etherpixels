@@ -6,7 +6,7 @@ let getWeb3 = new Promise(function(resolve, reject) {
   window.addEventListener('load', function() {
     var web3 = window.web3
             
-    if (false && process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development') {
       let provider = new Web3.providers.HttpProvider('http://127.0.0.1:9545')
       web3 = new Web3(provider)
           

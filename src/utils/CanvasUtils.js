@@ -59,7 +59,7 @@ var CanvasUtils = (() => {
       new_context.drawImage(old_ctx.canvas, offset_w, offset_h)
     }
     for (var i = old_max_index; i < new_max_index; i++) {
-      let world_coords = new ContractToWorld(i + 1).get_coords()
+      let world_coords = ContractToWorld.index_to_coords(i + 1)
       let buffer_coords = WorldToCanvas.to_buffer(world_coords.x, world_coords.y, new_size)
       new_context.putImageData(i_data_for_new_pixel, buffer_coords.x, buffer_coords.y)
     }
