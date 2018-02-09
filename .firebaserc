@@ -1,7 +1,0 @@
-{
-  "projects": {
-    "default": "ethpaint-development",
-    "prod": "ethpaint",
-    "dev": "ethpaint-development"
-  }
-}

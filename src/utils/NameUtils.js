@@ -9,11 +9,10 @@ class NameUtils {
       apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
       databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
     })
-    firebase.database().ref('usernames').on('value', snapshot => {
-      console.log(snapshot.val())
-    }, errorObject => {
-      console.log("The read failed: " + errorObject.code)
-    })
+    this.index = {}
+    let ref = firebase.database().ref('usernames')
+    ref.on('child_added', this.handle_new_name.bind(this))
+    ref.on('child_changed', this.handle_new_name.bind(this))
   }
 
   static submit_name(name, account, provider) {
@@ -54,6 +53,14 @@ class NameUtils {
       .then(_ => Alert.success('Name has been saved'))
       .catch(_ => Alert.error('Name update failed'))
     })
+  }
+
+  static handle_new_name(snapshot) {
+    this.index[snapshot.key] = snapshot.val()
+  }
+
+  static name(address) {
+    return this.index[address] || address
   }
 }
 

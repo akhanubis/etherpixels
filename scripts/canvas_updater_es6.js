@@ -6,7 +6,7 @@ import WorldToCanvas from "./utils/WorldToCanvas.js"
 import CanvasUtils from "./utils/CanvasUtils.js"
 import LogUtils from "./utils/LogUtils.js"
 
-require('dotenv').config({silent: true})
+require('dotenv').config({silent: true, path: process.env.ENV_PATH})
 
 const fs = require('fs')
 const zlib = require('zlib')
@@ -34,13 +34,13 @@ let max_index = null
 let web3 = null
 let instance = null
 let pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID || process.env.REACT_APP_PUSHER_APP_ID,
-  key: process.env.PUSHER_APP_KEY || process.env.REACT_APP_PUSHER_APP_KEY,
-  secret: process.env.PUSHER_APP_SECRET || process.env.REACT_APP_PUSHER_APP_SECRET,
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_APP_KEY,
+  secret: process.env.PUSHER_APP_SECRET,
   encrypted: true
 })
 
-const bucket = process.env.REACT_APP_S3_BUCKET
+const bucket = process.env.S3_BUCKET
 const pixels_key = 'pixels.png'
 const buffer_key = 'addresses.buf'
 const init_key = 'init.json'
@@ -59,7 +59,7 @@ let get_web3 = () => {
         web3_clientVersion: 'ZeroClientProvider',
       },
       pollingInterval: 99999999, // not interested in polling for new blocks
-      rpcUrl: `https://ropsten.infura.io/${process.env.REACT_APP_INFURA_API_KEY}`,
+      rpcUrl: `https://ropsten.infura.io/${process.env.INFURA_API_KEY}`,
       getAccounts: (cb) => cb(null, [])
     })
     provider.start()

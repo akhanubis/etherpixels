@@ -10,7 +10,7 @@ module.exports = {
       network_id: "*" // Match any network id
     },
     ropsten: {
-      provider: new HDWalletProvider(process.env.REACT_APP_ROPSTEN_SEED, "https://ropsten.infura.io/" + process.env.REACT_APP_INFURA_API_KEY),
+      provider: new HDWalletProvider(process.env.ROPSTEN_SEED, "https://ropsten.infura.io/" + process.env.INFURA_API_KEY),
       network_id: 3,
       gas: 3000000 
     }

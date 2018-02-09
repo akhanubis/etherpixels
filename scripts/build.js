@@ -5,7 +5,7 @@ process.env.NODE_ENV = 'production';
 // if this file is missing. dotenv will never modify any environment variables
 // that have already been set.
 // https://github.com/motdotla/dotenv
-require('dotenv').config({silent: true, path: '.build_env'});
+require('dotenv').config({silent: true, path: process.env.ENV_PATH});
 
 var chalk = require('chalk');
 var fs = require('fs-extra');

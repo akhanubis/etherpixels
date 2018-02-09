@@ -39,7 +39,8 @@ import 'react-s-alert/dist/s-alert-default.css'
 import 'react-s-alert/dist/s-alert-css-effects/slide.css'
 
 import LogRocket from 'logrocket'
-LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
+if (process.env.REACT_APP_LOGROCKET_APP_ID)
+  LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
 
 class App extends Component {
   constructor(props) {
@@ -85,6 +86,7 @@ class App extends Component {
     this.subscribed_accs = new Set()
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
+    NameUtils.init()
   }
 
   componentWillMount() {
@@ -136,7 +138,7 @@ class App extends Component {
 
   submit_name = e => {
     e.preventDefault()
-    NameUtils.submit_name("my new name", this.state.account, this.state.web3.currentProvider)
+    NameUtils.submit_name("my new name" + Math.random(), this.state.account, this.state.web3.currentProvider)
   }
 
   load_addresses_buffer = () => {
@@ -543,7 +545,8 @@ class App extends Component {
     if (this.state.web3.eth.accounts[0] !== this.state.account) {
       let new_acc = this.state.web3.eth.accounts[0]
       if (new_acc) {
-        LogRocket.identify(new_acc)
+        if (process.env.REACT_APP_LOGROCKET_APP_ID)
+          LogRocket.identify(new_acc)
         let already_subs = this.subscribed_accs.has(new_acc)
         if (!already_subs) {
           this.subscribed_accs.add(new_acc)

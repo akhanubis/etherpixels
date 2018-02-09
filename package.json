@@ -76,12 +76,16 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "full_build": "npm run build_canvas_updater && npm run build",
+    "dev_deploy": "set ENV_PATH=.build_dev_env&& npm run build_canvas_updater && npm run build && firebase use dev && firebase deploy",
+    "prod_deploy": "set ENV_PATH=.build_env&& npm run build_canvas_updater && npm run build && firebase use prod && firebase deploy && firebase use dev",
     "build_canvas_updater": "copy scripts\\.babelrc src\\.babelrc && babel ./scripts/canvas_updater_es6.js --out-file ./build_worker/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./build_worker/utils/ColorUtils.js && babel ./src/utils/LogUtils.js --out-file ./build_worker/utils/LogUtils.js && babel ./src/utils/ContractToWorld.js --out-file ./build_worker/utils/ContractToWorld.js && babel ./src/utils/WorldToCanvas.js --out-file ./build_worker/utils/WorldToCanvas.js && babel ./src/utils/CanvasUtils.js --out-file ./build_worker/utils/CanvasUtils.js && del src\\.babelrc",
-    "start_canvas_updater": "set NODE_ENV=development&&node build_worker/canvas_updater.js",
-    "start_canvas_updater_prod": "node build_worker/canvas_updater.js",
     "build_push_alert": "copy scripts\\push_alert.js build_scripts\\push_alert.js",
-    "send_server_message": "node build_scripts/push_alert.js"
+    "local_canvas_updater": "set ENV_PATH=.env&&set NODE_ENV=development&&node build_worker/canvas_updater.js",
+    "dev_canvas_updater": "set ENV_PATH=.run_dev_env&&node build_worker/canvas_updater.js",
+    "prod_canvas_updater": "set ENV_PATH=.run_prod_env&&node build_worker/canvas_updater.js",
+    "local_push_alert": "set ENV_PATH=.env&&set NODE_ENV=development&&node build_scripts/push_alert.js",
+    "dev_canvas_updater": "set ENV_PATH=.run_dev_env&&node build_scripts/push_alert.js",
+    "prod_canvas_updater": "set ENV_PATH=.run_prod_env&&node build_scripts/push_alert.js"
   },
   "jest": {
     "collectCoverageFrom": [

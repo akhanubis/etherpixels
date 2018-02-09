@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import PixelSquare from './PixelSquare'
+import NameUtils from './utils/NameUtils'
 import './HoverInfo.css'
 
 class HoverInfo extends Component {
@@ -8,7 +9,7 @@ class HoverInfo extends Component {
 
   render() {
     if (this.props.pixel) {
-      let ownage = this.props.pixel.is_new() ? '' : ` painted by ${this.props.pixel.owner}`
+      let ownage = this.props.pixel.is_new() ? '' : ` painted by ${NameUtils.name(this.props.pixel.owner)}`
       return (
         <div className="footer hover-info">
           <div className="container-fluid pixel-status">
