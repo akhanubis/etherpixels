@@ -32,6 +32,7 @@ const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
+import LoadingPanel from './LoadingPanel'
 
 import './css/bootstrap.min.css'
 import './App.css'
@@ -74,7 +75,8 @@ class App extends Component {
       y: 0,
       pending_txs: [],
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
-      current_tool: 'move'
+      current_tool: 'move',
+      loading_progress: 0
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
@@ -86,7 +88,7 @@ class App extends Component {
     this.subscribed_accs = new Set()
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
-    NameUtils.init()
+    NameUtils.init().then(this.update_progress)
   }
 
   componentWillMount() {
@@ -101,11 +103,12 @@ class App extends Component {
 
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
 
-  bootstraping() {
-    return this.bootstraped < this.bootstrap_steps
-  }
+  update_progress = () => this.setState(prev_state => ({ loading_progress: prev_state.loading_progress + 20}))
+
+  bootstraping = () => this.bootstraped < this.bootstrap_steps
 
   try_bootstrap = () => {
+    this.update_progress()
     this.bootstraped++
     if (this.bootstraping())
       return
@@ -123,6 +126,7 @@ class App extends Component {
       this.start_watching()
       this.redraw()
       this.update_minimap()
+      this.update_progress()
     })
   }
 
@@ -754,6 +758,7 @@ class App extends Component {
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.settings.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
+        <LoadingPanel progress={this.state.loading_progress} />
         <div ref={n => this.navbar = n}>
           <Navbar>
             <Navbar.Header>

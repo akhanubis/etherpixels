@@ -5,14 +5,17 @@ import 'firebase/database'
 
 class NameUtils {
   static init() {
-    firebase.initializeApp({
-      apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-      databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
+    return new Promise(resolve => {
+      firebase.initializeApp({
+        apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+        databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
+      })
+      this.index = {}
+      let ref = firebase.database().ref('usernames')
+      ref.on('child_added', this.handle_new_name.bind(this))
+      ref.on('child_changed', this.handle_new_name.bind(this))
+      resolve()
     })
-    this.index = {}
-    let ref = firebase.database().ref('usernames')
-    ref.on('child_added', this.handle_new_name.bind(this))
-    ref.on('child_changed', this.handle_new_name.bind(this))
   }
 
   static submit_name(name, account, provider) {
