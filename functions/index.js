@@ -30,7 +30,7 @@ exports.set_name = functions.https.onRequest((req, res) => {
     let recovered = sig_utils.recoverTypedSignature({ data: typed_data, sig: signature})
     if (recovered === address) {
       console.log('SigUtil Successfully verified signer as ' + address)
-      admin.database().ref('usernames/' + address).set(name)
+      admin.database().ref('usernames/' + address).set({ name: name, last_modified: admin.database.ServerValue.TIMESTAMP })
       res.sendStatus(200)
     }
     else {

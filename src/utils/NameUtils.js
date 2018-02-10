@@ -12,9 +12,13 @@ class NameUtils {
       })
       this.index = {}
       let ref = firebase.database().ref('usernames')
-      ref.on('child_added', this.handle_new_name.bind(this))
-      ref.on('child_changed', this.handle_new_name.bind(this))
-      resolve()
+      ref.once('value').then(snapshot => {
+        Object.entries(snapshot.val()).forEach(data => this.add_to_db(data[0], data[1].name))
+        let update_ref = ref.orderByChild('last_modified').limitToLast(1)
+        update_ref.on('child_added', this.handle_new_name.bind(this))
+        update_ref.on('child_changed', this.handle_new_name.bind(this))
+        resolve()
+      })
     })
   }
 
@@ -59,11 +63,15 @@ class NameUtils {
   }
 
   static handle_new_name(snapshot) {
-    this.index[snapshot.key] = snapshot.val()
+    this.add_to_db(snapshot.key, snapshot.val().name)
   }
 
   static name(address) {
     return this.index[address] || address
+  }
+
+  static add_to_db(address, name) {
+    this.index[address] = name
   }
 }
 
