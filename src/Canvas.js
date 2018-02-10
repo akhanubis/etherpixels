@@ -39,6 +39,7 @@ class Canvas extends PureComponent {
   }
 
   resize(callback) {
+    let old_smoothing = this.ctx.imageSmoothingEnabled
     let new_size = {
       width: this.canvas.clientWidth,
       height: this.canvas.clientHeight
@@ -47,7 +48,7 @@ class Canvas extends PureComponent {
       this.canvas.width = new_size.width
       this.canvas.height = new_size.height
       /* for some reason I have to reset this after resizing */
-      this.ctx.imageSmoothingEnabled = false
+      this.ctx.imageSmoothingEnabled = old_smoothing
       if (callback)
         callback(new_size)
       else if (this.props.on_resize)

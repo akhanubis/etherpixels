@@ -125,7 +125,8 @@ class App extends Component {
       this.clear_logs()
       this.start_watching()
       this.redraw()
-      this.update_minimap()
+      this.minimap_canvas.resize()
+      this.zoom_canvas.resize()
       this.update_progress()
     })
   }
@@ -174,6 +175,7 @@ class App extends Component {
     clear_image.onload = () => {
       this.main_canvas.set_clear_pattern(clear_image)
       this.minimap_canvas.set_clear_pattern(clear_image)
+      this.zoom_canvas.set_clear_pattern(clear_image)
       this.try_bootstrap()
     }
   }
@@ -202,7 +204,7 @@ class App extends Component {
       destination_size.x, destination_size.y)
   }
 
-  redraw = e => {
+  redraw = () => {
     let destination_top_left = this.destination_top_left()
     let destination_size = this.destination_size()
     this.main_canvas.resize()
@@ -212,7 +214,8 @@ class App extends Component {
       this.redraw_ctx(this.pending_buffer_ctx, destination_top_left, destination_size)
       this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
     }
-    this.update_zoom(e)
+    this.update_zoom()
+    this.update_minimap()
     this.outline_hovering_pixel()
   }
   
@@ -310,7 +313,6 @@ class App extends Component {
       return p
     })
     this.redraw()
-    this.update_minimap()
     return event_pixels
   }
   
@@ -328,36 +330,35 @@ class App extends Component {
     this.setState({ event_logs: []})
   }
 
-  update_zoom = e => {
-    if (!(e || this.current_zoom))
+  update_zoom = () => {
+    if (!this.pixel_at_pointer)
       return
-    if (e)
-      this.current_zoom = { x: e.offsetX, y: e.offsetY }
-    this.zoom_canvas.resize()
-    this.zoom_canvas.drawImage(this.main_canvas.canvas,
-                      Math.abs(this.current_zoom.x - 5),
-                      Math.abs(this.current_zoom.y - 5),
-                      10, 10,
-                      0, 0,
-                      this.zoom_canvas.canvas.width, this.zoom_canvas.canvas.height)
+    this.zoom_canvas.clear()
+    let source = WorldToCanvas.to_buffer(this.pixel_at_pointer.x - 3, this.pixel_at_pointer.y + 3, this.pixel_buffer_ctx.canvas)
+    let draw_settings = [source.x, source.y,
+                         7, 7,
+                         0, 0,
+                         this.zoom_canvas.canvas.width, this.zoom_canvas.canvas.height]
+    this.zoom_canvas.drawImage(this.pixel_buffer_ctx.canvas, ...draw_settings)
+    if (this.state.settings.preview_pending_txs) {
+      this.zoom_canvas.drawImage(this.pending_buffer_ctx.canvas, ...draw_settings)
+      this.zoom_canvas.drawImage(this.preview_buffer_ctx.canvas, ...draw_settings)
+    }
   }
   
   update_hovering_pixel = () => {
-    let pap = this.pixel_at_pointer()
-    this.setState({ hovering_pixel: pap.index <= this.state.max_index ? pap : null }, this.redraw)
+    this.setState({ hovering_pixel: this.pixel_at_pointer.index <= this.state.max_index ? this.pixel_at_pointer : null }, this.redraw)
   }
 
-  pointer_inside_canvas = pixel_at_pointer => {
-    return pixel_at_pointer.is_inside_canvas(this.state.max_index)
-  }
+  pointer_inside_canvas = () => this.pixel_at_pointer.is_inside_canvas(this.state.max_index)
 
-  pixel_at_pointer = () => {
+  update_pixel_at_pointer = () => {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     let i = new WorldToContract(x, y).get_index()
     let color = this.color_at(x, y)
     let buffer_info = i <= this.state.max_index ? this.address_buffer.entry_at(i) : {}
-    return new Pixel(
+    this.pixel_at_pointer = new Pixel(
       x,
       y,
       color,
@@ -380,12 +381,13 @@ class App extends Component {
     if (!this.point_at_center)
       return
     this.mouse_position = { x: e.offsetX, y: e.offsetY }
+    this.update_pixel_at_pointer()
     if (this.dragging_canvas(e))
       this.drag()
     else
       if (this.left_click_pressed(e))
         this.start_painting()
-      this.update_zoom(e)
+      this.update_zoom()
     this.update_hovering_pixel()
   }
 
@@ -408,15 +410,14 @@ class App extends Component {
   }
 
   start_painting = () => {
-    let pap = this.pixel_at_pointer()
-    if (this.pointer_inside_canvas(pap))
+    if (this.pointer_inside_canvas())
       if (this.tool_selected('paint'))
-        this.add_to_batch(pap)
+        this.add_to_batch()
       else
-        if (this.tool_selected('pick_color'))      
-          this.pick_color(pap)
+        if (this.tool_selected('pick_color'))
+          this.pick_color()
         else
-          this.remove_from_batch(pap)
+          this.remove_from_batch()
   }
 
   drag = () => {
@@ -425,7 +426,7 @@ class App extends Component {
     this.drag_start = this.mouse_position
   }
 
-  pick_color = pixel_at_pointer => {
+  pick_color = () => {
     let data = this.main_canvas.getImageData(this.mouse_position.x, this.mouse_position.y, 1, 1).data
     this.setState({ current_color: ColorUtils.intArrayToRgb(data) })
     this.save_custom_color(ColorUtils.intArrayToHex(data))
@@ -447,7 +448,6 @@ class App extends Component {
   }
 
   update_minimap = () => {
-    this.minimap_canvas.resize()
     this.minimap_canvas.clear()
     this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
                       0, 0,
@@ -521,7 +521,6 @@ class App extends Component {
           this.point_at_center.x = this.point_at_center.x + delta_w
           this.point_at_center.y = this.point_at_center.y + delta_h
           this.redraw()
-          this.update_minimap()
         })
       }
     )
@@ -587,19 +586,14 @@ class App extends Component {
     return ColorUtils.intArrayToHex(color_data)
   }
 
-  pixel_to_paint = pixel_at_pointer => {
-    return pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
-  }
+  pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
 
-  selected_pixel_in_batch = pixel_at_pointer => {
-    pixel_at_pointer = pixel_at_pointer || this.pixel_at_pointer()
-    return this.state.batch_paint.findIndex(p => p.same_coords(pixel_at_pointer))
-  }
+  selected_pixel_in_batch = () => this.state.batch_paint.findIndex(p => p.same_coords(this.pixel_at_pointer))
 
-  batch_paint_full = pixel_at_pointer => {
+  batch_paint_full = () => {
     if (!this.state.batch_paint.length)
       return false
-    return this.selected_pixel_in_batch(pixel_at_pointer) === -1 && this.state.batch_paint.length >= this.max_batch_length
+    return this.selected_pixel_in_batch() === -1 && this.state.batch_paint.length >= this.max_batch_length
   }
 
   remove_from_batch = pixel => {
@@ -686,9 +680,9 @@ class App extends Component {
     this.setState({ batch_paint: []}, this.update_preview_buffer)
   }
 
-  add_to_batch = pixel_at_pointer => {
-    let p = this.pixel_to_paint(pixel_at_pointer)
-    if (this.batch_paint_full(pixel_at_pointer))
+  add_to_batch = () => {
+    let p = this.pixel_to_paint()
+    if (this.batch_paint_full())
       return
     let index_to_insert = this.selected_pixel_in_batch(p)
     if (index_to_insert === -1)
