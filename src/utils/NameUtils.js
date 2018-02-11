@@ -11,19 +11,22 @@ class NameUtils {
         databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
       })
       this.index = {}
+
       let ref = firebase.database().ref('usernames')
       ref.once('value').then(snapshot => {
-        Object.entries(snapshot.val()).forEach(data => this.add_to_db(data[0], data[1].name))
+        Object.entries(snapshot.val() || {}).forEach(data => this.add_to_db(data[0], data[1]))
         let update_ref = ref.orderByChild('last_modified').limitToLast(1)
         update_ref.on('child_added', this.handle_new_name.bind(this))
         update_ref.on('child_changed', this.handle_new_name.bind(this))
+        ref.on('child_removed', this.handle_remove_name.bind(this))
         resolve()
       })
     })
   }
 
   static submit_name(name, account, provider) {
-    if (!(account && name && provider)) return
+    name = name.trim()
+    if (!(account && provider)) return
     let timestamp = new Date().getTime().toString()
     let sign_msg_params = [
       {
@@ -31,17 +34,29 @@ class NameUtils {
         name: 'Signing address',
         value: account
       },
-      {   
-        type: 'string',
-        name: 'New name',
-        value: name
-      },
       {
         type: 'string',
         name: 'Timestamp',
         value: timestamp
       }
-    ]   
+    ]
+    if (name)
+      sign_msg_params.push({
+        type: 'string',
+        name: 'Action',
+        value: 'Set name'
+      },
+      {
+        type: 'string',
+        name: 'New name',
+        value: name
+      })
+    else
+      sign_msg_params.push({
+        type: 'string',
+        name: 'Action',
+        value: 'Clear name'
+      })
 
     provider.sendAsync({
       method: 'eth_signTypedData',
@@ -63,15 +78,19 @@ class NameUtils {
   }
 
   static handle_new_name(snapshot) {
-    this.add_to_db(snapshot.key, snapshot.val().name)
+    this.add_to_db(snapshot.key, snapshot.val())
   }
 
   static name(address) {
     return this.index[address] || address
   }
 
-  static add_to_db(address, name) {
+  static add_to_db(address, { name, last_modified }) {
     this.index[address] = name
+  }
+
+  static handle_remove_name(snapshot) {
+    this.index[snapshot.key] = undefined
   }
 }
 

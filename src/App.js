@@ -146,6 +146,11 @@ class App extends Component {
     NameUtils.submit_name("my new name" + Math.random(), this.state.account, this.state.web3.currentProvider)
   }
 
+  clear_name = e => {
+    e.preventDefault()
+    NameUtils.submit_name('', this.state.account, this.state.web3.currentProvider)
+  }
+
   load_addresses_buffer = () => {
     axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
       AddressBuffer.decompress_buffer(response.data)
@@ -765,6 +770,7 @@ class App extends Component {
             <Nav pullRight>
               <NavItem className='submit-name-button'>
                 <Button onClick={this.submit_name}>set name</Button>
+                <Button onClick={this.clear_name}>clear name</Button>
               </NavItem>
               <NavItem className='account-status'>
                 <AccountStatus account={this.state.account} />

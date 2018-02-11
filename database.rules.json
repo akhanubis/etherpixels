@@ -1,6 +1,9 @@
 {
   "rules": {
     ".read": true,
-    ".write": false
+    ".write": false,
+    "usernames": {
+      ".indexOn": "last_modified"
+    }
   }
 }

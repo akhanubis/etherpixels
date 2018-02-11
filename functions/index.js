@@ -6,31 +6,43 @@ const cors = require('cors')({ origin: true})
 
 exports.set_name = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
-    let name = req.body.name,
+    let name = req.body.name.trim(),
         address = req.body.address,
         timestamp = req.body.timestamp,
-        signature = req.body.signature;
+        signature = req.body.signature
     let typed_data = [
       {
         type: 'string',
         name: 'Signing address',
         value: address
       },
-      {   
-        type: 'string',
-        name: 'New name',
-        value: name
-      },
       {
         type: 'string',
         name: 'Timestamp',
         value: timestamp
       }
-    ];
+    ]
+    if (name)
+      typed_data.push({
+        type: 'string',
+        name: 'Action',
+        value: 'Set name'
+      },
+      {
+        type: 'string',
+        name: 'New name',
+        value: name
+      })
+    else
+      typed_data.push({
+        type: 'string',
+        name: 'Action',
+        value: 'Clear name'
+      })
     let recovered = sig_utils.recoverTypedSignature({ data: typed_data, sig: signature})
     if (recovered === address) {
       console.log('SigUtil Successfully verified signer as ' + address)
-      admin.database().ref('usernames/' + address).set({ name: name, last_modified: admin.database.ServerValue.TIMESTAMP })
+      admin.database().ref('usernames/' + address).set(name ? { name: name, last_modified: admin.database.ServerValue.TIMESTAMP } : null)
       res.sendStatus(200)
     }
     else {
