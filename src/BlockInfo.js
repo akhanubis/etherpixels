@@ -25,7 +25,7 @@ class BlockInfo extends PureComponent {
         </Col>
         <Col md={4}>
           <div>Pixel supply</div>
-          <div>{this.props.max_index + 1}</div>
+          <div>{(this.props.max_index || 0) + 1}</div>
         </Col>
         <Col md={4}>
           <div>Last updated</div>

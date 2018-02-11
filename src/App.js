@@ -1,5 +1,5 @@
 // eslint-disable-next-line
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import {Helmet} from "react-helmet"
@@ -44,7 +44,7 @@ import LogRocket from 'logrocket'
 if (process.env.REACT_APP_LOGROCKET_APP_ID)
   LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
 
-class App extends Component {
+class App extends PureComponent {
   constructor(props) {
     super(props)
 
@@ -294,7 +294,8 @@ class App extends Component {
   start_watching = () => {
     this.pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
       cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
-      encrypted: true
+      encrypted: true,
+      disableStats: true
     })
     this.pusher.subscribe('main').bind('new_block', this.update_block_number)
     this.pusher.subscribe('main').bind('server_message', this.show_server_message)
@@ -559,20 +560,22 @@ class App extends Component {
   }
 
   fetch_account = () => {
-    if (this.state.web3.eth.accounts[0] !== this.state.account) {
-      let new_acc = this.state.web3.eth.accounts[0]
-      if (new_acc) {
-        if (process.env.REACT_APP_LOGROCKET_APP_ID)
-          LogRocket.identify(new_acc)
-        let already_subs = this.subscribed_accs.has(new_acc)
-        if (!already_subs) {
-          this.subscribed_accs.add(new_acc)
-          this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
-          this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
+    this.state.web3.eth.getAccounts((_, accounts) => {
+      let new_acc = accounts[0]
+      if (new_acc !== this.state.account) {
+        this.setState({ account: new_acc })
+        if (new_acc) {
+          if (process.env.REACT_APP_LOGROCKET_APP_ID)
+            LogRocket.identify(new_acc)
+          let already_subs = this.subscribed_accs.has(new_acc)
+          if (!already_subs) {
+            this.subscribed_accs.add(new_acc)
+            this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
+            this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
+          }
         }
       }
-      this.setState({ account: new_acc })
-    }
+    })
   }
 
   alert_and_remove_index = i => {
