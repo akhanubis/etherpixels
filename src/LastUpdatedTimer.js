@@ -17,10 +17,7 @@ class LastUpdatedTimer extends PureComponent {
   elapsed_seconds = () => Math.floor((this.state.current_time.getTime() - this.props.last_updated.getTime()) / 1000) + 1
 
   render() {
-    if (this.props.last_updated)
-      return <span> (received {this.elapsed_seconds()} secs ago)</span>
-    else
-      return null
+    return <span>{this.elapsed_seconds()} secs ago</span>
   }
 }
 

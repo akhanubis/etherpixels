@@ -23,11 +23,7 @@ contract usingCanvasBoundaries {
     ((block.number <= halving[2]) ? delta : halving[2] - g_block);
   }
 
-  function GenesisBlock() public view returns(uint genesis_block) {
-    return g_block;
-  }
-
-  function HalvingArray() public view returns(uint[] halving_array) {
-    return halving;
+  function HalvingInfo() public view returns(uint genesis_block, uint[] halving_array) {
+    return (g_block, halving);
   }
 }

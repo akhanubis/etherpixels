@@ -67,7 +67,6 @@ class App extends Component {
     this.state = {
       canvas_size: {},
       web3: null,
-      genesis_block: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
       batch_paint: [],
@@ -551,15 +550,10 @@ class App extends Component {
     canvas_contract.setProvider(this.state.web3.currentProvider)
     canvas_contract.deployed().then(instance => {
       this.contract_instance = instance
-      
-      instance.GenesisBlock.call().then(genesis_block => {
-        let g_block = genesis_block.toNumber()
-        instance.HalvingArray.call().then(halving_array => {
-          ContractToWorld.init(g_block, halving_array)
-          this.setState({ genesis_block: g_block }, this.load_canvases)
-        })
+      instance.HalvingInfo.call().then(halving_info => {
+        ContractToWorld.init(halving_info)
+        this.load_canvases()
       })
-
       instance.wei_per_block_cooldown.call().then(wei_per_block => this.wei_per_block = wei_per_block)
     })
   }
@@ -791,7 +785,7 @@ class App extends Component {
           <Grid fluid={true} className='main-container'>
             <CssHide hide={this.state.fullscreen}>
               <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
-                <BlockInfo current={this.state.current_block} genesis={this.state.genesis_block} max_index={this.state.max_index} />
+                <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
                 </div>

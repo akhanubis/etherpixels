@@ -1,7 +1,7 @@
 class ContractToWorld {
-  static init(g_block, h_array) {
-    this.genesis_block = g_block
-    this.halving_array = h_array
+  static init(h_array) {
+    this.genesis_block = h_array[0].toNumber()
+    this.halving_array = h_array[1].map(n => n.toNumber())
   }
 
   static index_to_coords(i) {

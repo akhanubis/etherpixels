@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import LastUpdatedTimer from './LastUpdatedTimer'
+import { Grid, Col } from 'react-bootstrap'
 import './BlockInfo.css'
 
 class BlockInfo extends PureComponent {
@@ -17,14 +18,20 @@ class BlockInfo extends PureComponent {
 
   render() {
     return (
-      <div className="block-info">
-        <p>Genesis block: {this.props.genesis}</p>
-        <p>
-          Blocknumber: {this.props.current}
-          <LastUpdatedTimer last_updated={this.state.last_updated} />
-        </p>
-        <p>Pixel supply: {this.props.max_index + 1}</p>
-      </div>
+      <Grid fluid={true} className="block-info">
+        <Col md={4}>
+          <div>Latest block #</div>
+          <div>{this.props.current}</div>
+        </Col>
+        <Col md={4}>
+          <div>Pixel supply</div>
+          <div>{this.props.max_index + 1}</div>
+        </Col>
+        <Col md={4}>
+          <div>Last updated</div>
+          <div><LastUpdatedTimer last_updated={this.state.last_updated} /></div>
+        </Col>
+      </Grid>
     )
   }
 }
