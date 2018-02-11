@@ -41,6 +41,19 @@ class Palette extends PureComponent {
     this.hide_color_picker()
   }
 
+  end_remove_custom_color = () => this.setState({ removing_custom_color: false })
+
+  toggle_remove_custom_color = () => this.setState(prev_state => ({ removing_custom_color: !prev_state.removing_custom_color }))
+
+  click_custom_color = color => {
+    if (this.state.removing_custom_color) {
+      this.end_remove_custom_color()
+      this.props.on_custom_color_remove(color.hex)
+    }
+    else
+      this.props.on_color_update(color)
+  }
+
   render() {
     let advanced_color_picker = (
       <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
@@ -62,17 +75,17 @@ class Palette extends PureComponent {
                 colors={this.default_colors}
               />
               <p>Custom colors</p>
-              <CirclePicker color={ this.props.current_color }
-                onChangeComplete={ this.props.on_color_update }
+              <CirclePicker className={this.state.removing_custom_color ? 'custom-colors-removing' : ''} color={ this.props.current_color }
+                onChangeComplete={ this.click_custom_color }
                 colors={this.props.custom_colors}
               />
               <Col md={4}>
-                <OverlayTrigger trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
+                <OverlayTrigger onClick={this.end_remove_custom_color} trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
                   <Button bsStyle="primary" block={true}>Add</Button>
                 </OverlayTrigger>
               </Col>
               <Col md={4}>
-                <Button bsStyle="primary" block={true} onClick={this.props.on_custom_colors_clear}>Clear</Button>
+                <Button bsStyle="primary" block={true} onClick={this.toggle_remove_custom_color} active={this.state.removing_custom_color}>Remove</Button>
               </Col>
               <Col md={4}>
                 <ToolSelector tools={this.props.tools} on_tool_selected={this.props.on_tool_selected} current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} />

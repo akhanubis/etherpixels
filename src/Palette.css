@@ -26,3 +26,7 @@
 .popover-color-picker .photoshop-picker > div:first-child {
   display: none !important;
 }
+
+.custom-colors-removing > span > div > span > div{
+  cursor: not-allowed !important/* TODO: usar uno custom */;
+}

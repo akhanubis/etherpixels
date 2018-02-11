@@ -436,15 +436,19 @@ class App extends Component {
     return this.state.current_tool === 'pick_color'
   }
 
-  save_custom_color = color => {
+  save_custom_color = hex_color => {
     let new_colors = new Set(this.state.settings.custom_colors)
-    new_colors.add(color) /* IE 11: add doesnt return the Set instance :( */
+    new_colors.add(hex_color) /* IE 11: add doesnt return the Set instance :( */
     this.update_settings({ custom_colors: [...new_colors] })
   }
 
-  clear_custom_colors = e => {
-    e.preventDefault()
-    this.update_settings({ custom_colors: []})
+  remove_custom_color = hex_color => {
+    const temp = [...this.state.settings.custom_colors]
+    let index_to_remove = temp.findIndex(c => c === hex_color)
+    if (index_to_remove !== -1) {
+      temp.splice(index_to_remove, 1)
+      this.update_settings({ custom_colors: temp})
+    }
   }
 
   update_minimap = () => {
@@ -772,7 +776,7 @@ class App extends Component {
           <Grid fluid={true} className='main-container'>
             <Col md={3} className='side-col'>
               <div className='palette-container' style={{height: this.state.current_palette_height}}>
-                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_colors_clear={this.clear_custom_colors} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
+                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
               </div>
               <ToolSelector tools={['paint', 'move', 'erase']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
               {block_info}
