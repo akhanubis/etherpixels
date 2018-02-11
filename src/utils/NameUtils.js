@@ -10,15 +10,15 @@ class NameUtils {
         apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
         databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
       })
-      this.index = {}
+      let stored_usernames = localStorage.getItem('usernames')
+      this.index = stored_usernames ? JSON.parse(stored_usernames) : {}
 
       let ref = firebase.database().ref('usernames')
-      ref.once('value').then(snapshot => {
+      ref.startAt(localStorage.getItem('last_modified_fetched') || 0).once('value').then(snapshot => {
         Object.entries(snapshot.val() || {}).forEach(data => this.add_to_db(data[0], data[1]))
         let update_ref = ref.orderByChild('last_modified').limitToLast(1)
         update_ref.on('child_added', this.handle_new_name.bind(this))
         update_ref.on('child_changed', this.handle_new_name.bind(this))
-        ref.on('child_removed', this.handle_remove_name.bind(this))
         resolve()
       })
     })
@@ -87,10 +87,8 @@ class NameUtils {
 
   static add_to_db(address, { name, last_modified }) {
     this.index[address] = name
-  }
-
-  static handle_remove_name(snapshot) {
-    this.index[snapshot.key] = undefined
+    localStorage.setItem('usernames', JSON.stringify(this.index))
+    localStorage.setItem('last_modified_fetched', last_modified)
   }
 }
 
