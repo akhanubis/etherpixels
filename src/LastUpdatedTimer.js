@@ -1,6 +1,13 @@
 import React, { PureComponent } from 'react'
 
 class LastUpdatedTimer extends PureComponent {
+  constructor(props) {
+    super(props)
+    this.state = {
+      current_time: this.props.last_updated
+    }
+  }
+
   componentDidMount = () => this.interval = setInterval(this.tick, 1000)
 
   componentWillUnmount = () => clearInterval(this.interval)

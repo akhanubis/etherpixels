@@ -20,6 +20,7 @@
 .pending-txs-container {
   border-radius: 5px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tx-panel-container {

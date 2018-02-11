@@ -51,10 +51,6 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
   font-size: 2em;
 }
 
-.block-info {
-  height: 90px;
-}
-
 .submit-name-button {
   height: 1px;
 }

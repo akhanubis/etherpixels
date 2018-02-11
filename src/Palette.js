@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react'
-import { CirclePicker, MaterialPicker, PhotoshopPicker } from 'react-color'
+import { CirclePicker, PhotoshopPicker } from 'react-color'
 import { Col, Grid, Button, OverlayTrigger, Popover } from 'react-bootstrap'
 import ToolSelector from './ToolSelector'
 import { ResizeSensor } from 'css-element-queries'
@@ -68,17 +68,21 @@ class Palette extends PureComponent {
     return (
       <div className="resizing-sensor color-picker-container" ref={rs => this.palette_resize_sensor = rs}>
         <Grid fluid={true}>
-          <Col md={8}>
+          <Col md={12}>
+            <CirclePicker
+              width="100%"
+              color={ this.props.current_color }
+              onChangeComplete={ this.props.on_color_update }
+              colors={this.default_colors}
+            />
+            <p>Custom colors</p>
+            <CirclePicker className={this.state.removing_custom_color ? 'custom-colors-removing' : ''}
+              width="100%"
+              color={ this.props.current_color }
+              onChangeComplete={ this.click_custom_color }
+              colors={this.props.custom_colors}
+            />
             <Grid fluid={true}>
-              <CirclePicker color={ this.props.current_color }
-                onChangeComplete={ this.props.on_color_update }
-                colors={this.default_colors}
-              />
-              <p>Custom colors</p>
-              <CirclePicker className={this.state.removing_custom_color ? 'custom-colors-removing' : ''} color={ this.props.current_color }
-                onChangeComplete={ this.click_custom_color }
-                colors={this.props.custom_colors}
-              />
               <Col md={4}>
                 <OverlayTrigger onClick={this.end_remove_custom_color} trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
                   <Button bsStyle="primary" block={true}>Add</Button>
@@ -91,12 +95,6 @@ class Palette extends PureComponent {
                 <ToolSelector tools={this.props.tools} on_tool_selected={this.props.on_tool_selected} current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} />
               </Col>
             </Grid>
-          </Col>
-          <Col md={4}>
-            <MaterialPicker
-              color={ this.props.current_color }
-              onChangeComplete={ this.props.on_color_update }
-            />
           </Col>
         </Grid>
       </div>

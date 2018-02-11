@@ -26,7 +26,7 @@ import AccountStatus from './AccountStatus'
 import EventLogPanel from './EventLogPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
-import LastUpdatedTimer from './LastUpdatedTimer'
+import BlockInfo from './BlockInfo'
 import BigNumber from 'bignumber.js'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
@@ -93,9 +93,14 @@ class App extends Component {
     NameUtils.init().then(this.update_progress)
   }
 
+  set_state_with_promise = (...args) => {
+    return new Promise(resolve => this.setState(...args, resolve))
+  }
+
   componentWillMount() {
     getWeb3
-    .then(result => this.setState({ web3: result.web3, web3_watch_only: result.watch_only }, this.instantiate_contract))
+    .then(result => this.set_state_with_promise({ web3: result.web3, web3_watch_only: result.watch_only }))
+    .then(this.instantiate_contract)
     .catch(() => console.log('Error finding web3.'))
   }
 
@@ -119,7 +124,8 @@ class App extends Component {
 
   continue_bootstrap = new_canvas_size => {
     new ResizeSensor(this.canvas_resize_sensor, this.redraw)
-    this.setState({ viewport_size: new_canvas_size }, () => {
+    this.set_state_with_promise({ viewport_size: new_canvas_size })
+    .then(() => {
       this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
       this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
       let last_cache_index = ContractToWorld.max_index(this.last_cache_block)
@@ -193,7 +199,9 @@ class App extends Component {
     this.create_buffer_canvas(dimension)
     if (img)
       this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
-    this.setState({ current_block: latest_block, max_index: new_max_index, canvas_size: { width: dimension, height: dimension } }, this.try_bootstrap)
+    this.set_state_with_promise({ canvas_size: { width: dimension, height: dimension } })
+    .then(this.on_new_block_state.bind(this, latest_block, new_max_index))
+    .then(this.try_bootstrap)
   }
 
   create_buffer_canvas = dimension => {
@@ -502,12 +510,13 @@ class App extends Component {
     this.update_hovering_pixel()
   }
 
+  on_new_block_state = (new_block, new_max_index) => this.set_state_with_promise({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
+
   update_block_number = ({ new_block }) => {
-    let old_max_index = this.state.max_index
     let new_max_index = ContractToWorld.max_index(new_block)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
-    this.setState({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
-    this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, old_max_index, new_max_index)
+    this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, this.state.max_index, new_max_index)
+    this.on_new_block_state(new_block, new_max_index)
   }
 
   resize_secondary_buffer = (ctx, dimension) => {
@@ -751,18 +760,6 @@ class App extends Component {
   }
 
   render() {
-    let block_info = null
-    if (this.state.current_block)
-      block_info = (
-        <div className="block-info">
-          <p>Genesis block: {this.state.genesis_block}</p>
-          <p>
-            Blocknumber: {this.state.current_block}
-            <LastUpdatedTimer last_updated={this.state.last_updated} />
-          </p>
-          <p>Pixel supply: {this.state.max_index + 1}</p>
-        </div>
-      )
     return (
       <div className="App">
         <Helmet>
@@ -794,11 +791,11 @@ class App extends Component {
           <Grid fluid={true} className='main-container'>
             <CssHide hide={this.state.fullscreen}>
               <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
+                <BlockInfo current={this.state.current_block} genesis={this.state.genesis_block} max_index={this.state.max_index} />
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-                {block_info}
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
                   <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
                 </PendingTxList>
