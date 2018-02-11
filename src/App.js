@@ -748,7 +748,7 @@ class App extends Component {
     this.holding_click = false
     if (tool === 'fullscreen') {
       this.update_settings({ show_events: false })
-      this.setState({ fullscreen: true })
+      this.setState(prev_state => ({ fullscreen: !prev_state.fullscreen }))
     }
     else
       this.setState({ current_tool: tool })
