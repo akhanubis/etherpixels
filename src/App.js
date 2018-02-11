@@ -33,6 +33,7 @@ import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
 import LoadingPanel from './LoadingPanel'
+import CssHide from './CssHide'
 
 import './css/bootstrap.min.css'
 import './App.css'
@@ -58,7 +59,8 @@ class App extends Component {
         paint: 'a',
         move: 's',
         erase: 'd',
-        pick_color: 'f'
+        pick_color: 'f',
+        fullscreen: 'g'
       }
     }
 
@@ -735,7 +737,17 @@ class App extends Component {
 
   select_tool = (tool) => {
     this.holding_click = false
-    this.setState({ current_tool: tool })
+    if (tool === 'fullscreen') {
+      this.update_settings({ show_events: false })
+      this.setState({ fullscreen: true })
+    }
+    else
+      this.setState({ current_tool: tool })
+  }
+
+  exit_fullscreen = e => {
+    e.preventDefault()
+    this.setState({ fullscreen: false })
   }
 
   render() {
@@ -760,7 +772,7 @@ class App extends Component {
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <GasEstimator gas_price={this.state.settings.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <LoadingPanel progress={this.state.loading_progress} />
-        <div ref={n => this.navbar = n}>
+        <CssHide hide={this.state.fullscreen}>
           <Navbar>
             <Navbar.Header>
               <Navbar.Brand>
@@ -777,20 +789,22 @@ class App extends Component {
               </NavItem>
             </Nav>
           </Navbar>
-        </div>
-        <main>
+        </CssHide>
+        <main className={this.state.fullscreen ? 'fullscreen' : ''}>
           <Grid fluid={true} className='main-container'>
-            <Col md={3} className='side-col'>
-              <div className='palette-container' style={{height: this.state.current_palette_height}}>
-                <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
-              </div>
-              <ToolSelector tools={['paint', 'move', 'erase']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-              {block_info}
-              <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
-                <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
-              </PendingTxList>
-            </Col>
-            <Col md={9} className='canvas-col'>
+            <CssHide hide={this.state.fullscreen}>
+              <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
+                <div className='palette-container' style={{height: this.state.current_palette_height}}>
+                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
+                </div>
+                <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+                {block_info}
+                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
+                  <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
+                </PendingTxList>
+              </Col>
+            </CssHide>
+            <Col md={this.state.fullscreen ? 12 : 9} className='canvas-col'>
               <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
                 <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
                   <div className='zoom-canvas'>
@@ -803,8 +817,17 @@ class App extends Component {
                     <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
                   </div>
                   <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+                  <CssHide hide={!this.state.fullscreen}>
+                    <div className='exit-fullscreen-icon'>
+                      <Button bsStyle="primary" onClick={this.exit_fullscreen}>
+                        Exit
+                      </Button>
+                    </div>
+                  </CssHide>
                 </div>
-                <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} account={this.state.account} />
+                <CssHide hide={this.state.fullscreen}>
+                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} account={this.state.account} />
+                </CssHide>
               </div>
             </Col>
           </Grid>
