@@ -14,7 +14,7 @@ class LastUpdatedTimer extends PureComponent {
 
   tick = () => this.setState({ current_time: new Date() })
 
-  elapsed_seconds = () => Math.floor((this.state.current_time.getTime() - this.props.last_updated.getTime()) / 1000)
+  elapsed_seconds = () => Math.floor((this.state.current_time.getTime() - this.props.last_updated.getTime()) / 1000) + 1
 
   render() {
     if (this.props.last_updated)
