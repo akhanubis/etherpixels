@@ -708,14 +708,12 @@ class App extends Component {
   }
 
   check_for_shortcuts = () => {
-    for (var tool in this.state.settings.shortcuts) {
-      if (!this.state.settings.shortcuts.hasOwnProperty(tool)) continue
-      let shortcut = this.state.settings.shortcuts[tool]
-      if (this.state.keys_down[shortcut]) {
-        this.select_tool(tool)
-        break
+    Object.entries(this.state.settings.shortcuts).forEach(s_array => {
+      if (this.state.keys_down[s_array[1]]) {
+        this.select_tool(s_array[0])
+        return false
       }
-    }
+    })
   }
 
   toggle_events = () => {
