@@ -10,6 +10,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   uint32[50000000] public availability;
   
   event PixelPainted(uint i, address new_owner, uint32 locked_until, bytes3 new_color);
+  event PixelUnavailable(uint i, address new_owner, uint32 locked_until, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     require(_index <= max_index());
@@ -26,9 +27,12 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   }
   
   function paint_pixel(uint _index, bytes3 _color, uint _value) private {
-    require(block.number >= availability[_index]);
-    uint paid_cooldown = _value / wei_per_block_cooldown;
-    availability[_index] = uint32(block.number + min_cooldown + ((max_cooldown < paid_cooldown) ? max_cooldown : paid_cooldown)); /* will break after block 4294967295 */
-    PixelPainted(_index, msg.sender, availability[_index], _color);
+    if (block.number < availability[_index])
+      PixelUnavailable(_index, msg.sender, availability[_index], _color);
+    else {
+      uint paid_cooldown = _value / wei_per_block_cooldown;
+      availability[_index] = uint32(block.number + min_cooldown + ((max_cooldown < paid_cooldown) ? max_cooldown : paid_cooldown)); /* will break after block 4294967295 */
+      PixelPainted(_index, msg.sender, availability[_index], _color);
+    }
 	}
 }

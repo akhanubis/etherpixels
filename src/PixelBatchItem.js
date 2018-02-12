@@ -9,7 +9,7 @@ class PixelBatchItem extends PureComponent {
         <PixelSquare color={this.props.pixel.old_color} />
         <span className='text'>=></span>
         <PixelSquare color={this.props.pixel.color} />
-        <span className='text'>({this.props.pixel.x}, {this.props.pixel.y})</span>
+        <span className='text'>({this.props.pixel.x}, {this.props.pixel.y}) {this.props.pixel.painted === false ? 'failed' : ''}</span>
       </div>
     )
   }

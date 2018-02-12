@@ -3,12 +3,13 @@ var LogUtils = (() => {
     sorted[log.transactionHash] = sorted[log.transactionHash] || {
       tx: log.transactionHash,
       owner: log.args.new_owner,
-      locked_until: log.args.locked_until.toNumber(),
       pixels: []
     }
     sorted[log.transactionHash].pixels.push({
       i: log.args.i.toNumber(),
-      color: log.args.new_color
+      color: log.args.new_color,
+      locked_until: log.args.locked_until.toNumber(),
+      painted: log.event === 'PixelPainted'
     })
   }
   

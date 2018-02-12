@@ -175,7 +175,7 @@ class App extends PureComponent {
         img.crossOrigin = ''
         img.src = this.bucket_url('pixels.png')
         img.style.display = 'none'
-        img.onload = this.load_buffer_data.bind(this, img, this.last_cache_block)
+        img.onload = this.load_buffer_data.bind(this, img)
       }
     })
   }
@@ -192,14 +192,14 @@ class App extends PureComponent {
     }
   }
 
-  load_buffer_data = (img, latest_block) => {
-    let new_max_index = ContractToWorld.max_index(latest_block)
+  load_buffer_data = img => {
+    let new_max_index = ContractToWorld.max_index(this.last_cache_block)
     let dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.create_buffer_canvas(dimension)
     if (img)
       this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
     this.set_state_with_promise({ canvas_size: { width: dimension, height: dimension } })
-    .then(this.on_new_block_state.bind(this, latest_block, new_max_index))
+    .then(this.on_new_block_state.bind(this, this.last_cache_block, new_max_index))
     .then(this.try_bootstrap)
   }
 
@@ -321,11 +321,13 @@ class App extends PureComponent {
   
   paint_pixels_from_tx = tx => {
     let event_pixels = tx.pixels.map(new_pixel => {
-      let p = Pixel.from_event(tx.owner, tx.locked_until, new_pixel)
+      let p = Pixel.from_event(tx.owner, new_pixel)
       p.old_color = this.color_at(p.x, p.y)
-      let buffer_coords = WorldToCanvas.to_buffer(p.x, p.y, this.state.canvas_size)
-      this.pixel_buffer_ctx.putImageData(p.image_data(), buffer_coords.x, buffer_coords.y)
-      this.address_buffer.update_pixel(p)
+      if (p.painted) {
+        let buffer_coords = WorldToCanvas.to_buffer(p.x, p.y, this.state.canvas_size)
+        this.pixel_buffer_ctx.putImageData(p.image_data(), buffer_coords.x, buffer_coords.y)
+        this.address_buffer.update_pixel(p)
+      }
       return p
     })
     this.redraw()
@@ -568,7 +570,6 @@ class App extends PureComponent {
           if (!already_subs) {
             this.subscribed_accs.add(new_acc)
             this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
-            this.pusher.subscribe(new_acc).bind('failed_tx', this.handle_failed_tx)
           }
         }
       }
@@ -580,11 +581,6 @@ class App extends PureComponent {
       return
     Alert.error(`Tx #${tx.key} has failed`)
     this.remove_pending_tx(tx)
-  }
-
-  handle_failed_tx = data => {
-    let failed_tx = LogUtils.matching_tx_with_gas(this.state.pending_txs, data)
-    this.alert_and_remove(failed_tx)
   }
 
   update_settings = (new_settings, callback) => {
@@ -637,6 +633,15 @@ class App extends PureComponent {
     return this.weak_map_for_keys.get(tx) + '' /* JS */
   }
 
+  notify_mined_tx = (tx_info, mined_tx) => {
+    if (tx_info.pixels.every(p => p.painted))
+      Alert.success(`Tx #${mined_tx.key} has been fully painted`)
+    else if (tx_info.pixels.some(p => p.painted))
+      Alert.warning(`Tx #${mined_tx.key} has been partially painted`)
+    else
+      Alert.error(`Tx #${mined_tx.key} has not been painted`)
+  }
+
   store_pending_tx = tx_promise => {
     tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
     this.setState(prev_state => {
@@ -652,7 +657,7 @@ class App extends PureComponent {
   remove_mined_tx = tx_info => {
     let mined_tx = LogUtils.mined_tx(this.state.pending_txs, tx_info)
     if (mined_tx) {
-      Alert.success(`Tx #${mined_tx.key} has been mined`)
+      this.notify_mined_tx(tx_info, mined_tx)
       this.remove_pending_tx(mined_tx)
     }
   }
@@ -728,9 +733,9 @@ class App extends PureComponent {
   }
 
   check_for_shortcuts = () => {
-    Object.entries(this.state.settings.shortcuts).forEach(s_array => {
-      if (this.state.keys_down[s_array[1]]) {
-        this.select_tool(s_array[0])
+    Object.entries(this.state.settings.shortcuts).forEach(([tool, key]) => {
+      if (this.state.keys_down[key]) {
+        this.select_tool(tool)
         return false
       }
     })

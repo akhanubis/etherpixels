@@ -30,20 +30,21 @@ class PixelBatch extends PureComponent {
     this.props.on_preview_change(this.props.panel_key)
   }
 
+  can_preview = () => this.props.on_preview_change
+
   render() {
     let batch_length = this.props.batch.length
     if (batch_length) {
       let price_info = this.props.gas_estimator ? (<p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>) : null
       let link = this.props.link ? (<a target="_blank" href={`https://etherscan.io/tx/${this.props.panel_key}`}>link</a>) : null
+      let preview_icon = this.can_preview() ? (<Col md={3}><a href="#" onClick={this.toggle_preview}>{this.props.preview ? 'hide' : 'show'}</a></Col>) : (<span></span>)
       return (
         <Panel id={this.props.panel_key} expanded={this.props.expanded} onToggle={this.handle_toggle}>
           <Panel.Heading>
             <Panel.Title>
               <Grid fluid>
-                <Col md={3}>
-                  <a href="#" onClick={this.toggle_preview}>{this.props.preview ? 'hide' : 'show'}</a>
-                </Col>
-                <Col md={6}>
+                {preview_icon}
+                <Col md={this.can_preview() ? 6 : 9}>
                   {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_batch_size && batch_length >= this.props.max_batch_size ? ', max reached' : ''})
                 </Col>
                 <Col md={3}>

@@ -88,25 +88,7 @@ let process_new_block = b_number => {
   let old_dimension = canvas_dimension
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
-}
-
-let process_pixel_solds = pixel_solds => {
-  console.log(`Processing ${pixel_solds.length} pixel${ pixel_solds.length == 1 ? '' : 's'}`)
-  let pusher_events = {}
-  pixel_solds.forEach((log) => {
-    update_pixel(log)
-    update_buffer(log)
-    LogUtils.to_sorted_event(pusher_events, log)
-  })
-  update_cache()
-  pusher.trigger('main', 'new_block', { new_block: current_block })
-  console.log('New block pushed')
-  let tx_hashes = Object.keys(pusher_events)
-  tx_hashes.forEach(tx_hash => {
-    pusher.trigger(['main', pusher_events[tx_hash].owner], 'mined_tx', pusher_events[tx_hash])
-    console.log(`Transaction pushed: ${tx_hash}`)
-  })
-  return tx_hashes
+  pusher.trigger('main', 'new_block', { new_block: b_number})
 }
 
 let update_pixel = log => {
@@ -123,11 +105,6 @@ let update_buffer = log => {
   let formatted_locked_until = left_pad(log.args.locked_until.toString(16), 8, 0)
   let entry = formatted_address + formatted_locked_until
   address_buffer.fill(entry, offset, offset + buffer_entry_size, 'hex')
-}
-
-let pixel_sold_handler = (start, end, result) => {
-  let mined_txs = process_pixel_solds(result)
-  process_past_fails(start, end, mined_txs)
 }
 
 let store_new_index = b_number => {
@@ -166,7 +143,7 @@ let start_watching = () => {
   process_past_logs(last_cache_block, current_block)
   
   web3.eth.filter("latest").watch((error, block_hash) => {
-    web3.eth.getBlock(block_hash, true, (error, result) => {
+    web3.eth.getBlock(block_hash, false, (error, result) => {
       if (error)
         console.error(error)
       else {
@@ -181,34 +158,30 @@ let start_watching = () => {
   })
 }
 
-let fetch_block_and_txs = (bn) => {
+let fetch_events = (event, start, end) => {
   return new Promise(resolve => {
-    console.log(`Fetching txs from block ${bn}...`)
-    web3.eth.getBlock(bn, true, (_, block) => resolve(block))
+    console.log(`Fetching ${event} logs from ${start} to ${end}`)
+    instance[event]({}, { fromBlock: start, toBlock: end }).get((_, result) => resolve(result))
   })
 }
 
-/* fetching some blocks behind to make sure I don't get null, related issue: https://github.com/INFURA/infura/issues/43 */
-async function process_past_fails(start, end, mined_txs) {
-  if (end - start > 10)
-    return
-  console.log(`Fetching fails from ${start} to ${end}`)
-  for(var bn = start; bn <= end; bn++) {
-    let block = await fetch_block_and_txs(bn)
-    block.transactions.forEach(tx => {
-      if (instance.address === tx.to)
-        /* not mined transaction present in block => fail */
-        if (!mined_txs.includes(tx.hash)) {
-          pusher.trigger(tx.from, 'failed_tx', { hash: tx.hash, owner: tx.from, gas: tx.gas })
-          console.log(`Failed transaction pushed: ${tx.hash}`)
-        }
-    })
-  }
-}
-
 let process_past_logs = (start, end) => {
-  console.log(`Fetching events from ${start} to ${end}`)
-  instance.PixelPainted({}, { fromBlock: start, toBlock: end }).get((_, result) => pixel_sold_handler(start, end, result))
+  Promise.all([fetch_events('PixelPainted', start, end), fetch_events('PixelUnavailable', start, end)]).then(values => {
+    let txs = {}
+    console.log(`Processing ${values[0].length} PixelPainted event${values[0].length == 1 ? '' : 's'}`)
+    values[0].forEach(l => {
+      update_pixel(l)
+      update_buffer(l)
+      LogUtils.to_sorted_event(txs, l)
+    })
+    update_cache()
+    console.log(`Processing ${values[1].length} PixelUnavailable event${values[1].length == 1 ? '' : 's'}`)
+    values[1].forEach(l => LogUtils.to_sorted_event(txs, l))
+    Object.entries(txs).forEach(([tx_hash, tx_info]) => {
+      pusher.trigger(['main', tx_info.owner], 'mined_tx', tx_info)
+      console.log(`Tx pushed: ${tx_hash}`)
+    })
+  })
 }
 
 let reset_cache = (g_block, b_number) => {
