@@ -52,7 +52,6 @@ class App extends PureComponent {
     this.default_settings = {
       unit: 'gwei',
       gas_price: new BigNumber(1000000000) /* 1 gwei */,
-      preview_pending_txs: true,
       custom_colors: [],
       paint_fee: 0, /* TODOOOOO*/
       shortcuts: {
@@ -77,7 +76,8 @@ class App extends PureComponent {
       pending_txs: [],
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'move',
-      loading_progress: 0
+      loading_progress: 0,
+      preview_draft: true
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
@@ -206,7 +206,6 @@ class App extends PureComponent {
   create_buffer_canvas = dimension => {
     this.pixel_buffer_ctx = CanvasUtils.new_canvas(dimension)
     this.preview_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
-    this.pending_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
     this.empty_canvas_ctx = CanvasUtils.new_canvas(dimension, true)
   }
 
@@ -224,26 +223,28 @@ class App extends PureComponent {
     this.main_canvas.resize()
     this.main_canvas.clear()
     this.redraw_ctx(this.pixel_buffer_ctx, destination_top_left, destination_size)
-    if (this.state.settings.preview_pending_txs) {
-      this.redraw_ctx(this.pending_buffer_ctx, destination_top_left, destination_size)
-      this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
-    }
+    this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
     this.update_zoom()
     this.update_minimap()
     this.outline_hovering_pixel()
   }
   
-  put_pixels_in_buffer = (pixels, ctx) => {
-    ctx.putImageData(this.empty_canvas_data, 0, 0)
+  put_pixels_in_preview = pixels => {
     pixels.forEach(p => {
-      let b_coords = WorldToCanvas.to_buffer(p.x, p.y, ctx.canvas)
-      ctx.putImageData(p.image_data(), b_coords.x, b_coords.y)
+      let b_coords = WorldToCanvas.to_buffer(p.x, p.y, this.preview_buffer_ctx.canvas)
+      this.preview_buffer_ctx.putImageData(p.image_data(), b_coords.x, b_coords.y)
     })
-    this.redraw()
   }
 
   update_preview_buffer = () => {
-    this.put_pixels_in_buffer(this.state.batch_paint, this.preview_buffer_ctx)
+    this.preview_buffer_ctx.putImageData(this.empty_canvas_data, 0, 0)
+    this.state.pending_txs.forEach(tx => {
+      if (tx.preview)
+        this.put_pixels_in_preview(tx.pixels)
+    })
+    if (this.state.preview_draft)
+      this.put_pixels_in_preview(this.state.batch_paint)
+    this.redraw()
   }
 
   update_pending_buffer = () => {
@@ -355,10 +356,7 @@ class App extends PureComponent {
                          0, 0,
                          this.zoom_canvas.canvas.width, this.zoom_canvas.canvas.height]
     this.zoom_canvas.drawImage(this.pixel_buffer_ctx.canvas, ...draw_settings)
-    if (this.state.settings.preview_pending_txs) {
-      this.zoom_canvas.drawImage(this.pending_buffer_ctx.canvas, ...draw_settings)
-      this.zoom_canvas.drawImage(this.preview_buffer_ctx.canvas, ...draw_settings)
-    }
+    this.zoom_canvas.drawImage(this.preview_buffer_ctx.canvas, ...draw_settings)
   }
   
   update_hovering_pixel = () => {
@@ -525,7 +523,6 @@ class App extends PureComponent {
 
   resize_pixel_buffer = (new_size, old_max_index, new_max_index) => {
     this.preview_buffer_ctx = this.resize_secondary_buffer(this.preview_buffer_ctx, new_size.width)
-    this.pending_buffer_ctx = this.resize_secondary_buffer(this.pending_buffer_ctx, new_size.width)
     this.empty_canvas_ctx = this.resize_secondary_buffer(this.empty_canvas_ctx, new_size.width)
     this.empty_canvas_data = this.empty_canvas_ctx.getImageData(0, 0, new_size.width, new_size.height)
     CanvasUtils.resize_canvas(
@@ -578,16 +575,16 @@ class App extends PureComponent {
     })
   }
 
-  alert_and_remove_index = i => {
-    if (i !== -1) {
-      Alert.error(`Tx #${this.state.pending_txs[i].key} has failed`)
-      this.remove_pending_tx(i)
-    }
+  alert_and_remove = tx => {
+    if (!tx)
+      return
+    Alert.error(`Tx #${tx.key} has failed`)
+    this.remove_pending_tx(tx)
   }
 
   handle_failed_tx = data => {
-    let failed_tx_index = LogUtils.matching_tx_with_gas_index(this.state.pending_txs, data)
-    this.alert_and_remove_index(failed_tx_index)
+    let failed_tx = LogUtils.matching_tx_with_gas(this.state.pending_txs, data)
+    this.alert_and_remove(failed_tx)
   }
 
   update_settings = (new_settings, callback) => {
@@ -643,35 +640,41 @@ class App extends PureComponent {
   store_pending_tx = tx_promise => {
     tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), owner: prev_state.account, key: this.tx_number(tx_promise) }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, preview: true, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), owner: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
-    }, this.update_pending_buffer)
+    }, this.update_preview_buffer)
   }
 
-  remove_pending_tx = i => {
-    this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs]
-      temp.splice(i, 1)
-      return { pending_txs: temp }
-    }, this.update_pending_buffer)
+  remove_pending_tx = tx => {
+    this.setState(prev_state => ({ pending_txs: prev_state.pending_txs.filter(p_tx => p_tx !== tx) }), this.update_preview_buffer)
   }
 
   remove_mined_tx = tx_info => {
-    let mined_tx_index = LogUtils.mined_tx_index(this.state.pending_txs, tx_info)
-    if (mined_tx_index !== -1) {
-      Alert.success(`Tx #${this.state.pending_txs[mined_tx_index].key} has been mined`)
-      this.remove_pending_tx(mined_tx_index)
+    let mined_tx = LogUtils.mined_tx(this.state.pending_txs, tx_info)
+    if (mined_tx) {
+      Alert.success(`Tx #${mined_tx.key} has been mined`)
+      this.remove_pending_tx(mined_tx)
     }
   }
 
   /* handle metamask reject */
   remove_failed_tx = tx_promise => {
-    let failed_tx_index = this.state.pending_txs.findIndex(tx => tx.promise === tx_promise)
-    this.alert_and_remove_index(failed_tx_index)
+    let failed_tx = this.state.pending_txs.find(tx => tx.promise === tx_promise)
+    this.alert_and_remove(failed_tx)
   }
 
-  toggle_preview_pending_txs = () => {
-    this.update_settings({ preview_pending_txs: !this.state.settings.preview_pending_txs }, this.redraw)
+  toggle_preview_pending_tx = tx_key => {
+    let tx_index = this.state.pending_txs.findIndex(tx => tx.key === tx_key)
+    if (tx_index !== -1)
+      this.setState(prev_state => {
+        const temp = [...prev_state.pending_txs]
+        temp[tx_index].preview = !temp[tx_index].preview
+        return { pending_txs: temp }
+      }, this.update_preview_buffer)
+  }
+
+  toggle_preview_draft = () => {
+    this.setState(prev_state => ({ preview_draft: !prev_state.preview_draft }), this.update_preview_buffer)
   }
 
   paint_many = batch_length => {
@@ -793,8 +796,8 @@ class App extends PureComponent {
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} preview={this.state.settings.preview_pending_txs} on_preview_change={this.toggle_preview_pending_txs}>
-                  <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} />
+                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} on_preview_change={this.toggle_preview_pending_tx}>
+                  <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
                 </PendingTxList>
               </Col>
             </CssHide>

@@ -25,6 +25,11 @@ class PixelBatch extends PureComponent {
     this.props.on_toggle(this.props.panel_key, expand)
   }
 
+  toggle_preview = e => {
+    e.preventDefault()
+    this.props.on_preview_change(this.props.panel_key)
+  }
+
   render() {
     let batch_length = this.props.batch.length
     if (batch_length) {
@@ -35,7 +40,10 @@ class PixelBatch extends PureComponent {
           <Panel.Heading>
             <Panel.Title>
               <Grid fluid>
-                <Col md={9}>
+                <Col md={3}>
+                  <a href="#" onClick={this.toggle_preview}>{this.props.preview ? 'hide' : 'show'}</a>
+                </Col>
+                <Col md={6}>
                   {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_batch_size && batch_length >= this.props.max_batch_size ? ', max reached' : ''})
                 </Col>
                 <Col md={3}>

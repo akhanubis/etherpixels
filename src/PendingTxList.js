@@ -1,6 +1,5 @@
 import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
-import { FormGroup, Checkbox } from 'react-bootstrap'
 import {TransitionMotion, spring } from 'react-motion'
 import './PendingTxList.css'
 
@@ -50,7 +49,7 @@ class PendingTxList extends PureComponent {
   active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
 
   tx_element = (key, tx) => {
-    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas_estimator: this.props.gas_estimator })
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, preview: tx.preview, on_preview_change: this.props.on_preview_change, gas_estimator: this.props.gas_estimator })
   }
 
   draft_element = () => {
@@ -62,9 +61,6 @@ class PendingTxList extends PureComponent {
   render() {
     return (
       <div className='pending-txs-container' style={this.custom_height()}>
-        <FormGroup>
-          <Checkbox inline checked={this.props.preview} onChange={this.props.on_preview_change}> Show preview </Checkbox>
-        </FormGroup>
         <div className="draft-panel-container">
           {this.draft_element()}
         </div>
