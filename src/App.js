@@ -130,7 +130,7 @@ class App extends PureComponent {
         gas_query_id: gas_query_id
       })
       this.gas_query_timer = setTimeout(() => {
-        this.contract_instance.BatchPaint.estimateGas(this.state.draft.pixels.length, this.state.draft.indexes, this.state.draft.colors, { from: this.state.account, value: 0 })
+        this.contract_instance.BatchPaint.estimateGas(this.state.draft.pixels.length, this.state.draft.indexes, this.state.draft.colors, { from: this.state.account, value: 10000000000000000 })
         .then(this.gas_query(gas_query_id))
       }, 2000)
     }
@@ -139,7 +139,7 @@ class App extends PureComponent {
   gas_query = query_id => {
     return (gas => {
       if (query_id === this.state.gas_query_id)
-        this.setState(prev_state => ({ draft: { ...prev_state.draft, gas: Math.floor(gas * 1.1) }, calculating_gas: false }))
+        this.setState(prev_state => ({ draft: { ...prev_state.draft, gas: Math.floor(gas * 1.1 + 10000) }, calculating_gas: false }))
     })
   }
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
@@ -599,7 +599,11 @@ class App extends PureComponent {
           ContractToWorld.init(halving_info)
           this.load_canvases()
         })
-        instance.wei_per_block_cooldown.call().then(wei_per_block => this.wei_per_block = wei_per_block)
+        instance.FeeInfo.call().then(([wei_per_cooldown, min_cooldown, max_cooldown]) => {
+          this.wei_per_cooldown = wei_per_cooldown
+          this.min_cooldown = min_cooldown.toNumber()
+          this.max_cooldown = max_cooldown.toNumber()
+        })
       })
     })
   }
@@ -711,7 +715,7 @@ class App extends PureComponent {
   }
 
   paint_options = () => {
-    return { from: this.state.account, value: 10 /* TODOOOO */, gas: this.state.draft.gas, gasPrice: this.state.settings.gas_price }
+    return { from: this.state.account, value: this.wei_per_cooldown.mul(this.min_cooldown).mul(this.state.draft.pixels.length) /* TODOOOO */, gas: this.state.draft.gas, gasPrice: this.state.settings.gas_price }
   }
 
   clear_draft = e => {
