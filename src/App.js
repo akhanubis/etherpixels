@@ -112,12 +112,14 @@ class App extends PureComponent {
   componentWillUpdate(_, next_state) {
     let draft_length = next_state.draft.pixels.length
     if (draft_length && draft_length !== this.state.draft.pixels.length) {
+      clearTimeout(this.gas_query_timer)
       let gas_query_id = next_state.gas_query_id + 1
       let indexes = []
       let colors = next_state.draft.pixels.map(p => {
         indexes.push(p.contract_index())
         return p.bytes3_color()
       })
+      /* to avoid sending too many estimateGas calls */
       this.setState({
         draft: {
           pixels: next_state.draft.pixels,
@@ -127,8 +129,10 @@ class App extends PureComponent {
         calculating_gas: true,
         gas_query_id: gas_query_id
       })
-      this.contract_instance.BatchPaint.estimateGas(draft_length, indexes, colors, { from: this.state.account, value: 0 })
-      .then(this.gas_query(gas_query_id))
+      this.gas_query_timer = setTimeout(() => {
+        this.contract_instance.BatchPaint.estimateGas(this.state.draft.pixels.length, this.state.draft.indexes, this.state.draft.colors, { from: this.state.account, value: 0 })
+        .then(this.gas_query(gas_query_id))
+      }, 2000)
     }
   }
 
