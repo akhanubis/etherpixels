@@ -40,7 +40,6 @@ import './App.css'
 import 'react-s-alert/dist/s-alert-default.css'
 import 'react-s-alert/dist/s-alert-css-effects/slide.css'
 
-
 class App extends PureComponent {
   constructor(props) {
     super(props)
@@ -653,7 +652,11 @@ class App extends PureComponent {
       }
     }
     else
-      alert('No account detected, unlock metamask')
+      Alert.error('No ethereum account detected, unlock Metamask or use Mist browser', {
+        position: 'top',
+        effect: null,
+        offset: 54
+      })
   }
 
   notify_mined_tx = tx_info => {
