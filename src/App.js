@@ -89,7 +89,6 @@ class App extends PureComponent {
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
-    this.subscribed_accs = new Set()
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
   }
@@ -349,6 +348,8 @@ class App extends PureComponent {
   }
 
   process_new_tx = pusher_tx => {
+    if (this.state.pending_txs.find(tx => tx.hash === pusher_tx.hash))
+      this.remove_mined_tx(pusher_tx)
     let event_pixels = this.paint_pixels_from_tx(pusher_tx)
     pusher_tx.pixels = event_pixels
     this.add_tx_to_events(pusher_tx)
@@ -606,15 +607,8 @@ class App extends PureComponent {
       let new_acc = accounts[0]
       if (new_acc !== this.state.account) {
         this.setState({ account: new_acc })
-        if (new_acc) {
-          if (this.logrocket_app_id)
-            LogRocket.identify(new_acc)
-          let already_subs = this.subscribed_accs.has(new_acc)
-          if (!already_subs) {
-            this.subscribed_accs.add(new_acc)
-            this.pusher.subscribe(new_acc).bind('mined_tx', this.remove_mined_tx)
-          }
-        }
+        if (new_acc && this.logrocket_app_id)
+          LogRocket.identify(new_acc)
       }
     })
   }
@@ -665,11 +659,11 @@ class App extends PureComponent {
   notify_mined_tx = tx_info => {
     let tx_short_hash = tx_info.hash.substr(0, 7)
     if (tx_info.pixels.every(p => p.painted))
-      Alert.success(`Tx #${tx_short_hash} has been fully painted`)
+      Alert.success(`Tx #${tx_short_hash}... has been fully painted`)
     else if (tx_info.pixels.some(p => p.painted))
-      Alert.warning(`Tx #${tx_short_hash} has been partially painted`)
+      Alert.warning(`Tx #${tx_short_hash}... has been partially painted`)
     else
-      Alert.error(`Tx #${tx_short_hash} has not been painted`)
+      Alert.error(`Tx #${tx_short_hash}... has not been painted`)
   }
 
   send_tx = tx_payload => {

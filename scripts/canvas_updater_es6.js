@@ -178,7 +178,7 @@ let process_past_logs = (start, end) => {
     console.log(`Processing ${values[1].length} PixelUnavailable event${values[1].length == 1 ? '' : 's'}`)
     values[1].forEach(l => LogUtils.to_sorted_event(txs, l))
     Object.entries(txs).forEach(([tx_hash, tx_info]) => {
-      pusher.trigger(['main', tx_info.owner], 'mined_tx', tx_info)
+      pusher.trigger('main', 'mined_tx', tx_info)
       console.log(`Tx pushed: ${tx_hash}`)
     })
   })
