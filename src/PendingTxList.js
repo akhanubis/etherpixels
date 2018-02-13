@@ -17,11 +17,6 @@ class PendingTxList extends PureComponent {
     this.setState({ active_key: expand ? toggled_key : null })
   }
 
-  total_price = () => {
-    let total_pixels = this.props.pending_txs.reduce((total, tx) => total.concat(tx.pixels), [])
-    return this.props.gas_estimator.estimate_total(total_pixels)
-  }
-
   custom_height = () => {
     return { height: `calc(100% - ${this.props.palette_height}px - 40px - 90px)` }
   }
@@ -49,7 +44,7 @@ class PendingTxList extends PureComponent {
   active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
 
   tx_element = (key, tx) => {
-    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, preview: tx.preview, on_preview_change: this.props.on_preview_change, gas_estimator: this.props.gas_estimator })
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas: tx.gas, gas_price: this.props.gas_price, preview: tx.preview, on_preview_change: this.props.on_preview_change })
   }
 
   draft_element = () => {

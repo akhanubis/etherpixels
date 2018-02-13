@@ -20,7 +20,6 @@ import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
 import CooldownFormatter from './CooldownFormatter'
-import GasEstimator from './GasEstimator'
 import LogUtils from './utils/LogUtils'
 import AccountStatus from './AccountStatus'
 import EventLogPanel from './EventLogPanel'
@@ -34,15 +33,14 @@ import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
 import LoadingPanel from './LoadingPanel'
 import CssHide from './CssHide'
+import LogRocket from 'logrocket'
+import EnvironmentManager from './utils/EnvironmentManager'
 
 import './css/bootstrap.min.css'
 import './App.css'
 import 'react-s-alert/dist/s-alert-default.css'
 import 'react-s-alert/dist/s-alert-css-effects/slide.css'
 
-import LogRocket from 'logrocket'
-if (process.env.REACT_APP_LOGROCKET_APP_ID)
-  LogRocket.init(process.env.REACT_APP_LOGROCKET_APP_ID)
 
 class App extends PureComponent {
   constructor(props) {
@@ -51,7 +49,7 @@ class App extends PureComponent {
     let stored_settings = localStorage.getItem('settings')
     this.default_settings = {
       unit: 'gwei',
-      gas_price: new BigNumber(1000000000) /* 1 gwei */,
+      gas_price: 1000000000 /* 1 gwei */,
       custom_colors: [],
       paint_fee: 0, /* TODOOOOO*/
       shortcuts: {
@@ -62,13 +60,18 @@ class App extends PureComponent {
         fullscreen: 'g'
       }
     }
-
+    this.empty_draft = {
+      gas: new BigNumber(0),
+      pixels: [],
+      indexes: [],
+      colors: []
+    }
     this.state = {
       canvas_size: {},
       web3: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
-      batch_paint: [],
+      draft: this.empty_draft,
       event_logs: [],
       keys_down: {},
       x: 0,
@@ -77,19 +80,19 @@ class App extends PureComponent {
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'move',
       loading_progress: 0,
-      preview_draft: true
+      preview_draft: true,
+      gas_query_id: 0
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 10
-    this.max_batch_length = 20
+    this.max_draft_length = 20
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
     this.subscribed_accs = new Set()
     PriceFormatter.init()
     PriceFormatter.set_unit(this.state.settings.unit)
-    NameUtils.init().then(this.update_progress)
   }
 
   set_state_with_promise = (...args) => {
@@ -107,6 +110,35 @@ class App extends PureComponent {
     ElementQueries.init()
   }
 
+  componentWillUpdate(_, next_state) {
+    let draft_length = next_state.draft.pixels.length
+    if (draft_length && draft_length !== this.state.draft.pixels.length) {
+      let gas_query_id = next_state.gas_query_id + 1
+      let indexes = []
+      let colors = next_state.draft.pixels.map(p => {
+        indexes.push(p.contract_index())
+        return p.bytes3_color()
+      })
+      this.setState({
+        draft: {
+          pixels: next_state.draft.pixels,
+          indexes: indexes,
+          colors: colors
+        },
+        calculating_gas: true,
+        gas_query_id: gas_query_id
+      })
+      this.contract_instance.BatchPaint.estimateGas(draft_length, indexes, colors, { from: this.state.account, value: 0 })
+      .then(this.gas_query(gas_query_id))
+    }
+  }
+
+  gas_query = query_id => {
+    return (gas => {
+      if (query_id === this.state.gas_query_id)
+        this.setState(prev_state => ({ draft: { ...prev_state.draft, gas: Math.floor(gas * 1.1) }, calculating_gas: false }))
+    })
+  }
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
 
   update_progress = () => this.setState(prev_state => ({ loading_progress: prev_state.loading_progress + 20}))
@@ -145,7 +177,7 @@ class App extends PureComponent {
   }
 
   bucket_url = key => {
-    return `https://${ process.env.REACT_APP_S3_BUCKET }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
+    return `https://${ EnvironmentManager.get('REACT_APP_S3_BUCKET') }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
   }
 
   submit_name = e => {
@@ -243,7 +275,7 @@ class App extends PureComponent {
         this.put_pixels_in_preview(tx.pixels)
     })
     if (this.state.preview_draft)
-      this.put_pixels_in_preview(this.state.batch_paint)
+      this.put_pixels_in_preview(this.state.draft.pixels)
     this.redraw()
   }
 
@@ -293,8 +325,8 @@ class App extends PureComponent {
   }
   
   start_watching = () => {
-    this.pusher = new Pusher(process.env.REACT_APP_PUSHER_APP_KEY, {
-      cluster: process.env.REACT_APP_PUSHER_APP_CLUSTER,
+    this.pusher = new Pusher(EnvironmentManager.get('REACT_APP_PUSHER_APP_KEY'), {
+      cluster: EnvironmentManager.get('REACT_APP_PUSHER_APP_CLUSTER'),
       encrypted: true,
       disableStats: true
     })
@@ -427,12 +459,12 @@ class App extends PureComponent {
   start_painting = () => {
     if (this.pointer_inside_canvas())
       if (this.tool_selected('paint'))
-        this.add_to_batch()
+        this.add_to_draft()
       else
         if (this.tool_selected('pick_color'))
           this.pick_color()
         else
-          this.remove_from_batch()
+          this.remove_from_draft()
   }
 
   drag = () => {
@@ -546,15 +578,23 @@ class App extends PureComponent {
   }
 
   instantiate_contract = () => {
-    const canvas_contract = contract(CanvasContract)
-    canvas_contract.setProvider(this.state.web3.currentProvider)
-    canvas_contract.deployed().then(instance => {
-      this.contract_instance = instance
-      instance.HalvingInfo.call().then(halving_info => {
-        ContractToWorld.init(halving_info)
-        this.load_canvases()
+    this.state.web3.version.getNetwork((_, network_id) => {
+      EnvironmentManager.init(network_id)
+      NameUtils.init().then(this.update_progress)
+      this.logrocket_app_id = EnvironmentManager.get('REACT_APP_LOGROCKET_APP_ID')
+      if (this.logrocket_app_id)
+        LogRocket.init(this.logrocket_app_id)
+
+      const canvas_contract = contract(CanvasContract)
+      canvas_contract.setProvider(this.state.web3.currentProvider)
+      canvas_contract.deployed().then(instance => {
+        this.contract_instance = instance
+        instance.HalvingInfo.call().then(halving_info => {
+          ContractToWorld.init(halving_info)
+          this.load_canvases()
+        })
+        instance.wei_per_block_cooldown.call().then(wei_per_block => this.wei_per_block = wei_per_block)
       })
-      instance.wei_per_block_cooldown.call().then(wei_per_block => this.wei_per_block = wei_per_block)
     })
   }
 
@@ -564,7 +604,7 @@ class App extends PureComponent {
       if (new_acc !== this.state.account) {
         this.setState({ account: new_acc })
         if (new_acc) {
-          if (process.env.REACT_APP_LOGROCKET_APP_ID)
+          if (this.logrocket_app_id)
             LogRocket.identify(new_acc)
           let already_subs = this.subscribed_accs.has(new_acc)
           if (!already_subs) {
@@ -579,7 +619,7 @@ class App extends PureComponent {
   alert_and_remove = tx => {
     if (!tx)
       return
-    Alert.error(`Tx #${tx.key} has failed`)
+    Alert.error(`Tx #${tx.key} has been rejected`)
     this.remove_pending_tx(tx)
   }
 
@@ -598,29 +638,29 @@ class App extends PureComponent {
 
   pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
 
-  selected_pixel_in_batch = () => this.state.batch_paint.findIndex(p => p.same_coords(this.pixel_at_pointer))
+  selected_pixel_in_draft = () => this.state.draft.pixels.findIndex(p => p.same_coords(this.pixel_at_pointer))
 
-  batch_paint_full = () => {
-    if (!this.state.batch_paint.length)
+  draft_full = () => {
+    if (!this.state.draft.pixels.length)
       return false
-    return this.selected_pixel_in_batch() === -1 && this.state.batch_paint.length >= this.max_batch_length
+    return this.selected_pixel_in_draft() === -1 && this.state.draft.pixels.length >= this.max_draft_length
   }
 
-  remove_from_batch = pixel => {
+  remove_from_draft = () => {
     this.pending_tx_list.expand_draft()
     this.setState(prev_state => {
-      return { batch_paint: prev_state.batch_paint.filter(p => !p.same_coords(pixel)) }
+      return { draft: { ...prev_state.draft, pixels: prev_state.draft.pixels.filter(p => !p.same_coords(this.pixel_at_pointer)) } }
     }, this.update_preview_buffer)
   }
 
   paint = e => {
     e.preventDefault()
     if (this.state.account) {
-      let batch_length = this.state.batch_paint.length
-      if (batch_length) {
-        let tx_promise = batch_length === 1 ? this.paint_one(this.state.batch_paint[0]) : this.paint_many(batch_length)
+      let draft_length = this.state.draft.pixels.length
+      if (draft_length) {
+        let tx_promise = draft_length === 1 ? this.paint_one(this.state.draft.pixels[0]) : this.paint_many(draft_length)
         this.store_pending_tx(tx_promise)
-        this.clear_batch()
+        this.clear_draft()
       }
     }
     else
@@ -645,7 +685,7 @@ class App extends PureComponent {
   store_pending_tx = tx_promise => {
     tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
     this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, preview: true, pixels: prev_state.batch_paint, gas: this.gas_estimator.estimate_gas(prev_state.batch_paint), owner: prev_state.account, key: this.tx_number(tx_promise) }]
+      const temp = [...prev_state.pending_txs, { promise: tx_promise, preview: true, pixels: prev_state.draft.pixels, gas: prev_state.draft.gas, owner: prev_state.account, key: this.tx_number(tx_promise) }]
       return { pending_txs: temp }
     }, this.update_preview_buffer)
   }
@@ -682,13 +722,8 @@ class App extends PureComponent {
     this.setState(prev_state => ({ preview_draft: !prev_state.preview_draft }), this.update_preview_buffer)
   }
 
-  paint_many = batch_length => {
-    let indexes = []
-    let colors = this.state.batch_paint.map((pixel) => {
-      indexes.push(pixel.contract_index())
-      return pixel.bytes3_color()
-    })
-    return this.contract_instance.BatchPaint(batch_length, indexes, colors, this.paint_options())
+  paint_many = draft_length => {
+    return this.contract_instance.BatchPaint(draft_length, this.state.draft.indexes, this.state.draft.colors, this.paint_options())
   }
 
   paint_one = pixel => {
@@ -696,29 +731,29 @@ class App extends PureComponent {
   }
 
   paint_options = () => {
-    return { from: this.state.account, value: this.gas_estimator.estimate_fee(this.state.batch_paint), gas: this.gas_estimator.estimate_gas(this.state.batch_paint), gasPrice: this.gas_estimator.gas_price() }
+    return { from: this.state.account, value: 10 /* TODOOOO */, gas: this.state.draft.gas, gasPrice: this.state.settings.gas_price }
   }
 
-  clear_batch = e => {
+  clear_draft = e => {
     if (e)
       e.preventDefault()
-    this.setState({ batch_paint: []}, this.update_preview_buffer)
+    this.setState({ draft: this.empty_draft }, this.update_preview_buffer)
   }
 
-  add_to_batch = () => {
+  add_to_draft = () => {
     let p = this.pixel_to_paint()
-    if (this.batch_paint_full())
+    if (this.draft_full())
       return
-    let index_to_insert = this.selected_pixel_in_batch(p)
+    let index_to_insert = this.selected_pixel_in_draft(p)
     if (index_to_insert === -1)
-      index_to_insert = this.state.batch_paint.length
-    else if (this.state.batch_paint[index_to_insert].color === p.color)
+      index_to_insert = this.state.draft.pixels.length
+    else if (this.state.draft.pixels[index_to_insert].color === p.color)
       return
     this.pending_tx_list.expand_draft()
     this.setState(prev_state => {
-      const temp = [...prev_state.batch_paint]
+      const temp = [...prev_state.draft.pixels]
       temp[index_to_insert] = p
-      return { batch_paint: temp }
+      return { draft: { ...prev_state.draft, pixels: temp } }
     }, this.update_preview_buffer)
   }
   
@@ -772,7 +807,6 @@ class App extends PureComponent {
           <title>Pavlito clabo un clabito</title>
         </Helmet>
         <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
-        <GasEstimator gas_price={this.state.settings.gas_price} fee={this.state.settings.paint_fee} ref={ge => this.gas_estimator = ge} />
         <LoadingPanel progress={this.state.loading_progress} />
         <CssHide hide={this.state.fullscreen}>
           <Navbar>
@@ -801,8 +835,8 @@ class App extends PureComponent {
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} gas_estimator={this.gas_estimator} on_preview_change={this.toggle_preview_pending_tx}>
-                  <PixelBatch title="Draft" panel_key={'draft'} gas_estimator={this.gas_estimator} on_batch_submit={this.paint} on_batch_clear={this.clear_batch} batch={this.state.batch_paint} max_batch_size={this.max_batch_length} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
+                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx} gas_price={this.state.settings.gas_price}>
+                  <PixelBatch title="Draft" panel_key={'draft'} estimating_gas={this.state.calculating_gas} gas={this.state.draft.gas} gas_price={this.state.settings.gas_price} on_draft_submit={this.paint} on_draft_clear={this.clear_draft} batch={this.state.draft.pixels} max_draft_size={this.max_draft_length} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
                 </PendingTxList>
               </Col>
             </CssHide>

@@ -3,22 +3,32 @@ import PixelBatchItem from './PixelBatchItem'
 import { Button, Panel, Grid, Col } from 'react-bootstrap'
 import './PixelBatch.css'
 import PriceFormatter from './utils/PriceFormatter'
+import BigNumber from 'bignumber.js'
 
 class PixelBatch extends PureComponent {
-  total_price = () => this.props.gas_estimator.estimate_total(this.props.batch)
+  gas_value = () => new BigNumber(this.props.gas_price).mul(this.props.gas)
 
   submit_buttons = () => {
-    if (this.props.on_batch_submit)
+    if (this.props.on_draft_submit)
       return (
         <div className="batch-button">
-          <Button bsStyle="primary" onClick={this.props.on_batch_submit}>Batch paint</Button>
-          <Button bsStyle="primary" onClick={this.props.on_batch_clear}>Clear</Button>
+          <Button bsStyle="primary" onClick={this.props.on_draft_submit}>Paint</Button>
+          <Button bsStyle="primary" onClick={this.props.on_draft_clear}>Clear</Button>
         </div>
       )
   }
 
   batch_list = () => {
     return this.props.batch.map(p => React.createElement(PixelBatchItem, { pixel: p, key: `${p.x}_${p.y}_${p.color}_${p.old_color}` }))
+  }
+
+  price_info = () => {
+    if (this.props.estimating_gas)
+      return <p>Estimated gas value: calculating...</p>
+    else if (this.props.gas)
+      return <p>Estimated gas value: {PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}</p>
+    else
+      return null
   }
 
   handle_toggle = (expand) => {
@@ -35,7 +45,6 @@ class PixelBatch extends PureComponent {
   render() {
     let batch_length = this.props.batch.length
     if (batch_length) {
-      let price_info = this.props.gas_estimator ? (<p>Batch (total including gas (@{PriceFormatter.format_to_unit(this.props.gas_estimator.gas_price(), 'gwei')}) and fees: {PriceFormatter.format(this.total_price())})</p>) : null
       let link = this.props.link ? (<a target="_blank" href={`https://etherscan.io/tx/${this.props.panel_key}`}>link</a>) : null
       let preview_icon = this.can_preview() ? (<Col md={3}><a href="#" onClick={this.toggle_preview}>{this.props.preview ? 'hide' : 'show'}</a></Col>) : (<span></span>)
       return (
@@ -45,7 +54,7 @@ class PixelBatch extends PureComponent {
               <Grid fluid>
                 {preview_icon}
                 <Col md={this.can_preview() ? 6 : 9}>
-                  {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_batch_size && batch_length >= this.props.max_batch_size ? ', max reached' : ''})
+                  {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_draft_size && batch_length >= this.props.max_draft_size ? ', max reached' : ''})
                 </Col>
                 <Col md={3}>
                   {link}
@@ -58,7 +67,7 @@ class PixelBatch extends PureComponent {
           </Panel.Heading>
           <Panel.Body collapsible>
             <div className='batch-container'>
-              {price_info}
+              {this.price_info()}
               <div className='batch-inner-container'>
                 {this.batch_list()}
               </div>

@@ -2,13 +2,14 @@ import Alert from 'react-s-alert'
 import axios from 'axios'
 import * as firebase from 'firebase/app'
 import 'firebase/database'
+import EnvironmentManager from './EnvironmentManager'
 
 class NameUtils {
   static init() {
     return new Promise(resolve => {
       firebase.initializeApp({
-        apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-        databaseURL: `https://${process.env.REACT_APP_FIREBASE_APP_NAME}.firebaseio.com`
+        apiKey: EnvironmentManager.get('REACT_APP_FIREBASE_API_KEY'),
+        databaseURL: `https://${EnvironmentManager.get('REACT_APP_FIREBASE_APP_NAME')}.firebaseio.com`
       })
       let stored_usernames = localStorage.getItem('usernames')
       this.index = stored_usernames ? JSON.parse(stored_usernames) : {}
@@ -66,7 +67,7 @@ class NameUtils {
       if (result.error)
         return Alert.warning('Message signing failed')
       Alert.info('Submitting new name...')
-      axios.post(`https://us-central1-${process.env.REACT_APP_FIREBASE_APP_NAME}.cloudfunctions.net/set_name`, {
+      axios.post(`https://us-central1-${EnvironmentManager.get('REACT_APP_FIREBASE_APP_NAME')}.cloudfunctions.net/set_name`, {
         name: name,
         address: account,
         timestamp: timestamp,

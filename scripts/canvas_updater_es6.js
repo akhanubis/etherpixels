@@ -59,7 +59,7 @@ let get_web3 = () => {
         web3_clientVersion: 'ZeroClientProvider',
       },
       pollingInterval: 99999999, // not interested in polling for new blocks
-      rpcUrl: `https://ropsten.infura.io/${process.env.INFURA_API_KEY}`,
+      rpcUrl: `https://${process.env.INFURA_NETWORK}.infura.io/${process.env.INFURA_API_KEY}`,
       getAccounts: (cb) => cb(null, [])
     })
     provider.start()

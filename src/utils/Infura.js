@@ -9,7 +9,7 @@ var Infura = (() => {
                 web3_clientVersion: 'ZeroClientProvider',
               },
               pollingInterval: 99999999, // not interested in polling for new blocks
-              rpcUrl: `https://ropsten.infura.io/${ process.env.REACT_APP_INFURA_API_KEY }`,
+              rpcUrl: `https://${process.env.REACT_APP_INFURA_NETWORK}.infura.io/${ process.env.REACT_APP_INFURA_API_KEY }`,
               // account mgmt
               getAccounts: (cb) => cb(null, [])
     }))
