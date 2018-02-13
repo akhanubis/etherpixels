@@ -616,13 +616,6 @@ class App extends PureComponent {
     })
   }
 
-  alert_and_remove = tx => {
-    if (!tx)
-      return
-    Alert.error(`Tx #${tx.key} has been rejected`)
-    this.remove_pending_tx(tx)
-  }
-
   update_settings = (new_settings, callback) => {
     let settings = { ...this.state.settings, ...new_settings }
     localStorage.setItem('settings', JSON.stringify(settings))
@@ -658,58 +651,41 @@ class App extends PureComponent {
     if (this.state.account) {
       let draft_length = this.state.draft.pixels.length
       if (draft_length) {
-        let tx_promise = draft_length === 1 ? this.paint_one(this.state.draft.pixels[0]) : this.paint_many(draft_length)
-        this.store_pending_tx(tx_promise)
-        this.clear_draft()
+        let tx_payload = draft_length === 1 ? this.paint_one(this.state.draft.pixels[0]) : this.paint_many(draft_length)
+        this.send_tx(tx_payload)
       }
     }
     else
       alert('No account detected, unlock metamask')
   }
 
-  tx_number = tx => {
-    if (!this.weak_map_for_keys.has(tx))
-      this.weak_map_for_keys.set(tx, ++this.weak_map_count)
-    return this.weak_map_for_keys.get(tx) + '' /* JS */
-  }
-
-  notify_mined_tx = (tx_info, mined_tx) => {
+  notify_mined_tx = tx_info => {
     if (tx_info.pixels.every(p => p.painted))
-      Alert.success(`Tx #${mined_tx.key} has been fully painted`)
+      Alert.success(`Tx #${tx_info.hash} has been fully painted`)
     else if (tx_info.pixels.some(p => p.painted))
-      Alert.warning(`Tx #${mined_tx.key} has been partially painted`)
+      Alert.warning(`Tx #${tx_info.hash} has been partially painted`)
     else
-      Alert.error(`Tx #${mined_tx.key} has not been painted`)
+      Alert.error(`Tx #${tx_info.hash} has not been painted`)
   }
 
-  store_pending_tx = tx_promise => {
-    tx_promise.catch(() => { this.remove_failed_tx(tx_promise) })
-    this.setState(prev_state => {
-      const temp = [...prev_state.pending_txs, { promise: tx_promise, preview: true, pixels: prev_state.draft.pixels, gas: prev_state.draft.gas, owner: prev_state.account, key: this.tx_number(tx_promise) }]
-      return { pending_txs: temp }
-    }, this.update_preview_buffer)
-  }
-
-  remove_pending_tx = tx => {
-    this.setState(prev_state => ({ pending_txs: prev_state.pending_txs.filter(p_tx => p_tx !== tx) }), this.update_preview_buffer)
+  send_tx = tx_payload => {
+    this.state.web3.eth.sendTransaction(tx_payload.params[0], (err, hash) => {
+      if (hash) {
+        this.setState(prev_state => {
+          const temp = [...prev_state.pending_txs, { preview: true, pixels: prev_state.draft.pixels, gas: prev_state.draft.gas, owner: prev_state.account, hash: hash }]
+          return { pending_txs: temp }
+        }, this.clear_draft)
+      }
+    })
   }
 
   remove_mined_tx = tx_info => {
-    let mined_tx = LogUtils.mined_tx(this.state.pending_txs, tx_info)
-    if (mined_tx) {
-      this.notify_mined_tx(tx_info, mined_tx)
-      this.remove_pending_tx(mined_tx)
-    }
+    this.notify_mined_tx(tx_info)
+    this.setState(prev_state => ({ pending_txs: prev_state.pending_txs.filter(p_tx => p_tx.hash !== tx_info.hash) }), this.update_preview_buffer)
   }
 
-  /* handle metamask reject */
-  remove_failed_tx = tx_promise => {
-    let failed_tx = this.state.pending_txs.find(tx => tx.promise === tx_promise)
-    this.alert_and_remove(failed_tx)
-  }
-
-  toggle_preview_pending_tx = tx_key => {
-    let tx_index = this.state.pending_txs.findIndex(tx => tx.key === tx_key)
+  toggle_preview_pending_tx = tx_hash => {
+    let tx_index = this.state.pending_txs.findIndex(tx => tx.hash === tx_hash)
     if (tx_index !== -1)
       this.setState(prev_state => {
         const temp = [...prev_state.pending_txs]
@@ -723,11 +699,11 @@ class App extends PureComponent {
   }
 
   paint_many = draft_length => {
-    return this.contract_instance.BatchPaint(draft_length, this.state.draft.indexes, this.state.draft.colors, this.paint_options())
+    return this.contract_instance.BatchPaint.request(draft_length, this.state.draft.indexes, this.state.draft.colors, this.paint_options())
   }
 
   paint_one = pixel => {
-    return this.contract_instance.Paint(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
+    return this.contract_instance.Paint.request(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
   }
 
   paint_options = () => {

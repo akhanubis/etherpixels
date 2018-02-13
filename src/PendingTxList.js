@@ -37,14 +37,15 @@ class PendingTxList extends PureComponent {
   }
 
   on_start_style = () => {
-    return this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 0 } }))
+    return this.props.pending_txs.map(tx => ({ data: tx, key: tx.hash, style: { opacity: 0 } }))
   }
 
   /* end of enter anim */
-  active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.key, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
+  active_style = () => this.props.pending_txs.map(tx => ({ data: tx, key: tx.hash, style: { opacity: 1, left: spring(0, {stiffness: 130, damping: 14}) } }))
 
-  tx_element = (key, tx) => {
-    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === key, panel_key: key.toString(), title: `Tx #${key}`, batch: tx.pixels, gas: tx.gas, gas_price: this.props.gas_price, preview: tx.preview, on_preview_change: this.props.on_preview_change })
+  tx_element = tx => {
+    let title = `Tx ${tx.hash.substr(0, 7)}...`
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === tx.hash, panel_key: tx.hash, title: title, batch: tx.pixels, gas: tx.gas, gas_price: this.props.gas_price, preview: tx.preview, on_preview_change: this.props.on_preview_change })
   }
 
   draft_element = () => {
@@ -69,7 +70,7 @@ class PendingTxList extends PureComponent {
             <div>
               {interpolatedStyles.reverse().map(config => (
                 <div key={config.key} className="tx-panel-container" style={this.interpolated_to_css(config.style)}>
-                  {this.tx_element(config.key, config.data)}
+                  {this.tx_element(config.data)}
                 </div>
               ))}
             </div>

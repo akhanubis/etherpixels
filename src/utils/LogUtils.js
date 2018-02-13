@@ -1,7 +1,7 @@
 var LogUtils = (() => {
   var to_sorted_event = (sorted, log) => {
     sorted[log.transactionHash] = sorted[log.transactionHash] || {
-      tx: log.transactionHash,
+      hash: log.transactionHash,
       owner: log.args.new_owner,
       pixels: []
     }
@@ -13,15 +13,8 @@ var LogUtils = (() => {
     })
   }
   
-  var mined_tx = (pending_txs, tx_info) => {
-    let indexes = tx_info.pixels.map(p => p.i)
-    /* find the tx that was sent referencing the same pixels than the one given */
-    return pending_txs.find(pending_tx => pending_tx.owner === tx_info.owner && indexes.length === pending_tx.pixels.length && indexes.every(i => pending_tx.pixels.find(p => p.index === i)))
-  }
-
   return {
-    to_sorted_event: to_sorted_event,
-    mined_tx: mined_tx
+    to_sorted_event: to_sorted_event
   }
 })()
 
