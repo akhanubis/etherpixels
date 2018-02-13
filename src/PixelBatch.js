@@ -73,7 +73,7 @@ class PixelBatch extends PureComponent {
               <Grid fluid>
                 {this.preview_icon}
                 <Col md={this.can_preview() ? 6 : 9}>
-                  {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_draft_size && batch_length >= this.props.max_draft_size ? ', max reached' : ''})
+                  {this.props.title}
                 </Col>
                 <Col md={3}>
                   {this.explorer_link}

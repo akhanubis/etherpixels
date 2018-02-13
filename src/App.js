@@ -720,6 +720,11 @@ class App extends PureComponent {
     this.setState({ draft: this.empty_draft }, this.update_preview_buffer)
   }
 
+  draft_title = () => {
+    let draft_length = this.state.draft.pixels.length
+    return `Draft (${draft_length} pixel${draft_length > 1 ? 's' : ''}${draft_length >= this.max_draft_length ? ', max reached' : ''})`
+  }
+
   add_to_draft = () => {
     let p = this.pixel_to_paint()
     if (this.draft_full())
@@ -815,7 +820,7 @@ class App extends PureComponent {
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx} gas_price={this.state.settings.gas_price}>
-                  <PixelBatch title="Draft" panel_key={'draft'} estimating_gas={this.state.calculating_gas} gas={this.state.draft.gas} gas_price={this.state.settings.gas_price} on_draft_submit={this.paint} on_draft_clear={this.clear_draft} batch={this.state.draft.pixels} max_draft_size={this.max_draft_length} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
+                  <PixelBatch title={this.draft_title()} panel_key={'draft'} estimating_gas={this.state.calculating_gas} gas={this.state.draft.gas} gas_price={this.state.settings.gas_price} on_draft_submit={this.paint} on_draft_clear={this.clear_draft} batch={this.state.draft.pixels} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
                 </PendingTxList>
               </Col>
             </CssHide>
