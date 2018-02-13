@@ -660,12 +660,13 @@ class App extends PureComponent {
   }
 
   notify_mined_tx = tx_info => {
+    let tx_short_hash = tx_info.hash.substr(0, 7)
     if (tx_info.pixels.every(p => p.painted))
-      Alert.success(`Tx #${tx_info.hash} has been fully painted`)
+      Alert.success(`Tx #${tx_short_hash} has been fully painted`)
     else if (tx_info.pixels.some(p => p.painted))
-      Alert.warning(`Tx #${tx_info.hash} has been partially painted`)
+      Alert.warning(`Tx #${tx_short_hash} has been partially painted`)
     else
-      Alert.error(`Tx #${tx_info.hash} has not been painted`)
+      Alert.error(`Tx #${tx_short_hash} has not been painted`)
   }
 
   send_tx = tx_payload => {
