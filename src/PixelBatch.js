@@ -4,8 +4,22 @@ import { Button, Panel, Grid, Col } from 'react-bootstrap'
 import './PixelBatch.css'
 import PriceFormatter from './utils/PriceFormatter'
 import BigNumber from 'bignumber.js'
+import EnvironmentManager from './utils/EnvironmentManager'
 
 class PixelBatch extends PureComponent {
+  constructor(props) {
+    super(props)
+    if (props.explorer_link) {
+      let network = EnvironmentManager.get_network()
+      this.explorer_link = <a target="_blank" href={`https://${network === 'ropsten' ? 'ropsten.' : ''}etherscan.io/tx/${props.panel_key}`}>link</a>
+    }
+    this.render_preview_icon(props)
+  }
+
+  componentWillUpdate(next_props) {
+    this.render_preview_icon(next_props)
+  }
+
   gas_value = () => new BigNumber(this.props.gas_price).mul(this.props.gas)
 
   submit_buttons = () => {
@@ -42,22 +56,27 @@ class PixelBatch extends PureComponent {
 
   can_preview = () => this.props.on_preview_change
 
+  render_preview_icon = props => {
+    if (this.can_preview())
+      this.preview_icon = <Col md={3}><a href="#" onClick={this.toggle_preview}>{props.preview ? 'hide' : 'show'}</a></Col>
+    else
+      this.preview_icon = null
+  }
+
   render() {
     let batch_length = this.props.batch.length
     if (batch_length) {
-      let link = this.props.link ? (<a target="_blank" href={`https://etherscan.io/tx/${this.props.panel_key}`}>link</a>) : null
-      let preview_icon = this.can_preview() ? (<Col md={3}><a href="#" onClick={this.toggle_preview}>{this.props.preview ? 'hide' : 'show'}</a></Col>) : (<span></span>)
       return (
         <Panel id={this.props.panel_key} expanded={this.props.expanded} onToggle={this.handle_toggle}>
           <Panel.Heading>
             <Panel.Title>
               <Grid fluid>
-                {preview_icon}
+                {this.preview_icon}
                 <Col md={this.can_preview() ? 6 : 9}>
                   {this.props.title} ({batch_length} pixel{batch_length > 1 ? 's' : ''}{this.props.max_draft_size && batch_length >= this.props.max_draft_size ? ', max reached' : ''})
                 </Col>
                 <Col md={3}>
-                  {link}
+                  {this.explorer_link}
                   <Panel.Toggle>
                     arrow
                   </Panel.Toggle>
