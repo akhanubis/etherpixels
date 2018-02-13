@@ -19,7 +19,7 @@ import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
-import CooldownFormatter from './CooldownFormatter'
+import CooldownFormatter from './utils/CooldownFormatter'
 import AccountStatus from './AccountStatus'
 import EventLogPanel from './EventLogPanel'
 import Palette from './Palette'
@@ -108,6 +108,8 @@ class App extends PureComponent {
   }
 
   componentWillUpdate(_, next_state) {
+    CooldownFormatter.new_block(next_state.current_block)
+    
     let draft_length = next_state.draft.pixels.length
     if (draft_length && draft_length !== this.state.draft.pixels.length) {
       clearTimeout(this.gas_query_timer)
@@ -583,6 +585,7 @@ class App extends PureComponent {
   instantiate_contract = () => {
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
+      CooldownFormatter.init()
       NameUtils.init().then(this.update_progress)
       this.logrocket_app_id = EnvironmentManager.get('REACT_APP_LOGROCKET_APP_ID')
       if (this.logrocket_app_id)
@@ -783,7 +786,6 @@ class App extends PureComponent {
           <meta charSet="utf-8" />
           <title>Pavlito clabo un clabito</title>
         </Helmet>
-        <CooldownFormatter current_block={this.state.current_block} ref={cf => this.cooldown_formatter = cf} />
         <LoadingPanel progress={this.state.loading_progress} />
         <CssHide hide={this.state.fullscreen}>
           <Navbar>
@@ -829,7 +831,7 @@ class App extends PureComponent {
                   <div className={`resize-sensor ${ this.is_picking_color() ? 'picking-color' : ''}`} ref={rs => this.canvas_resize_sensor = rs}>
                     <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
                   </div>
-                  <HoverInfo pixel={this.state.hovering_pixel} cooldown_formatter={this.cooldown_formatter} />
+                  <HoverInfo pixel={this.state.hovering_pixel} current_block={this.state.current_block} />
                   <CssHide hide={!this.state.fullscreen}>
                     <div className='exit-fullscreen-icon'>
                       <Button bsStyle="primary" onClick={this.exit_fullscreen}>
@@ -839,7 +841,7 @@ class App extends PureComponent {
                   </CssHide>
                 </div>
                 <CssHide hide={this.state.fullscreen}>
-                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} account={this.state.account} />
+                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} account={this.state.account} current_block={this.state.current_block} />
                 </CssHide>
               </div>
             </Col>

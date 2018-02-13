@@ -80,8 +80,8 @@ class EventLogPanel extends PureComponent {
               <div className='clear' onClick={this.props.on_clear}>clear</div>
               {filter_html}
             </h4>
-            <EventLog txs={this.filtered_logs()} />
-          </div>          
+            <EventLog txs={this.filtered_logs()} current_block={this.props.current_block} />
+          </div>
         </div>
       </div>
     )

@@ -21,7 +21,7 @@ class EventLog extends PureComponent {
 
   tx_element = (tx, active) => {
     let title = `Tx ${tx.hash.substr(0, 7)}...`
-    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: active === tx.hash, key: tx.hash, panel_key: tx.hash, title: title, batch: tx.pixels, explorer_link: true })
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: active === tx.hash, key: tx.hash, panel_key: tx.hash, title: title, batch: tx.pixels, explorer_link: true, current_block: this.props.current_block })
   }
 
   render_txs = (txs, active) => {

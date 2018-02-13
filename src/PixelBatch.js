@@ -33,7 +33,7 @@ class PixelBatch extends PureComponent {
   }
 
   batch_list = () => {
-    return this.props.batch.map(p => React.createElement(PixelBatchItem, { pixel: p, key: `${p.x}_${p.y}_${p.color}_${p.old_color}` }))
+    return this.props.batch.map(p => React.createElement(PixelBatchItem, { pixel: p, key: `${p.x}_${p.y}`, current_block: this.props.current_block }))
   }
 
   price_info = () => {

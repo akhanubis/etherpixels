@@ -19,3 +19,7 @@
   text-decoration: underline;
   margin-right: 5px;
 }
+
+.batch-pixel-info .right-text {
+  float: right;
+}

@@ -1,4 +1,3 @@
-import EnvironmentManager from './utils/EnvironmentManager'
 import zlib from 'zlib'
 
 class AddressBuffer {
@@ -12,7 +11,6 @@ class AddressBuffer {
   constructor(buffer) {
     this.raw_buffer = buffer
     this.buffer = new DataView(this.raw_buffer)
-    this.confirmations_needed = EnvironmentManager.get('REACT_APP_CONFIRMATIONS_NEEDED')
   }
 
   entry_at(i) {
@@ -52,7 +50,7 @@ class AddressBuffer {
   }
 
   locked_until_at(i) {
-    return this.buffer.getUint32(this.locked_until_offset(i), false) - this.confirmations_needed
+    return this.buffer.getUint32(this.locked_until_offset(i), false)
   }
 
   try_resize(i) {
