@@ -25,13 +25,13 @@ class Palette extends PureComponent {
 
   hide_color_picker = () => {
     this.color_picker_popover.hide()
-    this.current_custom_color = null
+    this.setState({ current_custom_color: null })
   }
 
-  update_current_custom_color = new_color => this.current_custom_color = new_color
+  update_current_custom_color = new_color => this.setState({ current_custom_color: new_color})
 
   save_custom_color = () => {
-    let color_to_add = this.current_custom_color || { hex: ColorUtils.rgbToHex(this.props.current_color), rgb: { ...this.props.current_color, a: 1 }} /* custom color is nil if the user didn't trigger a change */
+    let color_to_add = this.state.current_custom_color || { hex: ColorUtils.rgbToHex(this.props.current_color), rgb: { ...this.props.current_color, a: 1 }} /* custom color is nil if the user didn't trigger a change */
     this.props.on_custom_color_save(color_to_add.hex)
     this.props.on_color_update(color_to_add)
   }
@@ -58,7 +58,7 @@ class Palette extends PureComponent {
     let advanced_color_picker = (
       <Popover id="advanced_color_pickercolor" bsStyle="color-picker">
         <PhotoshopPicker
-          color={ this.props.current_color }
+          color={ this.state.current_custom_color || this.props.current_color }
           onChangeComplete={this.update_current_custom_color}
           onAccept={this.add_custom_color}
           onCancel={this.hide_color_picker}
