@@ -5,7 +5,7 @@ import "./UsingCanvasBoundaries.sol";
 contract Canvas is usingMortal, usingCanvasBoundaries {
   uint private min_cd = 20;
   uint private max_cd = 2880;
-  uint private wei_per_block_cd = 125000000000; /* 125 gwei */
+  uint private wei_per_block_cd = 50000000000; /* 50 gwei */
 
   uint32[50000000] private availability;
   
@@ -30,6 +30,11 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
 
   function FeeInfo() public view returns(uint wei_per_cooldown, uint min_cooldown, uint max_cooldown) {
     return (wei_per_block_cd, min_cd, max_cd);
+  }
+
+  function LowerFee(uint _new_fee) public {
+    assert(msg.sender == contract_owner && _new_fee < wei_per_block_cd);
+    wei_per_block_cd = _new_fee;
   }
   
   function paint_pixel(uint _index, bytes3 _color, uint _cd) private {

@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
 contract usingMortal {
-    address private contract_owner;
+    address internal contract_owner;
     function usingMortal() internal { contract_owner = msg.sender; }
 
     function Withdraw(uint _amount) public {
