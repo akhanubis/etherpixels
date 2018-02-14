@@ -83,7 +83,7 @@ class App extends PureComponent {
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
-    this.max_event_logs_size = 10
+    this.max_event_logs_size = 20
     this.max_draft_length = 20
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
