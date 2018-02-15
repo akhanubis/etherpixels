@@ -601,11 +601,11 @@ class App extends PureComponent {
       Alert.error(`Tx #${tx_short_hash}... has not been painted`)
   }
 
-  send_tx = (tx_payload, pixels, callback) => {
+  send_tx = (tx_payload, pixels, cooldown, callback) => {
     this.state.web3.eth.sendTransaction(tx_payload.params[0], (err, hash) => {
       if (hash) {
         this.setState(prev_state => {
-          const temp = [...prev_state.pending_txs, { preview: true, pixels: pixels, owner: prev_state.account, hash: hash }]
+          const temp = [...prev_state.pending_txs, { preview: true, cooldown: cooldown, pixels: pixels, owner: prev_state.account, hash: hash }]
           return { pending_txs: temp }
         }, callback)
       }

@@ -87,7 +87,7 @@ class Draft extends PureComponent {
     if (this.props.account) {
       let length = this.state.pixels.length
       let tx_payload = length === 1 ? this.paint_one(this.state.pixels[0]) : this.paint_many(length)
-      this.props.on_send(tx_payload, this.state.pixels, this.clear)
+      this.props.on_send(tx_payload, this.state.pixels, this.state.cooldown, this.clear)
     }
     else
       Alert.error('No ethereum account detected, unlock Metamask or use Mist browser', {
