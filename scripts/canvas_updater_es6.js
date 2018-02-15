@@ -19,8 +19,8 @@ const canvasContract = contract(CanvasContract)
 const Pusher = require('pusher')
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
-const buffer_entry_size = 24 /* 20 bytes for address, 4 bytes for locked_until */
-const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('000000000000000000000000000000000000000000000000', 'hex') /* empty address and locked_until */
+const buffer_entry_size = 32 /* 20 bytes for address, 10 bytes for locked_until */
+const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000048c27395000', 'hex') /* empty address and 5000000000000 starting price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
 let canvas = null
@@ -102,8 +102,8 @@ let update_pixel = log => {
 let update_buffer = log => {
   let offset = buffer_entry_size * log.args.i.toNumber()
   let formatted_address = log.args.new_owner.substr(2, 40)
-  let formatted_locked_until = left_pad(log.args.locked_until.toString(16), 8, 0)
-  let entry = formatted_address + formatted_locked_until
+  let formatted_price = left_pad(log.args.price.toString(16), 24, 0)
+  let entry = formatted_address + formatted_price
   address_buffer.fill(entry, offset, offset + buffer_entry_size, 'hex')
 }
 

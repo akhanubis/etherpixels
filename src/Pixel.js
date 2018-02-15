@@ -3,12 +3,12 @@ import ContractToWorld from './utils/ContractToWorld'
 import WorldToContract from './utils/WorldToContract'
 
 class Pixel {
-  constructor(x, y, color, owner, locked_until, old_color, index) {
+  constructor(x, y, color, owner, price, old_color, index) {
     this.x = x
     this.y = y
     this.color = color
     this.owner = owner
-    this.locked_until = locked_until
+    this.price = price
     this.old_color = old_color
     this.index = index
   }
@@ -21,7 +21,7 @@ class Pixel {
       coords.y,
       ColorUtils.bytes3ToHex(event.color),
       owner,
-      event.locked_until,
+      event.price,
       null,
       i
     )

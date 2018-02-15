@@ -8,7 +8,7 @@ var LogUtils = (() => {
     sorted[log.transactionHash].pixels.push({
       i: log.args.i.toNumber(),
       color: log.args.new_color,
-      locked_until: log.args.locked_until.toNumber(),
+      price: log.args.price.toNumber(),
       painted: log.event === 'PixelPainted'
     })
   }

@@ -58,17 +58,25 @@ class PriceFormatter {
     this.humanized = !!humanized
   }
 
+  static _format(wei_value, unit, with_usd) {
+    wei_value = new BigNumber(wei_value)
+    return `${ Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') } ${ this.unit_label(unit) }${ with_usd ? ` ($${ this.format_usd_price(wei_value).toFixed(2) })` : ''}`
+  }
+
   static format_usd_price(wei_value) {
     return wei_value.mul(this.ether_exp()).mul(this.usd_price)
   }
 
   static format(wei_value) {
-    return this.format_to_unit(wei_value, this.unit)
+    return this._format(wei_value, this.unit, true)
   }
 
   static format_to_unit(wei_value, unit) {
-    wei_value = new BigNumber(wei_value)
-    return `${ Numeral(wei_value.mul(this.unit_exp(unit))).format('0a') } ${ this.unit_label(unit) } ($${ this.format_usd_price(wei_value).toFixed(2) })`
+    return this._format(wei_value, unit, true)
+  }
+
+  static format_crypto_only(wei_value) {
+    return this._format(wei_value, this.unit, false)
   }
 }
 

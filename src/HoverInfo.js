@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PixelSquare from './PixelSquare'
 import NameUtils from './utils/NameUtils'
-import CooldownFormatter from './utils/CooldownFormatter'
+import PriceFormatter from './utils/PriceFormatter'
 import './HoverInfo.css'
 
 class HoverInfo extends Component {
@@ -15,7 +15,7 @@ class HoverInfo extends Component {
         <div className="footer hover-info">
           <div className="container-fluid pixel-status">
             <PixelSquare color={this.props.pixel.color} />
-            <span className="text-muted">({this.props.pixel.x}, {this.props.pixel.y}) {CooldownFormatter.format(this.props.pixel.locked_until)}{ownage}</span>
+            <span className="text-muted">({this.props.pixel.x}, {this.props.pixel.y}) {PriceFormatter.format(this.props.pixel.price)}{ownage}</span>
           </div>
         </div>
     )}

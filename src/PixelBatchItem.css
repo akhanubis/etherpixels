@@ -23,3 +23,7 @@
 .batch-pixel-info .right-text {
   float: right;
 }
+
+.batch-pixel-info .right-text .price-selector {
+  width: 95px;
+}

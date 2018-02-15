@@ -3,46 +3,50 @@ import "./UsingMortal.sol";
 import "./UsingCanvasBoundaries.sol";
 
 contract Canvas is usingMortal, usingCanvasBoundaries {
-  uint private min_cd = 20;
-  uint private max_cd = 2880;
-  uint private wei_per_block_cd = 50000000000; /* 50 gwei */
+  uint private starting_price = 5000000000000; /* 5000 gwei */
 
-  uint32[50000000] private availability;
+  uint256[50000000] private price;
+  address[50000000] private owners;
   
-  event PixelPainted(uint i, address new_owner, uint32 locked_until, bytes3 new_color);
-  event PixelUnavailable(uint i, address new_owner, uint32 locked_until, bytes3 new_color);
+  event PixelPainted(uint i, address new_owner, address old_owner, uint256 price, bytes3 new_color);
+  event PixelUnavailable(uint i, address new_owner, uint256 price, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
-    uint paid_cd = msg.value / wei_per_block_cd;
-    require(paid_cd >= min_cd && _index <= max_index());
-    paint_pixel(_index, _color, paid_cd);
+    require(_index <= max_index());
+    paint_pixel(_index, _color, msg.value);
 	}
   
-  function BatchPaint(uint8 _batch_size, uint[] _index, bytes3[] _color) public payable {
-    uint paid_cd = msg.value / (_batch_size * wei_per_block_cd);
-    require(paid_cd >= min_cd);
+  function BatchPaint(uint8 _batch_size, uint[] _index, bytes3[] _color, uint[] _paid) public payable {
+    uint remaining = msg.value;
     uint m_i = max_index();
     for(uint8 i = 0; i < _batch_size; i++) {
-      require(_index[i] <= m_i);
-      paint_pixel(_index[i], _color[i], paid_cd);
+      require(remaining >= _paid[i] && _index[i] <= m_i);
+      paint_pixel(_index[i], _color[i], _paid[i]);
+      remaining -= _paid[i];
     }
   }
 
-  function FeeInfo() public view returns(uint wei_per_cooldown, uint min_cooldown, uint max_cooldown) {
-    return (wei_per_block_cd, min_cd, max_cd);
+  function StartingPrice() public view returns(uint price) {
+    return starting_price;
   }
 
-  function LowerFee(uint _new_fee) public {
-    assert(msg.sender == contract_owner && _new_fee < wei_per_block_cd);
-    wei_per_block_cd = _new_fee;
+  function LowerStartingPrice(uint _new_starting_price) public {
+    assert(msg.sender == contract_owner && _new_starting_price < starting_price);
+    starting_price = _new_starting_price;
   }
   
-  function paint_pixel(uint _index, bytes3 _color, uint _cd) private {
-    if (block.number < availability[_index])
-      PixelUnavailable(_index, msg.sender, availability[_index], _color);
+  function paint_pixel(uint _index, bytes3 _color, uint _paid) private {
+    uint current_price = price[_index] == 0 ? starting_price : price[_index];
+    if (_paid < current_price * 11 / 10)
+      PixelUnavailable(_index, msg.sender, current_price, _color);
     else {
-      availability[_index] = uint32(block.number + ((max_cd < _cd) ? max_cd : _cd)); /* will break after block 4294967295 */
-      PixelPainted(_index, msg.sender, availability[_index], _color);
+      if (_paid > current_price * 2)
+        _paid = current_price * 2;
+      price[_index] = _paid;
+      address old_owner = owners[_index] == address(0) ? contract_owner : owners[_index];
+      owners[_index] = msg.sender;
+      PixelPainted(_index, msg.sender, old_owner, _paid, _color);
+      old_owner.transfer(_paid * 98 / 100);
     }
 	}
 }

@@ -1,33 +1,41 @@
 import zlib from 'zlib'
+import left_pad from 'left-pad'
+import BigNumber from 'bignumber.js'
 
 class AddressBuffer {
-  static get entry_size() { return 24 }
+  static get entry_size() { return 32 }
   static get address_length() { return 20 }
   static get address_in_words_length() { return 5 }
   static get word_size() { return 4 }
-  static get locked_until_length() { return 4 }
+  static get price_length() { return 12 }
+  static get price_in_words_length() { return 3 }
   static get resize_chunk_size() { return 240 } /* in entries amount */
 
-  constructor(buffer) {
+  constructor(buffer, starting_price) {
     this.raw_buffer = buffer
     this.buffer = new DataView(this.raw_buffer)
+    this.starting_price = starting_price.toNumber()
   }
 
   entry_at(i) {
     this.try_resize(i)
     return {
       address: this.address_at(i),
-      locked_until: this.locked_until_at(i)
+      price: this.price_at(i)
     }
   }
   
   update_pixel(pixel) {
-    this.set_address_at(pixel.index, pixel.owner).set_locked_until_at(pixel.index, pixel.locked_until)
+    this.set_address_at(pixel.index, pixel.owner).set_price_at(pixel.index, pixel.price)
   }
 
-  set_locked_until_at(i, locked_until) {
+  set_price_at(i, price) {
     this.try_resize(i)
-    this.buffer.setUint32(this.locked_until_offset(i), locked_until, false)
+    let starting_offset = this.price_offset(i)
+    /* should be using division but w/e */
+    price = left_pad(price.toString(16), 24, 0)
+    for (var j = 0; j < AddressBuffer.price_in_words_length; j++)
+      this.buffer.setUint32(starting_offset + j * AddressBuffer.word_size, parseInt(price.substr(j * 8, 8), 16), false)
     return this
   }
 
@@ -49,8 +57,15 @@ class AddressBuffer {
     }, '0x')
   }
 
-  locked_until_at(i) {
-    return this.buffer.getUint32(this.locked_until_offset(i), false)
+  price_at(i) {
+    let words = [], starting_offset = this.price_offset(i)
+    /* should be using division but w/e */
+    for(var j = 0; j < AddressBuffer.price_in_words_length; j++)
+      words.push(this.buffer.getUint32(starting_offset + j * AddressBuffer.word_size, false))
+    let read_price = parseInt(words.reduce((out, word) => {
+      return `${out}${word.toString(16).padStart(8, '0')}`
+    }, '0x'), 16)
+    return new BigNumber(read_price || this.starting_price)
   }
 
   try_resize(i) {
@@ -67,7 +82,7 @@ class AddressBuffer {
     return i * AddressBuffer.entry_size
   }
 
-  locked_until_offset(i) {
+  price_offset(i) {
     return this.address_offset(i) + AddressBuffer.address_length
   }
 

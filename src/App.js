@@ -19,7 +19,6 @@ import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
-import CooldownFormatter from './utils/CooldownFormatter'
 import AccountStatus from './AccountStatus'
 import EventLogPanel from './EventLogPanel'
 import Palette from './Palette'
@@ -56,7 +55,7 @@ class App extends PureComponent {
         pick_color: 'f',
         fullscreen: 'g'
       },
-      default_cooldown: 40
+      default_price_increase: 20
     }
     this.state = {
       canvas_size: {},
@@ -78,6 +77,10 @@ class App extends PureComponent {
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
+    this.pixel_at_pointer = {
+      x: -9999,
+      y: -9999
+    }
     PriceFormatter.init(this.state.settings.unit, this.state.settings.humanized_units)
   }
 
@@ -94,10 +97,6 @@ class App extends PureComponent {
 
   componentDidMount() {
     ElementQueries.init()
-  }
-
-  componentWillUpdate(_, next_state) {
-    CooldownFormatter.new_block(next_state.current_block)
   }
 
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
@@ -152,11 +151,13 @@ class App extends PureComponent {
   }
 
   load_addresses_buffer = () => {
-    axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
-      AddressBuffer.decompress_buffer(response.data)
-      .then(result => this.address_buffer = new AddressBuffer(result.buffer))
-      .catch(error => console.error("Error when inflating cache buffer"))
-      .then(this.try_bootstrap)
+    this.state.contract_instance.StartingPrice.call().then(starting_price => {
+      axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
+        AddressBuffer.decompress_buffer(response.data)
+        .then(result => this.address_buffer = new AddressBuffer(result.buffer, starting_price))
+        .catch(error => console.error("Error when inflating cache buffer"))
+        .then(this.try_bootstrap)
+      })
     })
   }
 
@@ -365,18 +366,20 @@ class App extends PureComponent {
   update_pixel_at_pointer = () => {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
-    let i = new WorldToContract(x, y).get_index()
-    let color = this.color_at(x, y)
-    let buffer_info = i <= this.state.max_index ? this.address_buffer.entry_at(i) : {}
-    this.pixel_at_pointer = new Pixel(
-      x,
-      y,
-      color,
-      buffer_info.address,
-      buffer_info.locked_until,
-      null,
-      i
-    )
+    if (this.pixel_at_pointer.x !== x || this.pixel_at_pointer.y !== y) {
+      let i = new WorldToContract(x, y).get_index()
+      let color = this.color_at(x, y)
+      let buffer_info = i <= this.state.max_index ? this.address_buffer.entry_at(i) : {}
+      this.pixel_at_pointer = new Pixel(
+        x,
+        y,
+        color,
+        buffer_info.address,
+        buffer_info.price,
+        null,
+        i
+      )
+    }
   }
 
   pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
@@ -549,7 +552,6 @@ class App extends PureComponent {
   instantiate_contract = () => {
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
-      CooldownFormatter.init()
       NameUtils.init().then(this.update_progress)
       this.logrocket_app_id = EnvironmentManager.get('REACT_APP_LOGROCKET_APP_ID')
       if (this.logrocket_app_id)
@@ -601,11 +603,11 @@ class App extends PureComponent {
       Alert.error(`Tx #${tx_short_hash}... has not been painted`)
   }
 
-  send_tx = (tx_payload, pixels, cooldown, callback) => {
+  send_tx = (tx_payload, pixels, callback) => {
     this.state.web3.eth.sendTransaction(tx_payload.params[0], (err, hash) => {
       if (hash) {
         this.setState(prev_state => {
-          const temp = [...prev_state.pending_txs, { preview: true, cooldown: cooldown, pixels: pixels, owner: prev_state.account, hash: hash }]
+          const temp = [...prev_state.pending_txs, { preview: true, pixels: pixels, owner: prev_state.account, hash: hash }]
           return { pending_txs: temp }
         }, callback)
       }
@@ -705,7 +707,7 @@ class App extends PureComponent {
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
-                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_cooldown={this.state.settings.default_cooldown} gas_price={this.state.settings.gas_price} />
+                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
               </Col>
             </CssHide>
