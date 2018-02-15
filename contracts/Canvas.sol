@@ -8,7 +8,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   uint256[50000000] private price;
   address[50000000] private owners;
   
-  event PixelPainted(uint i, address new_owner, address old_owner, uint256 price, bytes3 new_color);
+  event PixelPainted(uint i, address new_owner, uint256 price, bytes3 new_color);
   event PixelUnavailable(uint i, address new_owner, uint256 price, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
@@ -43,10 +43,11 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
       if (_paid > current_price * 2)
         _paid = current_price * 2;
       price[_index] = _paid;
-      address old_owner = owners[_index] == address(0) ? contract_owner : owners[_index];
+      address old_owner = owners[_index];
       owners[_index] = msg.sender;
-      PixelPainted(_index, msg.sender, old_owner, _paid, _color);
-      old_owner.transfer(_paid * 98 / 100);
+      PixelPainted(_index, msg.sender, _paid, _color);
+      if (old_owner != address(0))
+        old_owner.transfer(_paid * 98 / 100);
     }
 	}
 }
