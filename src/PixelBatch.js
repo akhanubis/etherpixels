@@ -1,9 +1,7 @@
 import React, { PureComponent } from 'react'
 import PixelBatchItem from './PixelBatchItem'
-import { Button, Panel, Grid, Col } from 'react-bootstrap'
+import { Panel, Grid, Col } from 'react-bootstrap'
 import './PixelBatch.css'
-import PriceFormatter from './utils/PriceFormatter'
-import BigNumber from 'bignumber.js'
 import EnvironmentManager from './utils/EnvironmentManager'
 
 class PixelBatch extends PureComponent {
@@ -20,29 +18,8 @@ class PixelBatch extends PureComponent {
     this.render_preview_icon(next_props)
   }
 
-  gas_value = () => new BigNumber(this.props.gas_price).mul(this.props.gas)
-
-  submit_buttons = () => {
-    if (this.props.on_draft_submit)
-      return (
-        <div className="batch-button">
-          <Button bsStyle="primary" onClick={this.props.on_draft_submit}>Paint</Button>
-          <Button bsStyle="primary" onClick={this.props.on_draft_clear}>Clear</Button>
-        </div>
-      )
-  }
-
   batch_list = () => {
     return this.props.batch.map(p => React.createElement(PixelBatchItem, { pixel: p, key: `${p.x}_${p.y}`, current_block: this.props.current_block }))
-  }
-
-  price_info = () => {
-    if (this.props.estimating_gas)
-      return <p>Estimated gas value: calculating...</p>
-    else if (this.props.gas)
-      return <p>Estimated gas value: {PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}</p>
-    else
-      return null
   }
 
   handle_toggle = (expand) => {
@@ -86,11 +63,10 @@ class PixelBatch extends PureComponent {
           </Panel.Heading>
           <Panel.Body collapsible>
             <div className='batch-container'>
-              {this.price_info()}
               <div className='batch-inner-container'>
                 {this.batch_list()}
               </div>
-              {this.submit_buttons()}
+              {this.props.children}
             </div>
           </Panel.Body>
         </Panel>

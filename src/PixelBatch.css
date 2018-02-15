@@ -7,7 +7,7 @@
 .batch-container .batch-inner-container {
   position: relative;
   overflow-y: auto;
-  height: 250px; 
+  max-height: 250px; 
 }
 
 .batch-container .batch-button {

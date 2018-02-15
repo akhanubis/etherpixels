@@ -12,7 +12,7 @@ import WorldToCanvas from './utils/WorldToCanvas'
 import WorldToContract from './utils/WorldToContract'
 import CanvasUtils from './utils/CanvasUtils'
 import Canvas from './Canvas'
-import PixelBatch from './PixelBatch'
+import Draft from './Draft'
 import KeyListener from './KeyListener'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
@@ -25,7 +25,6 @@ import EventLogPanel from './EventLogPanel'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
 import BlockInfo from './BlockInfo'
-import BigNumber from 'bignumber.js'
 const contract = require('truffle-contract')
 import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import Alert from 'react-s-alert'
@@ -49,27 +48,20 @@ class App extends PureComponent {
       unit: 'gwei',
       gas_price: 1000000000 /* 1 gwei */,
       custom_colors: [],
-      paint_fee: 0, /* TODOOOOO*/
       shortcuts: {
         paint: 'a',
         move: 's',
         erase: 'd',
         pick_color: 'f',
         fullscreen: 'g'
-      }
-    }
-    this.empty_draft = {
-      gas: new BigNumber(0),
-      pixels: [],
-      indexes: [],
-      colors: []
+      },
+      default_cooldown: 40
     }
     this.state = {
       canvas_size: {},
       web3: null,
       current_block: null,
       current_color: { r: 255, g: 255, b: 255, a: 255 },
-      draft: this.empty_draft,
       event_logs: [],
       keys_down: {},
       x: 0,
@@ -77,14 +69,11 @@ class App extends PureComponent {
       pending_txs: [],
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'move',
-      loading_progress: 0,
-      preview_draft: true,
-      gas_query_id: 0
+      loading_progress: 0
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 20
-    this.max_draft_length = 20
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
@@ -109,39 +98,8 @@ class App extends PureComponent {
 
   componentWillUpdate(_, next_state) {
     CooldownFormatter.new_block(next_state.current_block)
-    
-    let draft_length = next_state.draft.pixels.length
-    if (draft_length && draft_length !== this.state.draft.pixels.length) {
-      clearTimeout(this.gas_query_timer)
-      let gas_query_id = next_state.gas_query_id + 1
-      let indexes = []
-      let colors = next_state.draft.pixels.map(p => {
-        indexes.push(p.contract_index())
-        return p.bytes3_color()
-      })
-      /* to avoid sending too many estimateGas calls */
-      this.setState({
-        draft: {
-          pixels: next_state.draft.pixels,
-          indexes: indexes,
-          colors: colors
-        },
-        calculating_gas: true,
-        gas_query_id: gas_query_id
-      })
-      this.gas_query_timer = setTimeout(() => {
-        this.contract_instance.BatchPaint.estimateGas(this.state.draft.pixels.length, this.state.draft.indexes, this.state.draft.colors, { from: this.state.account, value: 10000000000000000 })
-        .then(this.gas_query(gas_query_id))
-      }, 2000)
-    }
   }
 
-  gas_query = query_id => {
-    return (gas => {
-      if (query_id === this.state.gas_query_id)
-        this.setState(prev_state => ({ draft: { ...prev_state.draft, gas: Math.floor(gas * 1.1 + 10000) }, calculating_gas: false }))
-    })
-  }
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
 
   update_progress = () => this.setState(prev_state => ({ loading_progress: prev_state.loading_progress + 20}))
@@ -204,7 +162,7 @@ class App extends PureComponent {
 
   load_cache_image = () => {
     axios.get(this.bucket_url('init.json')).then(response => {
-      if (this.contract_instance.address === response.data.contract_address) {
+      if (this.state.contract_instance.address === response.data.contract_address) {
         this.last_cache_block = response.data.last_cache_block
         let img = new Image()
         img.crossOrigin = ''
@@ -271,14 +229,14 @@ class App extends PureComponent {
     })
   }
 
-  update_preview_buffer = () => {
+  update_preview_buffer = (preview_draft, draft_pixels) => {
     this.preview_buffer_ctx.putImageData(this.empty_canvas_data, 0, 0)
     this.state.pending_txs.forEach(tx => {
       if (tx.preview)
         this.put_pixels_in_preview(tx.pixels)
     })
-    if (this.state.preview_draft)
-      this.put_pixels_in_preview(this.state.draft.pixels)
+    if (preview_draft)
+      this.put_pixels_in_preview(draft_pixels)
     this.redraw()
   }
 
@@ -421,6 +379,8 @@ class App extends PureComponent {
     )
   }
 
+  pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
+
   main_canvas_mouse_down = e => {
     e.preventDefault()
     if (this.dragging_canvas(e))
@@ -463,13 +423,17 @@ class App extends PureComponent {
 
   start_painting = () => {
     if (this.pointer_inside_canvas())
-      if (this.tool_selected('paint'))
-        this.add_to_draft()
+      if (this.tool_selected('paint')) {
+        this.draft.add(this.pixel_to_paint())
+        this.pending_tx_list.expand_draft()
+      }
       else
         if (this.tool_selected('pick_color'))
           this.pick_color()
-        else
-          this.remove_from_draft()
+        else {
+          this.draft.remove(this.pixel_at_pointer)
+          this.pending_tx_list.expand_draft()
+        }
   }
 
   drag = () => {
@@ -594,15 +558,18 @@ class App extends PureComponent {
       const canvas_contract = contract(CanvasContract)
       canvas_contract.setProvider(this.state.web3.currentProvider)
       canvas_contract.deployed().then(instance => {
-        this.contract_instance = instance
+        this.setState({ contract_instance: instance })
         instance.HalvingInfo.call().then(halving_info => {
           ContractToWorld.init(halving_info)
           this.load_canvases()
         })
         instance.FeeInfo.call().then(([wei_per_cooldown, min_cooldown, max_cooldown]) => {
-          this.wei_per_cooldown = wei_per_cooldown
-          this.min_cooldown = min_cooldown.toNumber()
-          this.max_cooldown = max_cooldown.toNumber()
+          this.setState({ cooldown_params: {
+            wei_per_cooldown: wei_per_cooldown,
+            min_cooldown: min_cooldown.toNumber(),
+            max_cooldown: max_cooldown.toNumber()
+          }})
+          this.update_settings({ default_cooldown: min_cooldown.mul(2).toNumber() })
         })
       })
     })
@@ -632,40 +599,6 @@ class App extends PureComponent {
     return ColorUtils.intArrayToHex(color_data)
   }
 
-  pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
-
-  selected_pixel_in_draft = () => this.state.draft.pixels.findIndex(p => p.same_coords(this.pixel_at_pointer))
-
-  draft_full = () => {
-    if (!this.state.draft.pixels.length)
-      return false
-    return this.selected_pixel_in_draft() === -1 && this.state.draft.pixels.length >= this.max_draft_length
-  }
-
-  remove_from_draft = () => {
-    this.pending_tx_list.expand_draft()
-    this.setState(prev_state => {
-      return { draft: { ...prev_state.draft, pixels: prev_state.draft.pixels.filter(p => !p.same_coords(this.pixel_at_pointer)) } }
-    }, this.update_preview_buffer)
-  }
-
-  paint = e => {
-    e.preventDefault()
-    if (this.state.account) {
-      let draft_length = this.state.draft.pixels.length
-      if (draft_length) {
-        let tx_payload = draft_length === 1 ? this.paint_one(this.state.draft.pixels[0]) : this.paint_many(draft_length)
-        this.send_tx(tx_payload)
-      }
-    }
-    else
-      Alert.error('No ethereum account detected, unlock Metamask or use Mist browser', {
-        position: 'top',
-        effect: null,
-        offset: 54
-      })
-  }
-
   notify_mined_tx = tx_info => {
     let tx_short_hash = tx_info.hash.substr(0, 7)
     if (tx_info.pixels.every(p => p.painted))
@@ -676,13 +609,13 @@ class App extends PureComponent {
       Alert.error(`Tx #${tx_short_hash}... has not been painted`)
   }
 
-  send_tx = tx_payload => {
+  send_tx = (tx_payload, pixels, callback) => {
     this.state.web3.eth.sendTransaction(tx_payload.params[0], (err, hash) => {
       if (hash) {
         this.setState(prev_state => {
-          const temp = [...prev_state.pending_txs, { preview: true, pixels: prev_state.draft.pixels, gas: prev_state.draft.gas, owner: prev_state.account, hash: hash }]
+          const temp = [...prev_state.pending_txs, { preview: true, pixels: pixels, owner: prev_state.account, hash: hash }]
           return { pending_txs: temp }
-        }, this.clear_draft)
+        }, callback)
       }
     })
   }
@@ -702,50 +635,6 @@ class App extends PureComponent {
       }, this.update_preview_buffer)
   }
 
-  toggle_preview_draft = () => {
-    this.setState(prev_state => ({ preview_draft: !prev_state.preview_draft }), this.update_preview_buffer)
-  }
-
-  paint_many = draft_length => {
-    return this.contract_instance.BatchPaint.request(draft_length, this.state.draft.indexes, this.state.draft.colors, this.paint_options())
-  }
-
-  paint_one = pixel => {
-    return this.contract_instance.Paint.request(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
-  }
-
-  paint_options = () => {
-    return { from: this.state.account, value: this.wei_per_cooldown.mul(this.min_cooldown).mul(this.state.draft.pixels.length) /* TODOOOO */, gas: this.state.draft.gas, gasPrice: this.state.settings.gas_price }
-  }
-
-  clear_draft = e => {
-    if (e)
-      e.preventDefault()
-    this.setState({ draft: this.empty_draft }, this.update_preview_buffer)
-  }
-
-  draft_title = () => {
-    let draft_length = this.state.draft.pixels.length
-    return `Draft (${draft_length} pixel${draft_length > 1 ? 's' : ''}${draft_length >= this.max_draft_length ? ', max reached' : ''})`
-  }
-
-  add_to_draft = () => {
-    let p = this.pixel_to_paint()
-    if (this.draft_full())
-      return
-    let index_to_insert = this.selected_pixel_in_draft(p)
-    if (index_to_insert === -1)
-      index_to_insert = this.state.draft.pixels.length
-    else if (this.state.draft.pixels[index_to_insert].color === p.color)
-      return
-    this.pending_tx_list.expand_draft()
-    this.setState(prev_state => {
-      const temp = [...prev_state.draft.pixels]
-      temp[index_to_insert] = p
-      return { draft: { ...prev_state.draft, pixels: temp } }
-    }, this.update_preview_buffer)
-  }
-  
   update_current_color = new_color => {
     this.setState({ current_color: new_color.rgb })
   }
@@ -823,8 +712,8 @@ class App extends PureComponent {
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
-                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx} gas_price={this.state.settings.gas_price}>
-                  <PixelBatch title={this.draft_title()} panel_key={'draft'} estimating_gas={this.state.calculating_gas} gas={this.state.draft.gas} gas_price={this.state.settings.gas_price} on_draft_submit={this.paint} on_draft_clear={this.clear_draft} batch={this.state.draft.pixels} preview={this.state.preview_draft} on_preview_change={this.toggle_preview_draft} />
+                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
+                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_cooldown={this.state.settings.default_cooldown} gas_price={this.state.settings.gas_price} cooldown_params={this.state.cooldown_params} />
                 </PendingTxList>
               </Col>
             </CssHide>
