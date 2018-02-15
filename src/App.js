@@ -46,6 +46,7 @@ class App extends PureComponent {
     let stored_settings = localStorage.getItem('settings')
     this.default_settings = {
       unit: 'gwei',
+      humanized_units: true,
       gas_price: 1000000000 /* 1 gwei */,
       custom_colors: [],
       shortcuts: {
@@ -77,8 +78,7 @@ class App extends PureComponent {
     this.events_panel_width = 290
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
-    PriceFormatter.init()
-    PriceFormatter.set_unit(this.state.settings.unit)
+    PriceFormatter.init(this.state.settings.unit, this.state.settings.humanized_units)
   }
 
   set_state_with_promise = (...args) => {
@@ -563,14 +563,6 @@ class App extends PureComponent {
           ContractToWorld.init(halving_info)
           this.load_canvases()
         })
-        instance.FeeInfo.call().then(([wei_per_cooldown, min_cooldown, max_cooldown]) => {
-          this.setState({ cooldown_params: {
-            wei_per_cooldown: wei_per_cooldown,
-            min_cooldown: min_cooldown.toNumber(),
-            max_cooldown: max_cooldown.toNumber()
-          }})
-          this.update_settings({ default_cooldown: min_cooldown.mul(2).toNumber() })
-        })
       })
     })
   }
@@ -713,7 +705,7 @@ class App extends PureComponent {
                 </div>
                 <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
-                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_cooldown={this.state.settings.default_cooldown} gas_price={this.state.settings.gas_price} cooldown_params={this.state.cooldown_params} />
+                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_cooldown={this.state.settings.default_cooldown} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
               </Col>
             </CssHide>

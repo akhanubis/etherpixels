@@ -1,0 +1,19 @@
+form.form-inline.cd-form {
+  display: inline-block;
+}
+
+.form-inline .form-control.cd-input {
+  width: 70px;
+}
+
+.form-inline .control-label.cd-label {
+  font-weight: inherit;
+}
+
+.batch-container .draft-buttons {
+  float: right;
+}
+
+.batch-container .draft-cd {
+  float: left;
+}

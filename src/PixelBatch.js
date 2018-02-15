@@ -55,7 +55,7 @@ class PixelBatch extends PureComponent {
                 <Col md={3}>
                   {this.explorer_link}
                   <Panel.Toggle>
-                    arrow
+                    <span className="glyphicon glyphicon-chevron-down"></span>
                   </Panel.Toggle>
                 </Col>
               </Grid>

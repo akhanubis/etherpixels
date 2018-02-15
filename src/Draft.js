@@ -1,22 +1,22 @@
 import React, { PureComponent } from 'react'
 import PixelBatch from './PixelBatch'
 import PriceFormatter from './utils/PriceFormatter'
-import { Button } from 'react-bootstrap' 
+import { Button, Form, FormGroup, FormControl, ControlLabel } from 'react-bootstrap' 
 import BigNumber from 'bignumber.js'
 import Alert from 'react-s-alert'
+import './Draft.css'
 
 class Draft extends PureComponent {
   constructor(props) {
     super(props)
     this.max_length = 20
     this.update_callback = () => this.props.on_update(this.state.preview, this.state.pixels)
-    this.gas_value = 0
     this.state = {
       gas: new BigNumber(0),
       pixels: [],
       indexes: [],
       colors: [],
-      cooldown: 0,
+      cooldown: props.default_cooldown,
       preview: true,
       gas_query_id: 0,
       calculating_gas: false
@@ -24,11 +24,28 @@ class Draft extends PureComponent {
   }
 
   componentWillUpdate(next_props, next_state) {
-    this.gas_value = new BigNumber(next_props.gas_price).mul(next_state.gas)
+    this.fetch_cooldown_settings(next_props, next_state)
+    this.estimate_gas(next_state)    
+  }
 
-    if (!this.state.cooldown && next_props.default_cooldown)
-      this.setState({ cooldown: next_props.default_cooldown })
+  fetch_cooldown_settings = (next_props, next_state) => {
+    if (!next_state.cooldown_settings && next_props.contract_instance)
+      next_props.contract_instance.FeeInfo.call().then(([wei_per_cooldown, min_cooldown, max_cooldown]) => {
+        this.setState({ cooldown_settings: {
+          wei_per_cooldown: wei_per_cooldown,
+          min_cooldown: min_cooldown.toNumber(),
+          max_cooldown: max_cooldown.toNumber(),
+        } })
+      })
+  }
 
+  update_cooldown = (e) => {
+    e.preventDefault()
+    let new_cd = Math.max(Math.min(e.target.value, this.state.cooldown_settings.max_cooldown), this.state.cooldown_settings.min_cooldown)
+    this.setState({ cooldown: new_cd })
+  }
+
+  estimate_gas = next_state => {
     let length = next_state.pixels.length
     if (length && length !== this.state.pixels.length) {
       clearTimeout(this.gas_query_timer)
@@ -81,16 +98,18 @@ class Draft extends PureComponent {
   }
 
   paint_many = length => {
-    return this.props.contract_instance.BatchPaint.request(length, this.state.indexes, this.state.colors, this.paint_options(length))
+    return this.props.contract_instance.BatchPaint.request(length, this.state.indexes, this.state.colors, this.paint_options())
   }
 
   paint_one = pixel => {
     return this.props.contract_instance.Paint.request(pixel.contract_index(), pixel.bytes3_color(), this.paint_options(1))
   }
 
-  paint_options = length => {
-    return { from: this.props.account, value: this.props.cooldown_params.wei_per_cooldown.mul(this.state.cooldown).mul(length), gas: this.state.gas, gasPrice: this.props.gas_price }
+  paint_options = () => {
+    return { from: this.props.account, value: this.amount_to_send(), gas: this.state.gas, gasPrice: this.props.gas_price }
   }
+
+  amount_to_send = () => this.state.cooldown_settings.wei_per_cooldown.mul(this.state.cooldown).mul(this.state.pixels.length)
 
   full = existing_pixel_index => {
     if (!this.state.pixels.length)
@@ -133,8 +152,34 @@ class Draft extends PureComponent {
     this.update_with_callback({ preview: new_state })
   }
 
-  price_info = () => {
-    return <p>Estimated gas value: {this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(this.gas_value, 'gwei')}</p>
+  gas_info = () => `Estimated gas value: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(new BigNumber(this.props.gas_price).mul(this.state.gas), 'gwei')}`
+
+  formatted_cooldown_value = () => PriceFormatter.format_to_unit(this.amount_to_send(), 'gwei')
+
+  cooldown_form = () => {
+    if (this.state.cooldown_settings)
+      return (
+        <Form inline className="cd-form">
+          <FormGroup controlId="cd_form">
+            <ControlLabel className="cd-label">Lock for</ControlLabel>
+            {' '}
+            <FormControl
+              bsSize='sm'
+              className="cd-input"
+              type="number"
+              min={this.state.cooldown_settings.min_cooldown}
+              max={this.state.cooldown_settings.max_cooldown}
+              placeholder={this.props.default_cooldown}
+              value={this.state.cooldown}
+              onChange={this.update_cooldown}
+            />
+            {' '}
+            <ControlLabel className="cd-label">blocks ({this.formatted_cooldown_value()})</ControlLabel>
+          </FormGroup>
+        </Form>
+      )
+    else
+      return null
   }
 
   render() {
@@ -151,10 +196,17 @@ class Draft extends PureComponent {
         on_toggle={this.props.on_toggle}
         expanded={this.props.expanded}
       >
-        {this.price_info()}
-        <div className="batch-button">
-          <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas}>Paint</Button>
-          <Button bsStyle="primary" onClick={this.clear}>Clear</Button>
+        <div className="draft-footer">
+          <div className="draft-gas">
+            {this.gas_info()}
+          </div>
+          <div className="draft-cd">
+            {this.cooldown_form()}
+          </div>
+          <div className="draft-buttons">
+            <Button bsStyle="primary" onClick={this.clear}>Clear</Button>
+            <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas}>Paint</Button>
+          </div>
         </div>
       </PixelBatch>
     )

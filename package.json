@@ -62,6 +62,7 @@
     "firebase": "^4.9.1",
     "left-pad": "^1.2.0",
     "logrocket": "^0.6.3",
+    "numeral": "^2.0.6",
     "pusher-js": "^4.2.2",
     "react": "^16.0.0",
     "react-bootstrap": "^0.32.1",

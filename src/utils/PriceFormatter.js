@@ -1,9 +1,12 @@
 import BigNumber from 'bignumber.js'
+import Numeral from 'numeral'
 import axios from 'axios'
 
 class PriceFormatter {
-  static init() {
+  static init(unit, humanized_units) {
     BigNumber.config({ EXPONENTIAL_AT: [-20, 20] })
+    this.set_unit(unit)
+    this.set_humanized(humanized_units)
     this.unit_exps = {
       ether:  new BigNumber(10).pow(-18),
       finney:  new BigNumber(10).pow(-15),
@@ -51,6 +54,10 @@ class PriceFormatter {
     this.unit = new_unit
   }
 
+  static set_humanized(humanized) {
+    this.humanized = !!humanized
+  }
+
   static format_usd_price(wei_value) {
     return wei_value.mul(this.ether_exp()).mul(this.usd_price)
   }
@@ -61,7 +68,7 @@ class PriceFormatter {
 
   static format_to_unit(wei_value, unit) {
     wei_value = new BigNumber(wei_value)
-    return `${ wei_value.mul(this.unit_exp(unit)).toString() } ${ this.unit_label(unit) } ($${ this.format_usd_price(wei_value).toFixed(2) })`
+    return `${ Numeral(wei_value.mul(this.unit_exp(unit))).format('0a') } ${ this.unit_label(unit) } ($${ this.format_usd_price(wei_value).toFixed(2) })`
   }
 }
 
