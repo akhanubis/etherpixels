@@ -1,5 +1,4 @@
 import React, { PureComponent } from 'react'
-import NameUtils from './utils/NameUtils'
 import PriceFormatter from './utils/PriceFormatter'
 import { Form, FormControl, FormGroup, ControlLabel, HelpBlock, InputGroup, Button, ButtonToolbar, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
 import Switch from 'react-toggle-button'
@@ -9,7 +8,7 @@ import './Settings.css'
 class Settings extends PureComponent {
   constructor(props) {
     super(props)
-    this.max_name_length = 40
+    this.max_name_length = 45
     this.max_price_increase = 100
     this.min_price_increase = 10
     this.state = {
@@ -17,11 +16,11 @@ class Settings extends PureComponent {
       gas_price: new BigNumber(props.settings.gas_price).mul(PriceFormatter.unit_exps.gwei).toNumber(),
       default_price_increase: props.settings.default_price_increase
     }
-    NameUtils.set_after_init(() => {
-      let stored_name = NameUtils.name(this.props.account)
-      if (stored_name)
-        this.setState({ name: NameUtils.name(this.props.account) })
-    })
+  }
+
+  componentWillUpdate(new_props) {
+    if (new_props.name != this.props.name)
+      this.setState({ name: new_props.name })
   }
 
   change_name = e => {
@@ -30,7 +29,7 @@ class Settings extends PureComponent {
 
   submit_name = e => {
     e.preventDefault()
-    NameUtils.submit_name(this.state.name, this.props.account, this.props.web3.currentProvider)
+    this.props.on_name_update(this.state.name)
   }
 
   valid_name = () => this.state.name.length < this.max_name_length

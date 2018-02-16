@@ -20,17 +20,12 @@ class NameUtils {
         let update_ref = ref.orderByChild('last_modified').limitToLast(1)
         update_ref.on('child_added', this.handle_new_name.bind(this))
         update_ref.on('child_changed', this.handle_new_name.bind(this))
-        this.after_init()
         resolve()
       })
     })
   }
 
-  static set_after_init(fn) {
-    this.after_init = fn
-  }
-  
-  static submit_name(name, account, provider) {
+  static submit_name(name, account, provider, callback) {
     name = name.trim()
     if (!(account && provider)) return
     let timestamp = new Date().getTime().toString()
@@ -78,7 +73,10 @@ class NameUtils {
         timestamp: timestamp,
         signature: result.result
       })
-      .then(_ => Alert.success('Name has been saved'))
+      .then(_ => {
+        Alert.success('Name has been saved')
+        callback()
+      })
       .catch(_ => Alert.error('Name update failed'))
     })
   }

@@ -10,9 +10,12 @@ exports.set_name = functions.https.onRequest((req, res) => {
         address = req.body.address,
         timestamp = req.body.timestamp,
         signature = req.body.signature
-    if (name.length > 40) {
+    if (name.length > 45) {
       res.sendStatus(403)
       return
+    }
+    if (name === address) {
+      name = ''
     }
     let typed_data = [
       {

@@ -559,7 +559,13 @@ class App extends PureComponent {
 
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
-      NameUtils.init().then(this.update_progress)
+      NameUtils.init()
+      .then(() => {
+        let n = NameUtils.name(this.state.account)
+        this.setState({ name: n === this.state.account ? '' : n })
+      })
+      .then(this.update_progress)
+
       this.logrocket_app_id = EnvironmentManager.get('REACT_APP_LOGROCKET_APP_ID')
       if (this.logrocket_app_id)
         LogRocket.init(this.logrocket_app_id)
@@ -591,6 +597,10 @@ class App extends PureComponent {
     let settings = { ...this.state.settings, ...new_settings }
     localStorage.setItem('settings', JSON.stringify(settings))
     this.setState({ settings: settings }, callback)
+  }
+
+  update_name = new_name => {
+    NameUtils.submit_name(new_name, this.state.account, this.state.web3.currentProvider, () => this.setState({ name: new_name }))
   }
 
   color_at = (x, y) => {
@@ -703,6 +713,9 @@ class App extends PureComponent {
               </Navbar.Brand>
             </Navbar.Header>
             <Nav pullRight>
+              <NavItem className='account-name'>
+                {this.state.name}
+              </NavItem>
               <NavItem className='account-status'>
                 <AccountStatus account={this.state.account} />
               </NavItem>
@@ -751,7 +764,7 @@ class App extends PureComponent {
                   <EventLogPanel event_logs={this.state.event_logs} settings_expanded={this.state.settings.show_settings} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
                 </CssHide>
                 <CssHide hide={this.state.fullscreen}>
-                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} web3={this.state.web3} settings={this.state.settings} on_update={this.update_settings}/>
+                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} settings={this.state.settings} on_update={this.update_settings} on_name_update={this.update_name} name={this.state.name} />
                 </CssHide>
               </div>
             </Col>
