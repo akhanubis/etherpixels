@@ -12,7 +12,8 @@ class KeyListener extends PureComponent {
   }
 
   update_key = (e, state) => {
-    this.props.on_key_update({ [e.key]: state })
+    if (!e.target.classList.value.includes('form-control'))
+      this.props.on_key_update({ [e.key]: state })
   }
 
   key_down = e => {
