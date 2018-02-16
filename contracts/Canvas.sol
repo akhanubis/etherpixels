@@ -5,11 +5,16 @@ import "./UsingCanvasBoundaries.sol";
 contract Canvas is usingMortal, usingCanvasBoundaries {
   uint private starting_price = 5000000000000; /* 5000 gwei */
 
-  uint256[50000000] private price;
-  address[50000000] private owners;
+  /* packed to 32 bytes */
+  struct Pixel {
+    uint96 price;
+    address owner;
+  }
   
-  event PixelPainted(uint i, address new_owner, uint256 price, bytes3 new_color);
-  event PixelUnavailable(uint i, address new_owner, uint256 price, bytes3 new_color);
+  mapping(uint => Pixel) private pixels;
+
+  event PixelPainted(uint i, address new_owner, uint price, bytes3 new_color);
+  event PixelUnavailable(uint i, address new_owner, uint price, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     require(_index <= max_index());
@@ -36,15 +41,17 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   }
   
   function paint_pixel(uint _index, bytes3 _color, uint _paid) private {
-    uint current_price = price[_index] == 0 ? starting_price : price[_index];
+    Pixel storage p = pixels[_index];
+    uint current_price = p.price == 0 ? starting_price : uint(p.price);
     if (_paid < current_price * 11 / 10)
       PixelUnavailable(_index, msg.sender, current_price, _color);
     else {
       if (_paid > current_price * 2)
         _paid = current_price * 2;
-      price[_index] = _paid;
-      address old_owner = owners[_index];
-      owners[_index] = msg.sender;
+      p.price = uint96(_paid);
+      require(p.price == _paid); /* casting guard */ 
+      address old_owner = p.owner;
+      p.owner = msg.sender;
       PixelPainted(_index, msg.sender, _paid, _color);
       if (old_owner != address(0))
         old_owner.transfer(_paid * 98 / 100);

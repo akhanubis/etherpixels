@@ -19,7 +19,7 @@ const canvasContract = contract(CanvasContract)
 const Pusher = require('pusher')
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
-const buffer_entry_size = 32 /* 20 bytes for address, 10 bytes for locked_until */
+const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
 const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000048c27395000', 'hex') /* empty address and 5000000000000 starting price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
