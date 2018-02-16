@@ -61,6 +61,11 @@ class Settings extends PureComponent {
     })
   }
 
+  change_zoom_at_pointer = v => {
+    v = !v
+    this.props.on_update({ zoom_at_pointer: v })
+  }
+
   style = () => {
     let right = this.props.expand ? 0 : - this.props.panel_width
     return { right: right, width: this.props.panel_width }
@@ -124,6 +129,15 @@ class Settings extends PureComponent {
               onChange={this.change_default_price_increase}
             />
             <FormControl.Feedback/>
+          </FormGroup>
+          <FormGroup controlId="zoom_at_pointer">
+            <ControlLabel>Zoom into/out of cursor position</ControlLabel>
+            <Switch
+              value={this.props.settings.zoom_at_pointer}
+              thumbStyle={{borderRadius: 2}}
+              trackStyle={{borderRadius: 2}}
+              onToggle={this.change_zoom_at_pointer}
+            />
           </FormGroup>
         </Form>
       </div>

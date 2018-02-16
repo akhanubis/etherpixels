@@ -56,7 +56,8 @@ class App extends PureComponent {
         pick_color: 'f',
         fullscreen: 'g'
       },
-      default_price_increase: 20
+      default_price_increase: 20,
+      zoom_at_pointer: true
     }
     this.state = {
       canvas_size: {},
@@ -500,7 +501,7 @@ class App extends PureComponent {
     /* Determine the direction of the scroll (< 0 → up, > 0 → down). */
     var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
     delta = delta > 0 ? 0.8 : 1.25
-    if (true) {
+    if (this.state.settings.zoom_at_pointer) {
       let old_mouse_pos = {
         x: this.mouse_position.x - 0.5 * this.state.viewport_size.width,
         y: this.mouse_position.y - 0.5 * this.state.viewport_size.height
