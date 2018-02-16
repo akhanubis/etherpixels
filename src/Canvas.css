@@ -42,6 +42,18 @@ canvas {
   height: 100%;
 }
 
-.picking-color {
+.pick_color {
   cursor: url('/assets/pick-color-icon.png') 0 16, pointer;
+}
+
+.erase {
+  cursor: url('/assets/erase-icon.png') 0 0, pointer;
+}
+
+.paint {
+  cursor: url('/assets/paint-icon.png') 0 16, pointer;
+}
+
+.move {
+  cursor: move;
 }

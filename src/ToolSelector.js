@@ -15,7 +15,8 @@ class Tool extends PureComponent {
       move: 'Move',
       erase: 'Erase',
       pick_color: 'Pick color',
-      fullscreen: 'Fullscreen'
+      fullscreen: 'Fullscreen',
+      reset_view: 'Reset view'
   }
 
   label = () => this.labels[this.props.id]

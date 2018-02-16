@@ -49,13 +49,6 @@ class App extends PureComponent {
       humanized_units: true,
       gas_price: 1000000000 /* 1 gwei */,
       custom_colors: [],
-      shortcuts: {
-        paint: 'a',
-        move: 's',
-        erase: 'd',
-        pick_color: 'f',
-        fullscreen: 'g'
-      },
       default_price_increase: 20,
       zoom_at_pointer: true
     }
@@ -70,7 +63,15 @@ class App extends PureComponent {
       y: 0,
       pending_txs: [],
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
-      current_tool: 'move',
+      current_tool: 'paint',
+      shortcuts: {
+        paint: 'a',
+        move: 's',
+        erase: 'd',
+        pick_color: 'f',
+        fullscreen: 'g',
+        reset_view: 'r'
+      },
       loading_progress: 0
     }
     this.bootstrap_steps = 3
@@ -119,13 +120,11 @@ class App extends PureComponent {
     new ResizeSensor(this.canvas_resize_sensor, this.redraw)
     this.set_state_with_promise({ viewport_size: new_canvas_size })
     .then(() => {
-      this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
-      this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
       let last_cache_index = ContractToWorld.max_index(this.last_cache_block)
+      this.reset_view()
       this.resize_pixel_buffer(this.state.canvas_size, last_cache_index, this.state.max_index)
       this.clear_logs()
       this.start_watching()
-      this.redraw()
       this.minimap_canvas.resize()
       this.zoom_canvas.resize()
       this.update_progress()
@@ -187,6 +186,12 @@ class App extends PureComponent {
     this.set_state_with_promise({ canvas_size: { width: dimension, height: dimension } })
     .then(this.on_new_block_state.bind(this, this.last_cache_block, new_max_index))
     .then(this.try_bootstrap)
+  }
+
+  reset_view = () => {
+    this.current_wheel_zoom = this.whole_canvas_on_viewport_ratio()
+    this.point_at_center = { x: this.state.canvas_size.width * 0.5, y: this.state.canvas_size.height * 0.5 }
+    this.redraw()
   }
 
   create_buffer_canvas = dimension => {
@@ -441,10 +446,6 @@ class App extends PureComponent {
     this.save_custom_color(ColorUtils.intArrayToHex(data))
   }
 
-  is_picking_color = () => {
-    return this.state.current_tool === 'pick_color'
-  }
-
   save_custom_color = hex_color => {
     let new_colors = new Set(this.state.settings.custom_colors)
     new_colors.add(hex_color) /* IE 11: add doesnt return the Set instance :( */
@@ -647,7 +648,7 @@ class App extends PureComponent {
   }
 
   check_for_shortcuts = () => {
-    Object.entries(this.state.settings.shortcuts).forEach(([tool, key]) => {
+    Object.entries(this.state.shortcuts).forEach(([tool, key]) => {
       if (this.state.keys_down[key]) {
         this.select_tool(tool)
         return false
@@ -671,9 +672,11 @@ class App extends PureComponent {
   select_tool = (tool) => {
     this.holding_click = false
     if (tool === 'fullscreen') {
-      this.update_settings({ show_events: false })
+      this.update_settings({ show_events: false, show_settings: false })
       this.setState(prev_state => ({ fullscreen: !prev_state.fullscreen }))
     }
+    else if (tool === 'reset_view')
+      this.reset_view()
     else
       this.setState({ current_tool: tool })
   }
@@ -716,9 +719,9 @@ class App extends PureComponent {
               <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
                 <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
-                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} on_height_change={this.update_palette_height} />
+                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.settings.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
                   <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
@@ -733,7 +736,7 @@ class App extends PureComponent {
                   <div className='minimap-canvas'>
                     <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
                   </div>
-                  <div className={`resize-sensor ${ this.is_picking_color() ? 'picking-color' : ''}`} ref={rs => this.canvas_resize_sensor = rs}>
+                  <div className={`resize-sensor ${this.state.current_tool}`} ref={rs => this.canvas_resize_sensor = rs}>
                     <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
                   </div>
                   <HoverInfo pixel={this.state.hovering_pixel} current_block={this.state.current_block} />
