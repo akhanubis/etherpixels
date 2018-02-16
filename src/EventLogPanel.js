@@ -17,6 +17,8 @@ class EventLogPanel extends PureComponent {
     let right = this.props.panel_width
     if (!this.props.expand)
       right = this.state.events_tab_hovered  && !this.hover_disabled? 0 : - this.hover_distance
+    if (this.props.settings_expanded)
+      right += this.props.panel_width
     return { right: right }
   }
 

@@ -544,7 +544,7 @@ class App extends PureComponent {
       setInterval(this.fetch_account, 1000)
       this.fetch_account()
     }
-    
+
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
       NameUtils.init().then(this.update_progress)
@@ -689,10 +689,6 @@ class App extends PureComponent {
               </Navbar.Brand>
             </Navbar.Header>
             <Nav pullRight>
-              <NavItem className='submit-name-button'>
-                <Button onClick={this.submit_name}>set name</Button>
-                <Button onClick={this.clear_name}>clear name</Button>
-              </NavItem>
               <NavItem className='account-status'>
                 <AccountStatus account={this.state.account} />
               </NavItem>
@@ -738,10 +734,10 @@ class App extends PureComponent {
                   </CssHide>
                 </div>
                 <CssHide hide={this.state.fullscreen}>
-                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
+                  <EventLogPanel event_logs={this.state.event_logs} settings_expanded={this.state.settings.show_settings} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
                 </CssHide>
                 <CssHide hide={this.state.fullscreen}>
-                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} web3={this.state.web3} />
+                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} web3={this.state.web3} settings={this.state.settings} on_update={this.update_settings}/>
                 </CssHide>
               </div>
             </Col>

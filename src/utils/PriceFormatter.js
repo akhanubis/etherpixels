@@ -60,7 +60,8 @@ class PriceFormatter {
 
   static _format(wei_value, unit, with_usd) {
     wei_value = new BigNumber(wei_value)
-    return `${ Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') } ${ this.unit_label(unit) }${ with_usd ? ` ($${ this.format_usd_price(wei_value).toFixed(2) })` : ''}`
+    let eth_value = this.humanized ? Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') : wei_value.mul(this.unit_exp(unit)).toString()
+    return `${ eth_value } ${ this.unit_label(unit) }${ with_usd ? ` ($${ this.format_usd_price(wei_value).toFixed(2) })` : ''}`
   }
 
   static format_usd_price(wei_value) {
