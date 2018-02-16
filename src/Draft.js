@@ -46,11 +46,14 @@ class Draft extends PureComponent {
         indexes: indexes,
         colors: colors,
         calculating_gas: true,
+        gas: 0,
+        will_fail: false,
         gas_query_id: gas_query_id
       })
       this.gas_query_timer = setTimeout(() => {
         this.props.contract_instance.BatchPaint.estimateGas(this.state.pixels.length, this.state.indexes, this.state.colors, this.state.prices, { from: this.props.account, value: 10000000000000000 })
         .then(this.gas_query(gas_query_id))
+        .catch(this.failed_gas_query(gas_query_id))
       }, 1000)
     }
   }
@@ -59,6 +62,13 @@ class Draft extends PureComponent {
     return (gas => {
       if (query_id === this.state.gas_query_id)
         this.setState({ gas: Math.floor(gas * 1.1 + 10000), calculating_gas: false })
+    })
+  }
+
+  failed_gas_query = query_id => {
+    return (() => {
+      if (query_id === this.state.gas_query_id)
+        this.setState({ will_fail: true, calculating_gas: false })
     })
   }
 
@@ -151,7 +161,12 @@ class Draft extends PureComponent {
 
   gas_value = () => new BigNumber(this.props.gas_price).mul(this.state.gas)
 
-  gas_info = () => `Max tx fee: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}`
+  gas_info = () => {
+    if (this.state.will_fail)
+      return 'Tx will fail with current values'
+    else
+      return `Max tx fee: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}`
+  }
 
   total = () => `Total: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format(this.gas_value().add(this.amount_to_send()))}`
 
@@ -180,7 +195,7 @@ class Draft extends PureComponent {
           </div>
           <div className="draft-buttons">
             <Button bsStyle="primary" onClick={this.clear}>Clear</Button>
-            <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas}>Paint</Button>
+            <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas || this.state.will_fail}>Paint</Button>
           </div>
         </div>
       </PixelBatch>
