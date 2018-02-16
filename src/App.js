@@ -231,13 +231,17 @@ class App extends PureComponent {
   }
 
   update_preview_buffer = (preview_draft, draft_pixels) => {
+    if (preview_draft !== undefined) {
+      this.last_preview_draft = preview_draft
+      this.last_draft_pixels = draft_pixels
+    }
     this.preview_buffer_ctx.putImageData(this.empty_canvas_data, 0, 0)
     this.state.pending_txs.forEach(tx => {
       if (tx.preview)
         this.put_pixels_in_preview(tx.pixels)
     })
-    if (preview_draft)
-      this.put_pixels_in_preview(draft_pixels)
+    if (this.last_preview_draft)
+      this.put_pixels_in_preview(this.last_draft_pixels)
     this.redraw()
   }
 
