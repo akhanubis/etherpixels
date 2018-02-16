@@ -499,8 +499,19 @@ class App extends PureComponent {
     else if (this.wheel_even_supported) return
     /* Determine the direction of the scroll (< 0 → up, > 0 → down). */
     var delta = ((e.deltaY || -e.wheelDelta || e.detail) >> 10) || 1
-    this.current_wheel_zoom = this.current_wheel_zoom * (delta > 0 ? 0.8 : 1.25)
-    this.update_hovering_pixel()
+    delta = delta > 0 ? 0.8 : 1.25
+    if (true) {
+      let old_mouse_pos = {
+        x: this.mouse_position.x - 0.5 * this.state.viewport_size.width,
+        y: this.mouse_position.y - 0.5 * this.state.viewport_size.height
+      }
+      this.current_wheel_zoom = this.current_wheel_zoom * delta
+      this.point_at_center.x -= old_mouse_pos.x * (1 - delta) / this.current_wheel_zoom
+      this.point_at_center.y -= old_mouse_pos.y * (1 - delta) / this.current_wheel_zoom
+    }
+    else
+      this.current_wheel_zoom = this.current_wheel_zoom * delta
+    this.redraw()
   }
 
   on_new_block_state = (new_block, new_max_index) => this.set_state_with_promise({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
