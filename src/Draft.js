@@ -151,7 +151,7 @@ class Draft extends PureComponent {
 
   gas_value = () => new BigNumber(this.props.gas_price).mul(this.state.gas)
 
-  gas_info = () => `Estimated gas value: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}`
+  gas_info = () => `Max tx fee: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format_to_unit(this.gas_value(), 'gwei')}`
 
   total = () => `Total: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format(this.gas_value().add(this.amount_to_send()))}`
 
