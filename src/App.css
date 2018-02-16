@@ -43,10 +43,6 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
   margin-right: 0;
 }
 
-.canvas-container.with-events {
-  margin-right: 290px;
-}
-
 .icon-2x {
   font-size: 2em;
 }
@@ -62,4 +58,8 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
   left: 0;
   margin-left: 2px;
   margin-bottom: 2px;
+}
+
+.canvas-outer-container {
+  background: #aaaaaa;
 }

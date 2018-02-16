@@ -29,6 +29,7 @@ import { ElementQueries, ResizeSensor } from 'css-element-queries'
 import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
 import LoadingPanel from './LoadingPanel'
+import Settings from './Settings'
 import CssHide from './CssHide'
 import LogRocket from 'logrocket'
 import EnvironmentManager from './utils/EnvironmentManager'
@@ -74,7 +75,7 @@ class App extends PureComponent {
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 20
-    this.events_panel_width = 290
+    this.right_panel_width = 300
     this.weak_map_for_keys = new WeakMap()
     this.weak_map_count = 0
     this.pixel_at_pointer = {
@@ -138,16 +139,6 @@ class App extends PureComponent {
 
   bucket_url = key => {
     return `https://${ EnvironmentManager.get('REACT_APP_S3_BUCKET') }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
-  }
-
-  submit_name = e => {
-    e.preventDefault()
-    NameUtils.submit_name("my new name" + Math.random(), this.state.account, this.state.web3.currentProvider)
-  }
-
-  clear_name = e => {
-    e.preventDefault()
-    NameUtils.submit_name('', this.state.account, this.state.web3.currentProvider)
   }
 
   load_addresses_buffer = () => {
@@ -299,12 +290,6 @@ class App extends PureComponent {
     this.pusher.subscribe('main').bind('new_block', this.update_block_number)
     this.pusher.subscribe('main').bind('server_message', this.show_server_message)
     this.pusher.subscribe('main').bind('mined_tx', this.process_new_tx)
-    
-    if (!this.state.web3_watch_only) {
-      /* metamask docs say this is the best way to go about this :shrugs: */
-      setInterval(this.fetch_account, 1000)
-      this.fetch_account()
-    }
   }
 
   show_server_message = ({ type, message}) => {
@@ -554,6 +539,12 @@ class App extends PureComponent {
   }
 
   instantiate_contract = () => {
+    if (!this.state.web3_watch_only) {
+      /* metamask docs say this is the best way to go about this :shrugs: */
+      setInterval(this.fetch_account, 1000)
+      this.fetch_account()
+    }
+    
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
       NameUtils.init().then(this.update_progress)
@@ -653,7 +644,12 @@ class App extends PureComponent {
   }
 
   toggle_events = () => {
-    this.update_settings({ show_events: !this.state.settings.show_events })
+    this.update_settings({ show_events: !this.state.settings.show_events, show_settings: false })
+  }
+
+  toggle_settings = e => {
+    e.preventDefault()
+    this.update_settings({ show_events: false, show_settings: !this.state.settings.show_settings })
   }
 
   resize_viewport = (new_size) => {
@@ -674,6 +670,8 @@ class App extends PureComponent {
     e.preventDefault()
     this.setState({ fullscreen: false })
   }
+
+  canvas_container_style = () => ({ marginRight: this.state.settings.show_events || this.state.settings.show_settings ? this.right_panel_width : 0 })
 
   render() {
     return (
@@ -698,6 +696,9 @@ class App extends PureComponent {
               <NavItem className='account-status'>
                 <AccountStatus account={this.state.account} />
               </NavItem>
+              <NavItem className="settings-icon">
+                <span className="glyphicon glyphicon-cog" onClick={this.toggle_settings}></span>
+              </NavItem>
             </Nav>
           </Navbar>
         </CssHide>
@@ -717,7 +718,7 @@ class App extends PureComponent {
             </CssHide>
             <Col md={this.state.fullscreen ? 12 : 9} className='canvas-col'>
               <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
-                <div className={`canvas-container ${ this.state.settings.show_events ? 'with-events' : ''}`}>
+                <div className="canvas-container" style={this.canvas_container_style()}>
                   <div className='zoom-canvas'>
                     <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
                   </div>
@@ -737,7 +738,10 @@ class App extends PureComponent {
                   </CssHide>
                 </div>
                 <CssHide hide={this.state.fullscreen}>
-                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} slideout_width={this.events_panel_width} account={this.state.account} current_block={this.state.current_block} />
+                  <EventLogPanel event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
+                </CssHide>
+                <CssHide hide={this.state.fullscreen}>
+                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} web3={this.state.web3} />
                 </CssHide>
               </div>
             </Col>

@@ -14,15 +14,15 @@ class EventLogPanel extends PureComponent {
   }
   
   tab_style = () => {
-    let right = this.props.slideout_width
+    let right = this.props.panel_width
     if (!this.props.expand)
       right = this.state.events_tab_hovered  && !this.hover_disabled? 0 : - this.hover_distance
     return { right: right }
   }
 
   inner_style = () => {
-    let right = this.props.expand ? 0 : - this.props.slideout_width
-    return { right: right }
+    let right = this.props.expand ? 0 : - this.props.panel_width
+    return { right: right, width: this.props.panel_width }
   }
 
   start_hover_events_tab = e => {
