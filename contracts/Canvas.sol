@@ -42,6 +42,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   
   function paint_pixel(uint _index, bytes3 _color, uint _paid) private {
     Pixel storage p = pixels[_index];
+    require(msg.sender != p.owner);
     uint current_price = p.price == 0 ? starting_price : uint(p.price);
     if (_paid < current_price * 11 / 10)
       PixelUnavailable(_index, msg.sender, current_price, _color);
