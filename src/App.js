@@ -1,4 +1,3 @@
-// eslint-disable-next-line
 import React, { PureComponent } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
