@@ -13,14 +13,14 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   
   mapping(uint => Pixel) private pixels;
 
-  event PixelPainted(uint i, address new_owner, uint price, bytes3 new_color);
+  event PixelPainted(uint i, address new_owner, address old_owner, uint price, bytes3 new_color);
   event PixelUnavailable(uint i, address new_owner, uint price, bytes3 new_color);
   
 	function Paint(uint _index, bytes3 _color) public payable {
     require(_index <= max_index());
     paint_pixel(_index, _color, msg.value);
 	}
-  
+
   function BatchPaint(uint8 _batch_size, uint[] _index, bytes3[] _color, uint[] _paid) public payable {
     uint remaining = msg.value;
     uint m_i = max_index();
@@ -53,7 +53,7 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
       require(p.price == _paid); /* casting guard */ 
       address old_owner = p.owner;
       p.owner = msg.sender;
-      PixelPainted(_index, msg.sender, _paid, _color);
+      PixelPainted(_index, msg.sender, old_owner, _paid, _color);
       if (old_owner != address(0))
         old_owner.transfer(_paid * 98 / 100);
     }
