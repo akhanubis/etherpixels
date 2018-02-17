@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PixelBatchItem from './PixelBatchItem'
-import { Panel, Grid, Col } from 'react-bootstrap'
+import { Panel, Grid, Badge } from 'react-bootstrap'
 import './PixelBatch.css'
 import EnvironmentManager from './utils/EnvironmentManager'
 
@@ -9,12 +9,15 @@ class PixelBatch extends PureComponent {
     super(props)
     if (props.explorer_link) {
       let network = EnvironmentManager.get_network()
-      this.explorer_link = <a target="_blank" href={`https://${network === 'ropsten' ? 'ropsten.' : ''}etherscan.io/tx/${props.panel_key}`}>link</a>
+      this.explorer_link = `https://${network === 'ropsten' ? 'ropsten.' : ''}etherscan.io/tx/${props.panel_key}`
     }
+    this.render_badges(props)
     this.render_preview_icon(props)
   }
 
   componentWillUpdate(next_props) {
+    if (this.props.badges.length !== next_props.badges.length)
+      this.render_badges(next_props)
     this.render_preview_icon(next_props)
   }
 
@@ -31,11 +34,25 @@ class PixelBatch extends PureComponent {
     this.props.on_preview_change(this.props.panel_key)
   }
 
-  can_preview = () => this.props.on_preview_change
+  render_badges = props => {
+    this.badges = (props.badges || []).map(b => {
+      let b_html = <Badge key={b.label} className={b.css}>{b.label}</Badge>
+      if (b.link)
+        return <a key={b.label} target="_blank" href={this.explorer_link}>{b_html}</a>
+      else
+        return <span key={b.label}>{b_html}</span>
+    })
+  }
 
   render_preview_icon = props => {
-    if (this.can_preview())
-      this.preview_icon = <Col md={3}><a href="#" onClick={this.toggle_preview}>{props.preview ? 'hide' : 'show'}</a></Col>
+    if (this.props.on_preview_change)
+      this.preview_icon = (
+        <div className="batch-preview-icon">
+          <a href="#" onClick={this.toggle_preview}>
+            <span className={`glyphicon glyphicon-eye-${ props.preview ? 'open' : 'close'}`}></span>
+          </a>
+        </div>
+      )
     else
       this.preview_icon = null
   }
@@ -49,15 +66,15 @@ class PixelBatch extends PureComponent {
             <Panel.Title>
               <Grid fluid>
                 {this.preview_icon}
-                <Col md={this.can_preview() ? 6 : 9}>
+                <div className="batch-title">
                   {this.props.title}
-                </Col>
-                <Col md={3}>
-                  {this.explorer_link}
+                  {this.badges}
+                </div>
+                <div className="batch-title-buttons">
                   <Panel.Toggle>
                     <span className="glyphicon glyphicon-chevron-down"></span>
                   </Panel.Toggle>
-                </Col>
+                </div>
               </Grid>
             </Panel.Title>
           </Panel.Heading>

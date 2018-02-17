@@ -87,7 +87,12 @@ class Draft extends PureComponent {
 
   title = () => {
     let length = this.state.pixels.length
-    return `Draft (${length} pixel${length > 1 ? 's' : ''}${length >= this.max_length ? ', max reached' : ''})`
+    return `Draft (${length} pixel${length > 1 ? 's' : ''})`
+  }
+
+  badges = () => {
+    let full_badge = this.state.pixels.length === this.max_length ? [{ css: 'full', label: 'FULL'}] : []
+    return [...full_badge, { css: 'in-progress', label: 'IN PROGRESS'}]
   }
 
   paint = e => {
@@ -174,6 +179,7 @@ class Draft extends PureComponent {
     return (
       <PixelBatch
         title={this.title()}
+        badges={this.badges()}
         panel_key={'draft'}
         estimating_gas={this.state.calculating_gas}
         gas={this.state.gas}

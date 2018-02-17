@@ -19,7 +19,7 @@ class Settings extends PureComponent {
   }
 
   componentWillUpdate(new_props) {
-    if (new_props.name != this.props.name)
+    if (new_props.name !== this.props.name)
       this.setState({ name: new_props.name })
   }
 

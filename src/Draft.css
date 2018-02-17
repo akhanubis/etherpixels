@@ -1,7 +1,3 @@
 .batch-container .draft-buttons {
-  float: right;
-}
-
-.batch-container .draft-total {
-  float: left;
+  text-align: right;
 }

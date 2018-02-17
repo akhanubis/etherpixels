@@ -13,3 +13,42 @@
 .tx-panel-container .panel, .draft-panel-container .panel {
   margin-bottom: 0;
 }
+
+.batch-preview-icon {
+  width: 30px;
+  display: inline-block;
+}
+
+.batch-title {
+  width: auto;
+  display: inline-block;
+}
+
+.batch-title-buttons {
+  width: 30px;
+  display: inline-block;
+  float: right;
+}
+
+.panel-heading .panel-title .badge {
+  border-radius: 0;
+  color: #FFFFFF;
+}
+
+.panel-heading .panel-title .badge.link {
+  background-color: #2196F3;
+}
+
+.panel-heading .panel-title .badge.pending {
+  background-color: #FF931E;
+}
+
+.panel-heading .panel-title .badge.in-progress {
+  background-color: rgba(0,0,0,0);
+  color: #999999;
+  border: 1px solid #999999;
+}
+
+.panel-heading .panel-title .badge.full {
+  background-color: #FF0000;
+}

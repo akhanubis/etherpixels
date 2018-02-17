@@ -45,7 +45,8 @@ class PendingTxList extends PureComponent {
 
   tx_element = tx => {
     let title = `Tx ${tx.hash.substr(0, 7)}...`
-    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === tx.hash, panel_key: tx.hash, title: title, batch: tx.pixels, preview: tx.preview, on_preview_change: this.props.on_preview_change, explorer_link: true })
+    let badges = [{ css: 'pending', label: 'PENDING'}, { css: 'link', label: 'LINK', link: true}]
+    return React.createElement(PixelBatch, { on_toggle: this.on_toggle, expanded: this.state.active_key === tx.hash, panel_key: tx.hash, title: title, badges: badges, batch: tx.pixels, preview: tx.preview, on_preview_change: this.props.on_preview_change, explorer_link: true })
   }
 
   draft_element = () => {
