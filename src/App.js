@@ -357,10 +357,10 @@ class App extends PureComponent {
 
   pointer_inside_canvas = () => this.pixel_at_pointer.is_inside_canvas(this.state.max_index)
 
-  update_pixel_at_pointer = () => {
+  update_pixel_at_pointer = (force) => {
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
-    if (this.pixel_at_pointer.x !== x || this.pixel_at_pointer.y !== y) {
+    if (force || this.pixel_at_pointer.x !== x || this.pixel_at_pointer.y !== y) {
       let i = new WorldToContract(x, y).get_index()
       let color = this.color_at(x, y)
       let buffer_info = i <= this.state.max_index ? this.address_buffer.entry_at(i) : {}
@@ -521,7 +521,7 @@ class App extends PureComponent {
     let new_max_index = ContractToWorld.max_index(new_block)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, this.state.max_index, new_max_index)
-    this.on_new_block_state(new_block, new_max_index)
+    this.on_new_block_state(new_block, new_max_index).then(this.update_pixel_at_pointer.bind(this, true))
   }
 
   resize_secondary_buffer = (ctx, dimension) => {
