@@ -1,7 +1,11 @@
-.tools {
+.tools-container {
   height: 40px;
 }
 
-.tools button:focus {
+.tools-container button:focus {
   background-color: #337ab7;
+}
+
+.tools-title, .tools {
+  display: inline-block;
 }

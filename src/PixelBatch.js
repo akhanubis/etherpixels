@@ -72,7 +72,7 @@ class PixelBatch extends PureComponent {
                 </div>
                 <div className="batch-title-buttons">
                   <Panel.Toggle>
-                    <span className="glyphicon glyphicon-chevron-down"></span>
+                    <span className="glyphicon glyphicon-triangle-bottom"></span>
                   </Panel.Toggle>
                 </div>
               </Grid>

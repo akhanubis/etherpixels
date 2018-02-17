@@ -731,9 +731,9 @@ class App extends PureComponent {
               <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
                 <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
-                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} tools={['pick_color']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} on_height_change={this.update_palette_height} />
+                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
                   <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>

@@ -1,7 +1,6 @@
 import React, { PureComponent } from 'react'
 import { CirclePicker, PhotoshopPicker } from 'react-color'
-import { Col, Grid, Button, OverlayTrigger, Popover } from 'react-bootstrap'
-import ToolSelector from './ToolSelector'
+import { Col, Grid, OverlayTrigger, Popover, Badge } from 'react-bootstrap'
 import { ResizeSensor } from 'css-element-queries'
 import ColorUtils from './utils/ColorUtils'
 
@@ -69,32 +68,26 @@ class Palette extends PureComponent {
       <div className="resizing-sensor color-picker-container" ref={rs => this.palette_resize_sensor = rs}>
         <Grid fluid={true}>
           <Col md={12}>
+            <p>Pick a color</p>
             <CirclePicker
               width="100%"
               color={ this.props.current_color }
               onChangeComplete={ this.props.on_color_update }
               colors={this.default_colors}
             />
-            <p>Custom colors</p>
+            <p className="custom-colors-title">Custom colors</p>
+            <div className="custom-colors-badges">
+              <OverlayTrigger onClick={this.end_remove_custom_color} trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
+                <Badge className="add">+ Add</Badge>
+              </OverlayTrigger>
+              {this.props.custom_colors.length ? <Badge onClick={this.toggle_remove_custom_color} className={`remove ${this.state.removing_custom_color ? 'active' : ''}`}>- Remove</Badge> : '' }
+            </div>
             <CirclePicker className={this.state.removing_custom_color ? 'custom-colors-removing' : ''}
               width="100%"
               color={ this.props.current_color }
               onChangeComplete={ this.click_custom_color }
               colors={this.props.custom_colors}
             />
-            <Grid fluid={true}>
-              <Col md={4}>
-                <OverlayTrigger onClick={this.end_remove_custom_color} trigger="click" overlay={advanced_color_picker} placement="right" ref={ot => this.color_picker_popover = ot} >
-                  <Button bsStyle="primary" block={true}>Add</Button>
-                </OverlayTrigger>
-              </Col>
-              <Col md={4}>
-                <Button bsStyle="primary" block={true} onClick={this.toggle_remove_custom_color} active={this.state.removing_custom_color}>Remove</Button>
-              </Col>
-              <Col md={4}>
-                <ToolSelector tools={this.props.tools} on_tool_selected={this.props.on_tool_selected} current_tool={this.props.current_tool} shortcuts={this.props.shortcuts} />
-              </Col>
-            </Grid>
           </Col>
         </Grid>
       </div>

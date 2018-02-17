@@ -10,16 +10,27 @@ class Tool extends PureComponent {
 
   selected = () => this.props.current_tool === this.props.id
 
-  labels = {
-      paint: 'Paint',
-      move: 'Move',
-      erase: 'Erase',
-      pick_color: 'Pick color',
-      fullscreen: 'Fullscreen',
-      reset_view: 'Reset view'
+  static labels = {
+    paint: 'Paint',
+    move: 'Move',
+    erase: 'Erase',
+    pick_color: 'Pick color',
+    fullscreen: 'Fullscreen',
+    reset_view: 'Reset view'
   }
 
-  label = () => this.labels[this.props.id]
+  static icons = {
+    paint: 'pencil',
+    move: 'move',
+    erase: 'erase',
+    pick_color: 'pushpin',
+    fullscreen: 'fullscreen',
+    reset_view: 'screenshot'
+  }
+
+  label = () => Tool.labels[this.props.id]
+
+  icon_class = () => `glyphicon glyphicon-${Tool.icons[this.props.id]}`
 
   tooltip = (
     <Tooltip id="tooltip">
@@ -30,7 +41,9 @@ class Tool extends PureComponent {
   render() {
     return (
       <OverlayTrigger placement="top" overlay={this.tooltip}>
-        <Button bsStyle="primary" active={this.selected()} onClick={this.select} >{this.label()}</Button>
+        <Button bsStyle="primary" active={this.selected()} onClick={this.select} >
+          <span className={this.icon_class()}></span>
+        </Button>
       </OverlayTrigger>
     )
   }
@@ -42,9 +55,12 @@ class ToolSelector extends PureComponent {
   }
   render() {
     return (
-      <ButtonToolbar className='tools'>
-        {this.tools()}
-      </ButtonToolbar>
+      <div className="tools-container">
+        <p className="tools-title">Tools</p>
+        <ButtonToolbar className='tools'>
+          {this.tools()}
+        </ButtonToolbar>
+      </div>
     )
   }
 }

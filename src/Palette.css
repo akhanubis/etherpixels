@@ -30,3 +30,32 @@
 .custom-colors-removing > span > div > span > div{
   cursor: not-allowed !important/* TODO: usar uno custom */;
 }
+
+.custom-colors-title {
+  display: inline-block;
+}
+
+.custom-colors-badges {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.custom-colors-badges .badge {
+  border-radius: 0 !important;
+  color: #FFFFFF !important;
+}
+
+.custom-colors-badges .badge.add {
+  background-color: #2196F3;
+}
+
+.custom-colors-badges .badge.remove {
+  background-color: #FF0000;
+}
+
+.custom-colors-badges .badge.remove.active {
+  background-color: #990000;
+}
+
+
+

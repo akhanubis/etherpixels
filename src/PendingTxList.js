@@ -18,7 +18,7 @@ class PendingTxList extends PureComponent {
   }
 
   custom_height = () => {
-    return { height: `calc(100% - ${this.props.palette_height}px - 40px - 90px)` }
+    return { height: `calc(100% - ${this.props.palette_height}px -40px - 90px)` }
   }
 
   /* end of exit anim */
@@ -58,6 +58,7 @@ class PendingTxList extends PureComponent {
   render() {
     return (
       <div className='pending-txs-container' style={this.custom_height()}>
+        <p>Batch</p>
         <div className="draft-panel-container">
           {this.draft_element()}
         </div>
