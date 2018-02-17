@@ -8,6 +8,8 @@ import LogUtils from "./utils/LogUtils.js"
 
 require('dotenv').config({silent: true, path: process.env.ENV_PATH})
 
+process.on('warning', e => console.warn(e.stack));
+
 const fs = require('fs')
 const zlib = require('zlib')
 const Canvas = require('canvas')
@@ -62,7 +64,6 @@ let get_web3 = () => {
       rpcUrl: `https://${process.env.INFURA_NETWORK}.infura.io/${process.env.INFURA_API_KEY}`,
       getAccounts: (cb) => cb(null, [])
     })
-    provider.start()
   }
   return new Web3(provider)
 }
