@@ -36,6 +36,7 @@ let current_block = null
 let max_index = null
 let instance = null
 let provider = null
+let logs_formatter = null
 let pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_APP_KEY,
@@ -139,6 +140,10 @@ let resize_assets = old_i => {
 }
 
 let start_watching = () => {
+  let events_filter = instance.allEvents()
+  events_filter.stopWatching()
+  logs_formatter = events_filter.formatter
+
   process_past_logs(last_cache_block, current_block)
   
   setInterval(() => {
@@ -148,24 +153,24 @@ let start_watching = () => {
       }, (_, res) => {
         let safe_number = parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED
         if (safe_number > current_block) {
-        let last_processed_block = current_block
-        process_new_block(safe_number)
-        process_past_logs(last_processed_block + 1, safe_number)
+          let last_processed_block = current_block
+          process_new_block(safe_number)
+          process_past_logs(last_processed_block + 1, safe_number)
+        }
       }
-    })
-  }, 1000)
+    )
+  }, 10000)
 }
 
-let events_filter = null
-
-let process_events = (_, result) => {
+let process_logs = (_, response) => {
+  console.log(`Processing ${response.result.length} event${response.result.length == 1 ? '' : 's'}`)
   let txs = {}
-  console.log(`Processing ${result.length} event${result.length == 1 ? '' : 's'}`)
-  result.forEach(l => {
-    LogUtils.to_sorted_event(txs, l)
-    if (l.event === 'PixelPainted') {
-      update_pixel(l)
-      update_buffer(l)
+  response.result.forEach(l => {
+    let formatted = logs_formatter(l)
+    LogUtils.to_sorted_event(txs, formatted)
+    if (formatted.event === 'PixelPainted') {
+      update_pixel(formatted)
+      update_buffer(formatted)
     }
   })
   Object.entries(txs).forEach(([tx_hash, tx_info]) => {
@@ -177,10 +182,14 @@ let process_events = (_, result) => {
 
 let process_past_logs = (start, end) => {
   console.log(`Fetching logs from ${start} to ${end}`)
-  if (events_filter)
-    events_filter.stopWatching()
-  events_filter = instance.allEvents({fromBlock: start, toBlock: end})
-  events_filter.get(process_events)
+  provider.sendAsync({
+    method: 'eth_getLogs',
+    params: [{
+      fromBlock: `0x${ start.toString(16) }`,
+      toBlock: `0x${ end.toString(16) }`,
+      address: instance.address
+    }]
+  }, process_logs)
 }
 
 let reset_cache = (g_block, b_number) => {
