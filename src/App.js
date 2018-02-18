@@ -532,22 +532,20 @@ class App extends PureComponent {
     this.preview_buffer_ctx = this.resize_secondary_buffer(this.preview_buffer_ctx, new_size.width)
     this.empty_canvas_ctx = this.resize_secondary_buffer(this.empty_canvas_ctx, new_size.width)
     this.empty_canvas_data = this.empty_canvas_ctx.getImageData(0, 0, new_size.width, new_size.height)
-    CanvasUtils.resize_canvas(
+    let result = CanvasUtils.resize_canvas(
       this.pixel_buffer_ctx,
       document.createElement('canvas'),
       new_size,
       old_max_index,
       new_max_index,
-      CanvasUtils.semitrans_image_data(ImageData),
-      (new_ctx, delta_w, delta_h) => {
-        this.pixel_buffer_ctx = new_ctx
-        this.setState({ canvas_size: new_size }, () => {
-          this.point_at_center.x = this.point_at_center.x + delta_w
-          this.point_at_center.y = this.point_at_center.y + delta_h
-          this.redraw()
-        })
-      }
+      CanvasUtils.semitrans_image_data(ImageData)
     )
+    this.pixel_buffer_ctx = result.ctx
+    this.setState({ canvas_size: new_size }, () => {
+      this.point_at_center.x = this.point_at_center.x + result.delta.width
+      this.point_at_center.y = this.point_at_center.y + result.delta.height
+      this.redraw()
+    })
   }
 
   instantiate_contract = () => {

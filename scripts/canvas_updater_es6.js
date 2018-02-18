@@ -1,39 +1,41 @@
 import CanvasContract from "../build/contracts/Canvas.json"
-import Web3 from 'web3'
 import ColorUtils from "./utils/ColorUtils.js"
 import ContractToWorld from "./utils/ContractToWorld.js"
 import WorldToCanvas from "./utils/WorldToCanvas.js"
 import CanvasUtils from "./utils/CanvasUtils.js"
 import LogUtils from "./utils/LogUtils.js"
 
+require('http').globalAgent.maxSockets = require('https').globalAgent.maxSockets = 20
 require('dotenv').config({silent: true, path: process.env.ENV_PATH})
 
 process.on('warning', e => console.warn(e.stack));
 
-const fs = require('fs')
 const zlib = require('zlib')
 const Canvas = require('canvas')
 const left_pad = require('left-pad')
+
 const ProviderEngine = require('web3-provider-engine')
-const ZeroClientProvider = require ('web3-provider-engine/zero.js')
-const contract = require('truffle-contract')
-const canvasContract = contract(CanvasContract)
+const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js')
+const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
+
+const canvasContract = require('truffle-contract')(CanvasContract)
 const Pusher = require('pusher')
 const AWS = require('aws-sdk')
 const s3 = new AWS.S3()
+
 const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
-const free_pixel_buffer = Buffer.allocUnsafe(buffer_entry_size).fill('0000000000000000000000000000000000000000000000000000048c27395000', 'hex') /* empty address and 5000000000000 starting price */
+const free_pixel_buffer_entry = '0000000000000000000000000000000000000000000000000000048c27395000' /* empty address and 5000000000000 starting price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
 
 let canvas = null
 let canvas_dimension = null
 let pixel_buffer_ctx = null
-let address_buffer = new Buffer(0)
+let address_buffer = Buffer.alloc(0)
 let last_cache_block = null
 let current_block = null
 let max_index = null
-let web3 = null
 let instance = null
+let provider = null
 let pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_APP_KEY,
@@ -47,32 +49,26 @@ const pixels_key = 'pixels.png'
 const buffer_key = 'addresses.buf'
 const init_key = 'init.json'
 
-let get_web3 = () => {
-  let provider = null
+let init_provider = () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('Using development web3')
-    provider = new Web3.providers.HttpProvider('http://127.0.0.1:9545')
+    let w = require('web3')
+    provider = new w.providers.HttpProvider('http://127.0.0.1:9545')
   }
   else {
     console.log('Using Infura')
-    provider = ZeroClientProvider({
-      static: {
-        eth_syncing: false,
-        web3_clientVersion: 'ZeroClientProvider',
-      },
-      pollingInterval: 99999999, // not interested in polling for new blocks
+    provider = new ProviderEngine()
+    provider.addProvider(new FilterSubprovider())
+    provider.addProvider(new RpcSubprovider({
       rpcUrl: `https://${process.env.INFURA_NETWORK}.infura.io/${process.env.INFURA_API_KEY}`,
-      getAccounts: (cb) => cb(null, [])
-    })
+    }))
+    provider.on('error', err => console.error(err.stack))
+    provider.start()
   }
-  return new Web3(provider)
 }
 
 let upload_callback = (err, data) => {
-  if (err)
-    console.log(err)
-  else
-    console.log(`New ${data.key}: ${data.ETag}`)
+  console.log(err ? err : `New ${data.key}: ${data.ETag}`)
 }
 
 let update_cache = () => {
@@ -85,6 +81,7 @@ let update_cache = () => {
 }
 
 let process_new_block = b_number => {
+  console.log('================================')
   console.log(`New block: ${b_number}`)
   let old_dimension = canvas_dimension
   let old_index = store_new_index(b_number)
@@ -126,12 +123,13 @@ let resize_canvas = old_i => {
     old_i,
     max_index,
     new_pixel_image_data
-  )
+  ).ctx
 }
 
 let resize_buffer = old_i => {
-  console.log(`Resizing buffer to: ${buffer_entry_size * (max_index + 1)}...`)
-  address_buffer = Buffer.concat([address_buffer, Buffer.allocUnsafe(buffer_entry_size * (max_index - old_i)).fill(free_pixel_buffer)], buffer_entry_size * (max_index + 1))
+  let new_length = buffer_entry_size * (max_index + 1)
+  console.log(`Resizing buffer to: ${new_length}...`)
+  address_buffer = Buffer.concat([address_buffer, Buffer.allocUnsafeSlow(buffer_entry_size * (max_index - old_i)).fill(free_pixel_buffer_entry, 'hex')], new_length)
 }
 
 let resize_assets = old_i => {
@@ -143,45 +141,42 @@ let resize_assets = old_i => {
 let start_watching = () => {
   process_past_logs(last_cache_block, current_block)
   
-  web3.eth.filter("latest").watch((error, block_hash) => {
-    web3.eth.getBlock(block_hash, false, (error, result) => {
-      if (error)
-        console.error(error)
-      else {
-        let safe_number = result.number - process.env.CONFIRMATIONS_NEEDED
+  setInterval(() => {
+    provider.sendAsync({
+      method: 'eth_blockNumber',
+      params: []
+      }, (_, res) => {
+        let safe_number = parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED
         if (safe_number > current_block) {
-          let last_processed_block = current_block
-          process_new_block(safe_number)
-          process_past_logs(last_processed_block + 1, safe_number)
-        }
+        let last_processed_block = current_block
+        process_new_block(safe_number)
+        process_past_logs(last_processed_block + 1, safe_number)
       }
     })
-  })
+  }, 1000)
 }
 
-let fetch_events = (event, start, end) => {
-  return new Promise(resolve => {
-    console.log(`Fetching ${event} logs from ${start} to ${end}`)
-    instance[event]({}, { fromBlock: start, toBlock: end }).get((_, result) => resolve(result))
-  })
-}
-
+let events_filter = null
 let process_past_logs = (start, end) => {
-  Promise.all([fetch_events('PixelPainted', start, end), fetch_events('PixelUnavailable', start, end)]).then(values => {
-    let txs = {}
-    console.log(`Processing ${values[0].length} PixelPainted event${values[0].length == 1 ? '' : 's'}`)
-    values[0].forEach(l => {
-      update_pixel(l)
-      update_buffer(l)
+  console.log(`Fetching logs from ${start} to ${end}`)
+  if (events_filter)
+    events_filter.stopWatching()
+  events_filter = instance.allEvents({fromBlock: start, toBlock: end})
+  let txs = {}
+  events_filter.get((_, result) => {
+    console.log(`Processing ${result.length} event${result.length == 1 ? '' : 's'}`)
+    result.forEach(l => {
       LogUtils.to_sorted_event(txs, l)
+      if (l.event === 'PixelPainted') {
+        update_pixel(l)
+        update_buffer(l)
+      }
     })
-    update_cache()
-    console.log(`Processing ${values[1].length} PixelUnavailable event${values[1].length == 1 ? '' : 's'}`)
-    values[1].forEach(l => LogUtils.to_sorted_event(txs, l))
     Object.entries(txs).forEach(([tx_hash, tx_info]) => {
       pusher.trigger('main', 'mined_tx', tx_info)
       console.log(`Tx pushed: ${tx_hash}`)
     })
+    update_cache()
   })
 }
 
@@ -234,9 +229,9 @@ let fetch_buffer = (g_block, b_number, pixels_data) => {
   })
 }
 
-web3 = get_web3()
-canvasContract.setProvider(web3.currentProvider)
-canvasContract.deployed().then((contract_instance) => {
+init_provider()
+canvasContract.setProvider(provider)
+canvasContract.deployed().then(contract_instance => {
   var matching_contract = false
   instance = contract_instance
   console.log(`Contract deployed\nFetching halving information...`)
@@ -255,20 +250,21 @@ canvasContract.deployed().then((contract_instance) => {
         matching_contract = cache_address === instance.address
       }
       console.log('Fetching current block...')
-      web3.eth.getBlockNumber((error, b_number) => {
-        if (error)
-          throw error
-        else {
-          let safe_number = b_number - process.env.CONFIRMATIONS_NEEDED
+      provider.sendAsync({
+        method: 'eth_blockNumber',
+        params: []
+        }, (_, res) => {
+          let safe_number = parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED
           if (matching_contract)
             fetch_pixels(g_block, safe_number)
           else {
             console.log('Last cache files point to older contract version, resetting cache...')
             reset_cache(g_block, safe_number)
           }
-          setInterval(() => { console.log("Listening for events...") }, 60000)
         }
-      })
+      )
     })
   })
 })
+
+setInterval(() => { let a = 0}, 99999999999)
