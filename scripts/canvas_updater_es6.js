@@ -157,27 +157,30 @@ let start_watching = () => {
 }
 
 let events_filter = null
+
+let process_events = (_, result) => {
+  let txs = {}
+  console.log(`Processing ${result.length} event${result.length == 1 ? '' : 's'}`)
+  result.forEach(l => {
+    LogUtils.to_sorted_event(txs, l)
+    if (l.event === 'PixelPainted') {
+      update_pixel(l)
+      update_buffer(l)
+    }
+  })
+  Object.entries(txs).forEach(([tx_hash, tx_info]) => {
+    pusher.trigger('main', 'mined_tx', tx_info)
+    console.log(`Tx pushed: ${tx_hash}`)
+  })
+  update_cache()
+}
+
 let process_past_logs = (start, end) => {
   console.log(`Fetching logs from ${start} to ${end}`)
   if (events_filter)
     events_filter.stopWatching()
   events_filter = instance.allEvents({fromBlock: start, toBlock: end})
-  let txs = {}
-  events_filter.get((_, result) => {
-    console.log(`Processing ${result.length} event${result.length == 1 ? '' : 's'}`)
-    result.forEach(l => {
-      LogUtils.to_sorted_event(txs, l)
-      if (l.event === 'PixelPainted') {
-        update_pixel(l)
-        update_buffer(l)
-      }
-    })
-    Object.entries(txs).forEach(([tx_hash, tx_info]) => {
-      pusher.trigger('main', 'mined_tx', tx_info)
-      console.log(`Tx pushed: ${tx_hash}`)
-    })
-    update_cache()
-  })
+  events_filter.get(process_events)
 }
 
 let reset_cache = (g_block, b_number) => {
