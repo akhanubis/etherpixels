@@ -61,7 +61,10 @@ class Draft extends PureComponent {
   gas_query = query_id => {
     return (gas => {
       if (query_id === this.state.gas_query_id)
-        this.setState({ gas: Math.floor(gas * 1.1 + 10000), calculating_gas: false })
+        if (gas > 1000000)
+          this.failed_gas_query(query_id)()
+        else
+          this.setState({ gas: Math.floor(gas * 1.1 + 10000), calculating_gas: false })
     })
   }
 
