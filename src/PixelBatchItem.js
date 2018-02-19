@@ -13,50 +13,73 @@ class PixelBatchItem extends PureComponent {
       this.max_increase = 100
       this.cent = new BigNumber(1).div(100)
       this.initial_price = props.pixel.price
-      let new_price = this.initial_price.mul(this.cent.mul(props.default_price_increase).add(1))
-      props.pixel.price = new_price
       this.state = {
         price_increase: props.default_price_increase
       }
-      this.props.on_price_change({ ...props.pixel, price: new_price })
+      this.on_account_change(props.account)
     }
   }
 
-  change_price = e => {
+  componentWillUpdate(next_props) {
+    if (next_props.account !== this.props.account)
+      this.on_account_change(next_props.account)
+  }
+
+  on_account_change = new_acc => {
+    if (this.owner_account(new_acc))
+      this.change_price(0)
+    else
+      this.change_price(this.input_price())
+  }
+
+  handle_price_change = e => {
     e.preventDefault()
     let new_increase = Math.max(Math.min(e.target.value, this.max_increase), this.min_increase)
-    this.setState({ price_increase: new_increase })
-    this.props.on_price_change({ ...this.props.pixel, price: this.initial_price.mul(this.cent.mul(new_increase).add(1)) })
+    this.setState({ price_increase: new_increase }, () => {
+      this.change_price(this.input_price())
+    })
   }
+
+  input_price = () => this.initial_price.mul(this.cent.mul(this.state.price_increase).add(1))
+
+  change_price = price => {
+    this.props.pixel.price = price
+    this.props.on_price_change(this.props.pixel) 
+  }
+
+  owner_account = acc => acc === this.props.pixel.owner
 
   price_info = () => {
     if (this.props.on_price_change)
-      return (
-        <span className='right-text'>
-          <Form inline className="cd-form">
-            <FormGroup controlId="cd_form">
-              {PriceFormatter.format_crypto_only(this.initial_price)} +{' '}
-              <InputGroup className="price-selector">
-                <FormControl
-                  bsSize='sm'
-                  className="cd-input"
-                  type="number"
-                  min={this.min_increase}
-                  max={this.max_increase}
-                  placeholder={this.props.default_price_increase}
-                  value={this.state.price_increase}
-                  onChange={this.change_price}
-                />
-                <InputGroup.Addon>
-                  %
-                </InputGroup.Addon>
-              </InputGroup>
-              {' '} = {PriceFormatter.format_crypto_only(this.props.pixel.price)}
-            </FormGroup>
-          </Form>
-        </span>
-      )
-    else  
+      if (this.owner_account(this.props.account))
+        return <span className='right-text'>owned</span>
+      else
+        return (
+          <span className='right-text'>
+            <Form inline className="cd-form">
+              <FormGroup controlId="cd_form">
+                {PriceFormatter.format_crypto_only(this.initial_price)} +{' '}
+                <InputGroup className="price-selector">
+                  <FormControl
+                    bsSize='sm'
+                    className="cd-input"
+                    type="number"
+                    min={this.min_increase}
+                    max={this.max_increase}
+                    placeholder={this.props.default_price_increase}
+                    value={this.state.price_increase}
+                    onChange={this.handle_price_change}
+                  />
+                  <InputGroup.Addon>
+                    %
+                  </InputGroup.Addon>
+                </InputGroup>
+                {' '} = {PriceFormatter.format_crypto_only(this.props.pixel.price)}
+              </FormGroup>
+            </Form>
+          </span>
+        )
+    else 
       return (
         <span className='right-text'>
           {PriceFormatter.format(this.props.pixel.price)}

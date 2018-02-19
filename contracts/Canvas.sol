@@ -42,20 +42,24 @@ contract Canvas is usingMortal, usingCanvasBoundaries {
   
   function paint_pixel(uint _index, bytes3 _color, uint _paid) private {
     Pixel storage p = pixels[_index];
-    require(msg.sender != p.owner);
-    uint current_price = p.price == 0 ? starting_price : uint(p.price);
-    if (_paid < current_price * 11 / 10)
-      PixelUnavailable(_index, msg.sender, current_price, _color);
+    if (msg.sender == p.owner) {
+      PixelPainted(_index, msg.sender, msg.sender, p.price, _color);
+    }
     else {
-      if (_paid > current_price * 2)
-        _paid = current_price * 2;
-      p.price = uint96(_paid);
-      require(p.price == _paid); /* casting guard */ 
-      address old_owner = p.owner;
-      p.owner = msg.sender;
-      PixelPainted(_index, msg.sender, old_owner, _paid, _color);
-      if (old_owner != address(0))
-        old_owner.transfer(_paid * 98 / 100);
+      uint current_price = p.price == 0 ? starting_price : uint(p.price);
+      if (_paid < current_price * 11 / 10)
+        PixelUnavailable(_index, msg.sender, current_price, _color);
+      else {
+        if (_paid > current_price * 2)
+          _paid = current_price * 2;
+        p.price = uint96(_paid);
+        require(p.price == _paid); /* casting guard */ 
+        address old_owner = p.owner;
+        p.owner = msg.sender;
+        PixelPainted(_index, msg.sender, old_owner, p.price, _color);
+        if (old_owner != address(0))
+          old_owner.transfer(_paid * 98 / 100);
+      }
     }
 	}
 }

@@ -51,7 +51,7 @@ class Draft extends PureComponent {
         gas_query_id: gas_query_id
       })
       this.gas_query_timer = setTimeout(() => {
-        this.props.contract_instance.BatchPaint.estimateGas(this.state.pixels.length, this.state.indexes, this.state.colors, this.state.prices, { from: this.props.account, value: 10000000000000000 })
+        this.props.contract_instance.BatchPaint.estimateGas(this.state.pixels.length, this.state.indexes, this.state.colors, this.state.prices, { from: this.props.account, value: 10000000000000000000 })
         .then(this.gas_query(gas_query_id))
         .catch(this.failed_gas_query(gas_query_id))
       }, 1000)
@@ -194,6 +194,7 @@ class Draft extends PureComponent {
         expanded={this.props.expanded}
         on_price_change={this.update_price}
         default_price_increase={this.props.default_price_increase}
+        account={this.props.account}
       >
         <div className="draft-footer">
           <div className="draft-gas">
