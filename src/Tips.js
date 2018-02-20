@@ -5,7 +5,7 @@ class Tips extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {
-      current_tip: Math.floor(Math.random() * (this.tips.length + 1))
+      current_tip: Math.floor(Math.random() * this.tips.length)
     }
   }
 

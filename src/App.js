@@ -74,6 +74,13 @@ class App extends PureComponent {
       },
       loading_progress: 0
     }
+    this.loading_blur = {
+      WebkitFilter: 'blur(5px)',
+      MozFilter: 'blur(5px)',
+      OFilter: 'blur(5px)',
+      msFilter: 'blur(5px)',
+      filter: 'blur(5px)'
+    }
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 20
@@ -698,14 +705,25 @@ class App extends PureComponent {
 
   canvas_container_style = () => ({ marginRight: this.state.settings.show_events || this.state.settings.show_settings ? this.right_panel_width : 0 })
 
+  loading_style = () => {
+    let blur = `blur(${-0.05 * this.state.loading_progress + 5}px)`
+    return {
+      WebkitFilter: blur,
+      MozFilter: blur,
+      OFilter: blur,
+      msFilter: blur,
+      filter: blur
+    }
+  }
+
   render() {
-    return (
-      <div className="App">
+    return ([
+      <div className="App" key="1" style={this.loading_style()}>
         <Helmet>
           <meta charSet="utf-8" />
           <title>Pavlito clabo un clabito</title>
+          <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
         </Helmet>
-        <LoadingPanel progress={this.state.loading_progress} />
         <CssHide hide={this.state.fullscreen}>
           <Topbar name={this.state.name} account={this.state.account} toggle_settings={this.toggle_settings} />
           <Footer />
@@ -754,11 +772,12 @@ class App extends PureComponent {
               </div>
             </Col>
           </Grid>
+          <Alert stack={{limit: 3}} position="top-right" offset={30} effect="slide" html={false} />
         </main>
-        <Alert stack={{limit: 3}} position="top-right" effect="slide" html={false} />
         <KeyListener on_key_update={this.update_key} />
-      </div>
-    )
+      </div>,
+      <LoadingPanel key="2" progress={this.state.loading_progress} />
+    ])
   }
 }
 
