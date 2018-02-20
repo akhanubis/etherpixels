@@ -19,15 +19,15 @@ class Footer extends PureComponent {
         </Navbar.Text>
         <Nav className="footer-icons" pullRight>
           <NavItem>
-            <i class="fas fa-info"></i>
+            <i className="fas fa-info"></i>
           </NavItem>
           <OverlayTrigger placement="top" overlay={this.code_tooltip}>
             <NavItem>
-              <i class="fas fa-code"></i>
+              <i className="fas fa-code"></i>
             </NavItem>
           </OverlayTrigger>
           <NavItem>
-            <i class="fab fa-reddit-alien"></i>
+            <i className="fab fa-reddit-alien"></i>
           </NavItem>
         </Nav>
       </Navbar>

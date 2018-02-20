@@ -1,3 +1,12 @@
 .nav>li.account-status>a {
-  padding: 10px 15px;
+  padding: 0;
+}
+
+.nav>li.account-status .account-not-detected {
+  padding: 14px 15px 10px 15px;
+  font-size: 26px;
+}
+
+.nav>li.account-status .account-detected {
+  padding: 10px 15px 10px 15px;
 }

@@ -20,7 +20,7 @@ class Topbar extends PureComponent {
             <AccountStatus account={this.props.account} />
           </NavItem>
           <NavItem className="settings-icon" onClick={this.props.toggle_settings}>
-            <span className="glyphicon glyphicon-cog"></span>
+            <i className="fas fa-cog" />
           </NavItem>
         </Nav>
       </Navbar>

@@ -86,7 +86,10 @@ class NameUtils {
   }
 
   static name(address) {
-    return this.index[address] || address
+    if (this.index)
+      return this.index[address] || address
+    else
+      return address
   }
 
   static add_to_db(address, { name, last_modified }) {

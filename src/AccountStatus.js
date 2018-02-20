@@ -6,12 +6,6 @@ import './AccountStatus.css'
 
 
 class AccountStatus extends PureComponent {
-  error_tooltip = (
-    <Tooltip id="tooltip">
-      No active account detected. It looks like metamask is locked or missing
-    </Tooltip>
-  )
-
   account_tooltip = () => {
     return (
       <Tooltip id="tooltip">
@@ -24,16 +18,16 @@ class AccountStatus extends PureComponent {
     if (this.props.account)
       return (
         <OverlayTrigger placement='left' overlay={this.account_tooltip()}>
-          <div>
+          <div className="account-detected">
             <BlockiesIdenticon account={this.props.account} />
           </div>
         </OverlayTrigger>
       )
     else
       return (
-        <OverlayTrigger placement='left' overlay={this.error_tooltip}>
-          <span className='glyphicon glyphicon-exclamation-sign icon-2x'></span>
-        </OverlayTrigger>
+        <div className="account-not-detected">
+          <i className="fas fa-exclamation"></i>
+        </div>
       )
   }
 }

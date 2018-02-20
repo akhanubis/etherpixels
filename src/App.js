@@ -74,13 +74,6 @@ class App extends PureComponent {
       },
       loading_progress: 0
     }
-    this.loading_blur = {
-      WebkitFilter: 'blur(5px)',
-      MozFilter: 'blur(5px)',
-      OFilter: 'blur(5px)',
-      msFilter: 'blur(5px)',
-      filter: 'blur(5px)'
-    }
     this.bootstrap_steps = 3
     this.bootstraped = 0
     this.max_event_logs_size = 20
@@ -594,7 +587,8 @@ class App extends PureComponent {
     this.state.web3.eth.getAccounts((_, accounts) => {
       let new_acc = accounts[0]
       if (new_acc !== this.state.account) {
-        this.setState({ account: new_acc })
+        let n = NameUtils.name(new_acc)
+        this.setState({ account: new_acc, name: n === new_acc ? '' : n  })
         if (new_acc && this.logrocket_app_id)
           LogRocket.identify(new_acc)
       }
@@ -725,7 +719,7 @@ class App extends PureComponent {
           <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
         </Helmet>
         <CssHide hide={this.state.fullscreen}>
-          <Topbar name={this.state.name} account={this.state.account} toggle_settings={this.toggle_settings} />
+          <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} />
           <Footer />
         </CssHide>
         <main className={this.state.fullscreen ? 'fullscreen' : ''}>
