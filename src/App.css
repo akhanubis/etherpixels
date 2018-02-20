@@ -28,7 +28,9 @@ button[disabled] {
 }
 
 main {
-  height: calc(100% - 54px); /* navbar */
+  height: 100%;
+  padding-top: 53px; /* topbar */
+  padding-bottom: 50px; /* footer */
 }
 
 main.fullscreen {

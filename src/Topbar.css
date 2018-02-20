@@ -1,0 +1,12 @@
+.navbar .container {
+  padding: 0;
+  width: 100%;
+}
+
+.navbar {
+  margin-bottom: 0 !important;
+}
+
+.navbar-right {
+  margin-right: 0 !important;
+}

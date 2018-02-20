@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import CanvasContract from '../build/contracts/Canvas.json'
 import getWeb3 from './utils/getWeb3'
 import {Helmet} from "react-helmet"
-import { Col, Grid, Navbar, Nav, NavItem, Button } from 'react-bootstrap'
+import { Col, Grid, Button } from 'react-bootstrap'
 import Pixel from './Pixel'
 import HoverInfo from './HoverInfo'
 import ColorUtils from './utils/ColorUtils'
@@ -18,8 +18,9 @@ import AddressBuffer from './AddressBuffer'
 import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
-import AccountStatus from './AccountStatus'
 import EventLogPanel from './EventLogPanel'
+import Topbar from './Topbar'
+import Footer from './Footer'
 import Palette from './Palette'
 import ToolSelector from './ToolSelector'
 import BlockInfo from './BlockInfo'
@@ -358,6 +359,8 @@ class App extends PureComponent {
   pointer_inside_canvas = () => this.pixel_at_pointer.is_inside_canvas(this.state.max_index)
 
   update_pixel_at_pointer = (force) => {
+    if (!this.mouse_position)
+      return
     let x = Math.round(this.point_at_center.x - this.state.canvas_size.width / 2 + (this.mouse_position.x - this.state.viewport_size.width * 0.5) / this.current_wheel_zoom)
     let y = - Math.round(this.point_at_center.y - this.state.canvas_size.height / 2 + (this.mouse_position.y - this.state.viewport_size.height * 0.5) / this.current_wheel_zoom)
     if (force || this.pixel_at_pointer.x !== x || this.pixel_at_pointer.y !== y) {
@@ -704,24 +707,8 @@ class App extends PureComponent {
         </Helmet>
         <LoadingPanel progress={this.state.loading_progress} />
         <CssHide hide={this.state.fullscreen}>
-          <Navbar>
-            <Navbar.Header>
-              <Navbar.Brand>
-                ETHPaint
-              </Navbar.Brand>
-            </Navbar.Header>
-            <Nav pullRight>
-              <NavItem className='account-name'>
-                {this.state.name}
-              </NavItem>
-              <NavItem className='account-status'>
-                <AccountStatus account={this.state.account} />
-              </NavItem>
-              <NavItem className="settings-icon">
-                <span className="glyphicon glyphicon-cog" onClick={this.toggle_settings}></span>
-              </NavItem>
-            </Nav>
-          </Navbar>
+          <Topbar name={this.state.name} account={this.state.account} toggle_settings={this.toggle_settings} />
+          <Footer />
         </CssHide>
         <main className={this.state.fullscreen ? 'fullscreen' : ''}>
           <Grid fluid={true} className='main-container'>
