@@ -700,7 +700,7 @@ class App extends PureComponent {
   canvas_container_style = () => ({ marginRight: this.state.settings.show_events || this.state.settings.show_settings ? this.right_panel_width : 0 })
 
   loading_style = () => {
-    let blur = `blur(${-0.05 * this.state.loading_progress + 5}px)`
+    let blur = `blur(${-0.1 * this.state.loading_progress + 10}px)`
     return {
       WebkitFilter: blur,
       MozFilter: blur,
