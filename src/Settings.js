@@ -87,7 +87,7 @@ class Settings extends PureComponent {
             </InputGroup>
             <FormControl.Feedback/>
           </FormGroup>
-          <HelpBlock><span className="glyphicon glyphicon-alert"></span>&nbsp;Everyone will be able to see your nickname in association with your address</HelpBlock>
+          <HelpBlock><i className="fas fa-exclamation-triangle" />&nbsp;Everyone will be able to see your nickname in association with your address</HelpBlock>
           <hr/>
           <FormGroup controlId="unit">
             <ControlLabel>Display values in</ControlLabel>

@@ -18,7 +18,8 @@ class PixelBatch extends PureComponent {
   componentWillUpdate(next_props) {
     if (this.props.badges.length !== next_props.badges.length)
       this.render_badges(next_props)
-    this.render_preview_icon(next_props)
+    if (this.props.preview !== next_props.preview)
+      this.render_preview_icon(next_props)
   }
 
   batch_list = () => {
@@ -49,7 +50,12 @@ class PixelBatch extends PureComponent {
       this.preview_icon = (
         <div className="batch-preview-icon">
           <a href="#" onClick={this.toggle_preview}>
-            <span className={`glyphicon glyphicon-eye-${ props.preview ? 'open' : 'close'}`}></span>
+            <div style={props.preview ? {} : { display: 'none'}}>
+              <i className="fas fa-eye"/>
+            </div>
+            <div style={props.preview ? { display: 'none'} : {}}>
+              <i className="fas fa-eye-slash"/>
+            </div>
           </a>
         </div>
       )
@@ -72,7 +78,7 @@ class PixelBatch extends PureComponent {
                 </div>
                 <div className="batch-title-buttons">
                   <Panel.Toggle>
-                    <span className="glyphicon glyphicon-triangle-bottom"></span>
+                    <i className="fas fa-caret-down"/>
                   </Panel.Toggle>
                 </div>
               </Grid>
