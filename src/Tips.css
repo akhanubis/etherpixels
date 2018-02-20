@@ -1,4 +1,5 @@
-.tips {
+.carousel.slide {
+  padding-top: 15px;
   cursor: pointer;
   -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */

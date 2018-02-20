@@ -14,9 +14,9 @@ class Footer extends PureComponent {
   render() {
     return (
       <Navbar fixedBottom>
-        <Navbar.Text pullLeft>
+        <Nav pullLeft>
           <Tips />
-        </Navbar.Text>
+        </Nav>
         <Nav className="footer-icons" pullRight>
           <NavItem>
             <i className="fas fa-info"></i>
