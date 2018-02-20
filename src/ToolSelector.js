@@ -20,17 +20,17 @@ class Tool extends PureComponent {
   }
 
   static icons = {
-    paint: 'pencil',
-    move: 'move',
-    erase: 'erase',
-    pick_color: 'pushpin',
-    fullscreen: 'fullscreen',
-    reset_view: 'screenshot'
+    paint: 'pencil-alt',
+    move: 'arrows-alt',
+    erase: 'eraser',
+    pick_color: 'eye-dropper',
+    fullscreen: 'expand-arrows-alt',
+    reset_view: 'image'
   }
 
   label = () => Tool.labels[this.props.id]
 
-  icon_class = () => `glyphicon glyphicon-${Tool.icons[this.props.id]}`
+  icon_class = () => `fas fa-${Tool.icons[this.props.id]}`
 
   tooltip = (
     <Tooltip id="tooltip">
@@ -42,7 +42,7 @@ class Tool extends PureComponent {
     return (
       <OverlayTrigger placement="top" overlay={this.tooltip}>
         <Button bsStyle="primary" active={this.selected()} onClick={this.select} >
-          <span className={this.icon_class()}></span>
+          <i className={this.icon_class()} />
         </Button>
       </OverlayTrigger>
     )
