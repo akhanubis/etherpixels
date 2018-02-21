@@ -34,7 +34,8 @@ main {
 }
 
 main.fullscreen {
-  height: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor {
