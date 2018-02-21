@@ -14,6 +14,8 @@ class Draft extends PureComponent {
       this.compute_prices()
       this.props.on_update(this.state.preview, this.state.pixels)
     }
+    this.prev_pixels = []
+    this.next_pixels = []
     this.state = {
       gas: new BigNumber(0),
       pixels: [],
@@ -27,7 +29,7 @@ class Draft extends PureComponent {
   }
 
   componentWillUpdate(next_props, next_state) {
-    this.estimate_gas(next_state)    
+    this.estimate_gas(next_state)
   }
 
   estimate_gas = next_state => {
@@ -143,6 +145,7 @@ class Draft extends PureComponent {
       existing_pixel_index = this.state.pixels.length
     else if (this.state.pixels[existing_pixel_index].color === pixel_to_paint.color)
       return
+    this.save_pixels_state()
     this.update_with_callback(prev_state => {
       const temp = [...prev_state.pixels]
       temp[existing_pixel_index] = pixel_to_paint
@@ -151,14 +154,39 @@ class Draft extends PureComponent {
   }
 
   remove = pixel_at_pointer => {
+    this.save_pixels_state()
     this.update_with_callback(prev_state => {
       return { pixels: prev_state.pixels.filter(p => !p.same_coords(pixel_at_pointer)) }
     })
   }
 
+  save_pixels_state = () => {
+    this.prev_pixels.push(this.state.pixels)
+    this.next_pixels = []
+  }
+
+  rollback = () => this.roll_stacks(this.prev_pixels, this.next_pixels)
+
+  rollforward = () => this.roll_stacks(this.next_pixels, this.prev_pixels)
+
+  roll_stacks = (from, to) => {
+    let new_state = from.pop()
+    if (new_state) {
+      to.push(this.state.pixels)
+      this.update_with_callback({ pixels: new_state })
+    }
+  }
+
   clear = e => {
-    if (e)
+    if (e) {
+      /* clear by button, not by tx submit, so save state */
+      this.save_pixels_state()
       e.preventDefault()
+    }
+    else {
+      this.prev_pixels = []
+      this.next_pixels = []
+    }
     this.update_with_callback({ pixels: [] })
   }
 

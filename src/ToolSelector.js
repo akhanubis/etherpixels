@@ -14,6 +14,8 @@ class Tool extends PureComponent {
     paint: 'Paint',
     move: 'Move',
     erase: 'Erase',
+    undo: 'Undo',
+    redo: 'Redo',
     pick_color: 'Pick color',
     fullscreen: 'Fullscreen',
     reset_view: 'Reset view'
@@ -23,6 +25,8 @@ class Tool extends PureComponent {
     paint: 'pencil-alt',
     move: 'arrows-alt',
     erase: 'eraser',
+    undo: 'undo-alt',
+    redo: 'redo-alt',
     pick_color: 'eye-dropper',
     fullscreen: 'expand-arrows-alt',
     reset_view: 'image'
@@ -34,7 +38,7 @@ class Tool extends PureComponent {
 
   tooltip = (
     <Tooltip id="tooltip">
-      {this.label()} ({this.props.shortcuts[this.props.id]})
+      {this.label()} ({Array.from(this.props.shortcuts[this.props.id]).join(' + ')})
     </Tooltip>
   )
 

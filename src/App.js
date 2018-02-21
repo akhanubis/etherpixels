@@ -68,6 +68,8 @@ class App extends PureComponent {
         paint: 'a',
         move: 's',
         erase: 'd',
+        undo: ['Control', 'z'],
+        redo: ['Control', 'y'],
         pick_color: 'f',
         fullscreen: 'g',
         reset_view: 'r'
@@ -386,7 +388,7 @@ class App extends PureComponent {
     if (this.dragging_canvas(e))
       this.start_dragging()
     else
-      this.start_painting()
+      this.click_on_pixel_handler()
   }
 
   main_canvas_mouse_move = e => {
@@ -398,7 +400,7 @@ class App extends PureComponent {
       this.drag()
     else
       if (this.left_click_pressed(e))
-        this.start_painting()
+        this.click_on_pixel_handler()
       this.update_zoom()
     this.update_hovering_pixel()
   }
@@ -421,19 +423,25 @@ class App extends PureComponent {
     this.drag_start = this.mouse_position
   }
 
-  start_painting = () => {
+  click_on_pixel_handler = () => {
     if (this.pointer_inside_canvas())
-      if (this.tool_selected('paint')) {
-        this.draft.add(this.pixel_to_paint())
-        this.pending_tx_list.expand_draft()
-      }
+      if (this.tool_selected('paint'))
+        this.paint_pixel()
       else
         if (this.tool_selected('pick_color'))
           this.pick_color()
-        else {
-          this.draft.remove(this.pixel_at_pointer)
-          this.pending_tx_list.expand_draft()
-        }
+        else
+          this.erase_pixel()
+  }
+
+  paint_pixel = () => {
+    this.draft.add(this.pixel_to_paint())
+    this.pending_tx_list.expand_draft()
+  }
+
+  erase_pixel = () => {
+    this.draft.remove(this.pixel_at_pointer)
+    this.pending_tx_list.expand_draft()
   }
 
   drag = () => {
@@ -660,7 +668,8 @@ class App extends PureComponent {
 
   check_for_shortcuts = () => {
     Object.entries(this.state.shortcuts).forEach(([tool, key]) => {
-      if (this.state.keys_down[key]) {
+      key = Array.from(key)
+      if (key.every(k => this.state.keys_down[k])) {
         this.select_tool(tool)
         return false
       }
@@ -688,8 +697,20 @@ class App extends PureComponent {
     }
     else if (tool === 'reset_view')
       this.reset_view()
+    else if (tool === 'undo')
+      this.undo()
+    else if (tool === 'redo')
+      this.redo()
     else
       this.setState({ current_tool: tool })
+  }
+
+  undo = () => {
+    this.draft.rollback()
+  }
+
+  redo = () => {
+    this.draft.rollforward()
   }
 
   exit_fullscreen = e => {
@@ -730,7 +751,7 @@ class App extends PureComponent {
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
                   <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
