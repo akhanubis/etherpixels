@@ -14,37 +14,42 @@ class PixelBatchItem extends PureComponent {
       this.cent = new BigNumber(1).div(100)
       this.initial_price = props.pixel.price
       this.state = {
-        price_increase: props.default_price_increase
+        price_increase: props.default_price_increase,
+        price: this.end_price(props.default_price_increase)
       }
       this.on_account_change(props.account)
     }
+    else
+      this.state = {
+        price: props.pixel.price
+      }
   }
 
   componentWillUpdate(next_props) {
-    if (next_props.account !== this.props.account)
+    if (next_props.on_price_change)
       this.on_account_change(next_props.account)
   }
 
   on_account_change = new_acc => {
     if (this.owner_account(new_acc))
-      this.change_price(0)
+      this.change_price(new BigNumber(0))
     else
-      this.change_price(this.input_price())
+      this.change_price(this.end_price(this.state.price_increase))
   }
 
   handle_price_change = e => {
     e.preventDefault()
     let new_increase = Math.max(Math.min(e.target.value, this.max_increase), this.min_increase)
-    this.setState({ price_increase: new_increase }, () => {
-      this.change_price(this.input_price())
+    let new_price = this.end_price(new_increase)
+    this.setState({ price_increase: new_increase, price: new_price }, () => {
+      this.change_price(new_price)
     })
   }
 
-  input_price = () => this.initial_price.mul(this.cent.mul(this.state.price_increase).add(1))
+  end_price = increase => this.initial_price.mul(this.cent.mul(increase).add(1))
 
   change_price = price => {
-    this.props.pixel.price = price
-    this.props.on_price_change(this.props.pixel) 
+    this.props.on_price_change(this.props.pixel, price) 
   }
 
   owner_account = acc => acc === this.props.pixel.owner
@@ -74,7 +79,7 @@ class PixelBatchItem extends PureComponent {
                     %
                   </InputGroup.Addon>
                 </InputGroup>
-                {' '} = {PriceFormatter.format_crypto_only(this.props.pixel.price)}
+                {' '} = {PriceFormatter.format_crypto_only(this.state.price)}
               </FormGroup>
             </Form>
           </span>
@@ -82,7 +87,7 @@ class PixelBatchItem extends PureComponent {
     else 
       return (
         <span className='right-text'>
-          {PriceFormatter.format(this.props.pixel.price)}
+          {PriceFormatter.format(this.state.price)}
         </span>
       )
   }

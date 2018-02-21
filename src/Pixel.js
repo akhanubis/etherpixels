@@ -30,9 +30,15 @@ class Pixel {
   }
 
   change_color(new_color) {
-    this.old_color = this.color
-    this.color = new_color
-    return this
+    return new Pixel(
+      this.x,
+      this.y,
+      new_color,
+      this.owner,
+      this.price,
+      this.color,
+      this.index
+    )
   }
 
   image_data() {

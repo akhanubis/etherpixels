@@ -14,13 +14,12 @@ class Draft extends PureComponent {
       this.compute_prices()
       this.props.on_update(this.state.preview, this.state.pixels)
     }
+    
     this.prev_pixels = []
     this.next_pixels = []
     this.state = {
       gas: new BigNumber(0),
       pixels: [],
-      indexes: [],
-      colors: [],
       prices: [],
       preview: true,
       gas_query_id: 0,
@@ -37,23 +36,20 @@ class Draft extends PureComponent {
     if (length && length !== this.state.pixels.length) {
       clearTimeout(this.gas_query_timer)
       let gas_query_id = next_state.gas_query_id + 1
-      let indexes = []
-      let colors = next_state.pixels.map(p => {
-        indexes.push(p.contract_index())
-        return p.bytes3_color()
+      let colors = []
+      let indexes = next_state.pixels.map(p => {
+        colors.push('0xFFFFFF')
+        return p.contract_index()
       })
       /* to avoid sending too many estimateGas calls */
       this.setState({
-        pixels: next_state.pixels,
-        indexes: indexes,
-        colors: colors,
         calculating_gas: true,
         gas: 0,
         will_fail: false,
         gas_query_id: gas_query_id
       })
       this.gas_query_timer = setTimeout(() => {
-        this.props.contract_instance.BatchPaint.estimateGas(this.state.pixels.length, this.state.indexes, this.state.colors, this.state.prices, { from: this.props.account, value: 10000000000000000000 })
+        this.props.contract_instance.BatchPaint.estimateGas(this.state.pixels.length, indexes, colors, this.state.prices, { from: this.props.account, value: 10000000000000000000 })
         .then(this.gas_query(gas_query_id))
         .catch(this.failed_gas_query(gas_query_id))
       }, 1000)
@@ -77,11 +73,11 @@ class Draft extends PureComponent {
     })
   }
 
-  update_price = pixel => {
+  update_price = (pixel, new_price) => {
     this.setState(prev_state => {
       const temp = [...prev_state.pixels]
       let i = temp.findIndex(p => p.same_coords(pixel))
-      temp[i].price = pixel.price
+      temp[i].price = new_price
       return { pixels: temp }
     }, this.compute_prices)
   }
@@ -116,11 +112,16 @@ class Draft extends PureComponent {
   }
 
   paint_many = length => {
-    return this.props.contract_instance.BatchPaint.request(length, this.state.indexes, this.state.colors, this.state.prices, this.paint_options())
+    let colors = []
+    let indexes = this.state.pixels.map(p => {
+      colors.push(p.bytes3_color())
+      return p.contract_index()
+    })
+    return this.props.contract_instance.BatchPaint.request(length, indexes, colors, this.state.prices, this.paint_options())
   }
 
   paint_one = pixel => {
-    return this.props.contract_instance.Paint.request(pixel.contract_index(), pixel.bytes3_color(), this.paint_options(1))
+    return this.props.contract_instance.Paint.request(pixel.contract_index(), pixel.bytes3_color(), this.paint_options())
   }
 
   paint_options = () => {
