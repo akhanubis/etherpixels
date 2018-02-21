@@ -59,10 +59,8 @@ typings/
 
 # dotenv environment variables file
 .env
-.build_dev_env
 .build_env
-.run_dev_env
-.run_prod_env
+.run*
 
 build/
 build_webpack/
