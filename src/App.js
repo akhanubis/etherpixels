@@ -33,6 +33,7 @@ import Settings from './Settings'
 import CssHide from './CssHide'
 import LogRocket from 'logrocket'
 import EnvironmentManager from './utils/EnvironmentManager'
+import BigNumber from 'bignumber.js'
 
 import './css/bootstrap.min.css'
 import './App.css'
@@ -309,6 +310,7 @@ class App extends PureComponent {
       this.remove_mined_tx(pusher_tx)
     let event_pixels = this.paint_pixels_from_tx(pusher_tx)
     pusher_tx.pixels = event_pixels
+    this.notify_sold_pixels(pusher_tx)
     this.add_tx_to_events(pusher_tx)
   }
   
@@ -327,6 +329,15 @@ class App extends PureComponent {
     return event_pixels
   }
   
+  notify_sold_pixels = tx => {
+    if (this.state.account && tx.owner !== this.state.account) {
+      let sold_pixels = tx.pixels.filter(p => p.old_owner === this.state.account)
+      let total = sold_pixels.reduce((t, p) => t.add(p.price), new BigNumber(0))
+      if (sold_pixels.length)
+        Alert.success(`You sold ${ sold_pixels.length } pixel${ sold_pixels.length === 1 ? '' : 's' } for ${ PriceFormatter.format(total.toNumber()) }`)
+    }
+  }
+
   add_tx_to_events = tx => {
     this.setState(prev_state => {
       let temp = [...prev_state.event_logs]

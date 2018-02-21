@@ -26,6 +26,7 @@ class Pixel {
       i
     )
     p.painted = event.painted
+    p.old_owner = event.old_owner
     return p
   }
 
