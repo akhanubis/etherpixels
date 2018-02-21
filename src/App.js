@@ -34,6 +34,9 @@ import CssHide from './CssHide'
 import LogRocket from 'logrocket'
 import EnvironmentManager from './utils/EnvironmentManager'
 import BigNumber from 'bignumber.js'
+import * as firebase from 'firebase/app'
+import 'firebase/database'
+import 'firebase/storage'
 
 import './css/bootstrap.min.css'
 import './App.css'
@@ -134,37 +137,39 @@ class App extends PureComponent {
     })
   }
 
+  timestamp = () => `&disable_cache=${+ new Date()}`
+
   load_canvases = () => {
     this.load_cache_image()
     this.load_clear_image()
     this.load_addresses_buffer()
   }
 
-  bucket_url = key => {
-    return `https://${ EnvironmentManager.get('REACT_APP_S3_BUCKET') }.s3.us-east-2.amazonaws.com/${key}?disable_cache=${+ new Date()}`
-  }
-
   load_addresses_buffer = () => {
     this.state.contract_instance.StartingPrice.call().then(starting_price => {
-      axios.get(this.bucket_url('addresses.buf'), { responseType:"arraybuffer" }).then(response => {
-        AddressBuffer.decompress_buffer(response.data)
-        .then(result => this.address_buffer = new AddressBuffer(result.buffer, starting_price))
-        .catch(error => console.error("Error when inflating cache buffer"))
-        .then(this.try_bootstrap)
+      firebase.storage().ref('addresses.buf').getDownloadURL().then(url => {
+        axios.get(url + this.timestamp(), { responseType:"arraybuffer" }).then(response => {
+          AddressBuffer.decompress_buffer(response.data)
+          .then(result => this.address_buffer = new AddressBuffer(result.buffer, starting_price))
+          .catch(error => console.error("Error when inflating cache buffer"))
+          .then(this.try_bootstrap)
+        })
       })
     })
   }
 
   load_cache_image = () => {
-    axios.get(this.bucket_url('init.json')).then(response => {
-      if (this.state.contract_instance.address === response.data.contract_address) {
-        this.last_cache_block = response.data.last_cache_block
-        let img = new Image()
-        img.crossOrigin = ''
-        img.src = this.bucket_url('pixels.png')
-        img.style.display = 'none'
-        img.onload = this.load_buffer_data.bind(this, img)
-      }
+    Promise.all([firebase.storage().ref('init.json').getDownloadURL(), firebase.storage().ref('pixels.png').getDownloadURL()]).then(([init_url, pixels_url]) => {
+      axios.get(init_url + this.timestamp()).then(response => {
+        if (this.state.contract_instance.address === response.data.contract_address) {
+          this.last_cache_block = response.data.last_cache_block
+          let img = new Image()
+          img.crossOrigin = ''
+          img.src = pixels_url + this.timestamp()
+          img.style.display = 'none'
+          img.onload = this.load_buffer_data.bind(this, img)
+        }
+      })
     })
   }
 
@@ -579,7 +584,12 @@ class App extends PureComponent {
 
     this.state.web3.version.getNetwork((_, network_id) => {
       EnvironmentManager.init(network_id)
-      NameUtils.init()
+      firebase.initializeApp({
+        apiKey: EnvironmentManager.get('REACT_APP_FIREBASE_API_KEY'),
+        databaseURL: `https://${EnvironmentManager.get('REACT_APP_FIREBASE_APP_NAME')}.firebaseio.com`,
+        storageBucket: `${EnvironmentManager.get('REACT_APP_FIREBASE_APP_NAME')}.appspot.com`
+      })
+      NameUtils.init(firebase)
       .then(() => {
         let n = NameUtils.name(this.state.account)
         this.setState({ name: n === this.state.account ? '' : n })

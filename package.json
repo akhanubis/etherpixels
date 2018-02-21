@@ -41,6 +41,7 @@
     "path-exists": "2.1.0",
     "postcss-loader": "1.0.0",
     "promise": "7.1.1",
+    "pusher": "^1.5.1",
     "react-dev-utils": "^0.4.2",
     "recursive-readdir": "2.1.0",
     "strip-ansi": "3.0.1",
@@ -51,15 +52,15 @@
     "webpack": "1.14.0",
     "webpack-dev-server": "1.16.2",
     "webpack-manifest-plugin": "1.1.0",
-    "aws-sdk": "^2.183.0",
-    "whatwg-fetch": "1.0.0",
-    "pusher": "^1.5.1"
+    "whatwg-fetch": "1.0.0"
   },
   "dependencies": {
+    "@google-cloud/storage": "^1.6.0",
     "axios": "^0.17.1",
     "css-element-queries": "^1.0.1",
     "dotenv": "^2.0.0",
     "firebase": "^4.9.1",
+    "firebase-admin": "^5.9.0",
     "left-pad": "^1.2.0",
     "logrocket": "^0.6.3",
     "numeral": "^2.0.6",

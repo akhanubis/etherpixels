@@ -20,12 +20,22 @@ const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
 
 const canvasContract = require('truffle-contract')(CanvasContract)
 const Pusher = require('pusher')
-const AWS = require('aws-sdk')
-const s3 = new AWS.S3()
 
 const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
 const free_pixel_buffer_entry = '0000000000000000000000000000000000000000000000000000048c27395000' /* empty address and 5000000000000 starting price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
+
+const admin = require('firebase-admin')
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_APP_NAME,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: `-----BEGIN PRIVATE KEY-----\n${ process.env.FIREBASE_PRIVATE_KEY }\n-----END PRIVATE KEY-----\n`
+  }),
+  databaseURL: `https://${process.env.FIREBASE_APP_NAME}.firebaseio.com`,
+  storageBucket: `${process.env.FIREBASE_APP_NAME}.appspot.com`
+})
+let bucket_ref = admin.storage().bucket()
 
 let canvas = null
 let canvas_dimension = null
@@ -45,10 +55,9 @@ let pusher = new Pusher({
   encrypted: true
 })
 
-const bucket = process.env.S3_BUCKET
-const pixels_key = 'pixels.png'
-const buffer_key = 'addresses.buf'
-const init_key = 'init.json'
+const pixels_file_name = 'pixels.png'
+const buffer_file_name = 'addresses.buf'
+const init_file_name = 'init.json'
 
 let init_provider = () => {
   if (process.env.NODE_ENV === 'development') {
@@ -68,17 +77,17 @@ let init_provider = () => {
   }
 }
 
-let upload_callback = (err, data) => {
-  console.log(err ? err : `New ${data.key}: ${data.ETag}`)
+let wrap_upload = (filename, content) => {
+  bucket_ref.file(filename).save(content)
+  .then(() => { console.log(`${filename} uploaded`) })
+  .catch(() => { console.log(`${filename} upload failed`) })
 }
 
 let update_cache = () => {
   console.log("Updating cache...")
-  s3.upload({ ACL: 'public-read', Bucket: bucket, Key: pixels_key, Body: canvas.toBuffer() }, upload_callback)
-  let init_json = JSON.stringify({ contract_address: instance.address, last_cache_block: current_block })
-  s3.upload({ ACL: 'public-read', Bucket: bucket, Key: init_key, Body: init_json }, upload_callback)
-  let deflated_body = zlib.deflateRawSync(address_buffer)
-  s3.upload({ ACL: 'public-read', Bucket: bucket, Key: buffer_key, Body: deflated_body }, upload_callback)
+  wrap_upload(pixels_file_name, canvas.toBuffer())
+  wrap_upload(init_file_name, JSON.stringify({ contract_address: instance.address, last_cache_block: current_block }))
+  wrap_upload(buffer_file_name, zlib.deflateRawSync(address_buffer))
 }
 
 let process_new_block = b_number => {
@@ -218,26 +227,26 @@ let continue_cache = (b_number, pixels_data, buffer_data) => {
 }
 
 let fetch_pixels = (g_block, b_number) => {
-  console.log(`Reading ${bucket}/${pixels_key}...`)
-  s3.getObject({ Bucket: bucket, Key: pixels_key }, (error, pixels_data) => {
+  console.log(`Reading ${pixels_file_name}...`)
+  bucket_ref.file(pixels_file_name).download((error, pixels_data) => {
     if (error) {
       console.log('Last pixels file not found')
       reset_cache(g_block, b_number)
     }
     else
-      fetch_buffer(g_block, b_number, pixels_data.Body)
+      fetch_buffer(g_block, b_number, pixels_data)
   })
 }
 
 let fetch_buffer = (g_block, b_number, pixels_data) => {
-  console.log(`Reading ${bucket}/${buffer_key}...`)
-  s3.getObject({ Bucket: bucket, Key: buffer_key }, (error, buffer_data) => {
+  console.log(`Reading ${buffer_file_name}...`)
+  bucket_ref.file(buffer_file_name).download((error, buffer_data) => {
     if (error) {
       console.log('Last buffer file not found')
       reset_cache(g_block, b_number)
     }
     else
-      continue_cache(b_number, pixels_data, buffer_data.Body)
+      continue_cache(b_number, pixels_data, buffer_data)
   })
 }
 
@@ -251,11 +260,11 @@ canvasContract.deployed().then(contract_instance => {
     let g_block = halving_info[0].toNumber()
     ContractToWorld.init(halving_info)
     console.log(`Halving array: ${ halving_info }\nFetching init.json...`)
-    s3.getObject({ Bucket: bucket, Key: init_key }, (error, data) => {
+    bucket_ref.file(init_file_name).download((error, data) => {
       if (error)
         console.log('File init.json not found')
       else {
-        let json_data = JSON.parse(data.Body.toString())
+        let json_data = JSON.parse(data.toString())
         last_cache_block = json_data.last_cache_block
         console.log(`Last block cached: ${ last_cache_block }`)
         let cache_address = json_data.contract_address

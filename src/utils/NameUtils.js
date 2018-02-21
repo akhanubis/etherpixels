@@ -1,16 +1,10 @@
 import Alert from 'react-s-alert'
 import axios from 'axios'
-import * as firebase from 'firebase/app'
-import 'firebase/database'
 import EnvironmentManager from './EnvironmentManager'
 
 class NameUtils {
-  static init() {
+  static init(firebase) {
     return new Promise(resolve => {
-      firebase.initializeApp({
-        apiKey: EnvironmentManager.get('REACT_APP_FIREBASE_API_KEY'),
-        databaseURL: `https://${EnvironmentManager.get('REACT_APP_FIREBASE_APP_NAME')}.firebaseio.com`
-      })
       let stored_usernames = localStorage.getItem('usernames')
       this.index = stored_usernames ? JSON.parse(stored_usernames) : {}
 
