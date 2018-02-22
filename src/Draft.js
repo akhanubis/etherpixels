@@ -155,7 +155,9 @@ class Draft extends PureComponent {
   }
 
   remove = pixel_at_pointer => {
-    this.save_pixels_state()
+    /* only save if a pixel will actually be removed */
+    if (this.state.pixels.find(p => p.same_coords(pixel_at_pointer)))
+      this.save_pixels_state()
     this.update_with_callback(prev_state => {
       return { pixels: prev_state.pixels.filter(p => !p.same_coords(pixel_at_pointer)) }
     })
