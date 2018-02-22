@@ -41,7 +41,6 @@
     "path-exists": "2.1.0",
     "postcss-loader": "1.0.0",
     "promise": "7.1.1",
-    "pusher": "^1.5.1",
     "react-dev-utils": "^0.4.2",
     "recursive-readdir": "2.1.0",
     "strip-ansi": "3.0.1",
@@ -64,7 +63,6 @@
     "left-pad": "^1.2.0",
     "logrocket": "^0.6.3",
     "numeral": "^2.0.6",
-    "pusher-js": "^4.2.2",
     "react": "^16.0.0",
     "react-bootstrap": "^0.32.1",
     "react-color": "^2.13.8",
@@ -79,18 +77,14 @@
     "start": "set ENV_PATH=.build_env&&node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "full_build": "npm run build_canvas_updater && npm run build_push_alert && npm run build",
+    "full_build": "npm run build_canvas_updater && npm run build",
     "local_deploy": "set REACT_APP_INFURA_NETWORK=unused&&set ENV_PATH=.build_env&& npm run full_build && firebase use local && firebase deploy && firebase use ropsten",
     "ropsten_deploy": "set REACT_APP_INFURA_NETWORK=ropsten&&set ENV_PATH=.build_env&& npm run full_build && firebase use ropsten && firebase deploy",
     "mainnet_deploy": "set REACT_APP_INFURA_NETWORK=mainnet&&set ENV_PATH=.build_env&& npm run full_build && firebase use mainnet && firebase deploy && firebase use ropsten",
     "build_canvas_updater": "copy scripts\\.babelrc src\\.babelrc && babel ./scripts/canvas_updater_es6.js --out-file ./build_worker/canvas_updater.js && babel ./src/utils/ColorUtils.js --out-file ./build_worker/utils/ColorUtils.js && babel ./src/utils/LogUtils.js --out-file ./build_worker/utils/LogUtils.js && babel ./src/utils/ContractToWorld.js --out-file ./build_worker/utils/ContractToWorld.js && babel ./src/utils/WorldToCanvas.js --out-file ./build_worker/utils/WorldToCanvas.js && babel ./src/utils/CanvasUtils.js --out-file ./build_worker/utils/CanvasUtils.js && del src\\.babelrc",
-    "build_push_alert": "copy scripts\\push_alert.js build_scripts\\push_alert.js",
     "local_canvas_updater": "set ENV_PATH=.run_local_env&&set NODE_ENV=development&&node build_worker/canvas_updater.js",
     "ropsten_canvas_updater": "set ENV_PATH=.run_ropsten_env&&node build_worker/canvas_updater.js",
-    "mainnet_canvas_updater": "set ENV_PATH=.run_mainnet_env&&node build_worker/canvas_updater.js",
-    "local_push_alert": "set ENV_PATH=.run_local_env&&node build_scripts/push_alert.js",
-    "ropsten_push_alert": "set ENV_PATH=.run_ropsten_env&&node build_scripts/push_alert.js",
-    "mainnet_push_alert": "set ENV_PATH=.run_mainnet_env&&node build_scripts/push_alert.js"
+    "mainnet_canvas_updater": "set ENV_PATH=.run_mainnet_env&&node build_worker/canvas_updater.js"
   },
   "jest": {
     "collectCoverageFrom": [

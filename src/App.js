@@ -15,7 +15,6 @@ import Draft from './Draft'
 import KeyListener from './KeyListener'
 import axios from 'axios'
 import AddressBuffer from './AddressBuffer'
-import Pusher from 'pusher-js'
 import PendingTxList from './PendingTxList'
 import PriceFormatter from './utils/PriceFormatter'
 import EventLogPanel from './EventLogPanel'
@@ -307,21 +306,22 @@ class App extends PureComponent {
   }
   
   start_watching = () => {
-    this.pusher = new Pusher(EnvironmentManager.get('REACT_APP_PUSHER_APP_KEY'), {
-      cluster: EnvironmentManager.get('REACT_APP_PUSHER_APP_CLUSTER'),
-      encrypted: true,
-      disableStats: true
+    let db = firebase.database()
+    db.ref('blocks').on('child_added', block_info => {
+      this.update_block_number(block_info.key)
+      let txs = block_info.val()
+      if (txs)
+        Object.entries(txs).forEach(this.process_new_tx)
     })
-    this.pusher.subscribe('main').bind('new_block', this.update_block_number)
-    this.pusher.subscribe('main').bind('server_message', this.show_server_message)
-    this.pusher.subscribe('main').bind('mined_tx', this.process_new_tx)
+    db.ref('admin_messages').on('child_added', this.show_server_message)
   }
 
-  show_server_message = ({ type, message}) => {
+  show_server_message = snapshot => {
+    let { type, message } = snapshot.val()
     Alert[type](message)
   }
 
-  process_new_tx = pusher_tx => {
+  process_new_tx = ([_, pusher_tx]) => {
     if (this.state.pending_txs.find(tx => tx.hash === pusher_tx.hash))
       this.remove_mined_tx(pusher_tx)
     let event_pixels = this.paint_pixels_from_tx(pusher_tx)
@@ -555,7 +555,7 @@ class App extends PureComponent {
 
   on_new_block_state = (new_block, new_max_index) => this.set_state_with_promise({ current_block: new_block, max_index: new_max_index, last_updated: new Date() })
 
-  update_block_number = ({ new_block }) => {
+  update_block_number = new_block => {
     let new_max_index = ContractToWorld.max_index(new_block)
     let new_dimension = ContractToWorld.canvas_dimension(new_max_index)
     this.resize_pixel_buffer({ width: new_dimension, height: new_dimension }, this.state.max_index, new_max_index)

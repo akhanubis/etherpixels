@@ -19,7 +19,6 @@ const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js'
 const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
 
 const canvasContract = require('truffle-contract')(CanvasContract)
-const Pusher = require('pusher')
 
 const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
 const free_pixel_buffer_entry = '0000000000000000000000000000000000000000000000000000048c27395000' /* empty address and 5000000000000 starting price */
@@ -47,13 +46,6 @@ let max_index = null
 let instance = null
 let provider = null
 let logs_formatter = null
-let pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_APP_KEY,
-  secret: process.env.PUSHER_APP_SECRET,
-  cluster: process.env.PUSHER_APP_CLUSTER,
-  encrypted: true
-})
 
 const pixels_file_name = 'pixels.png'
 const buffer_file_name = 'addresses.buf'
@@ -96,7 +88,6 @@ let process_new_block = b_number => {
   let old_dimension = canvas_dimension
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
-  pusher.trigger('main', 'new_block', { new_block: b_number})
 }
 
 let update_pixel = log => {
@@ -165,16 +156,29 @@ let start_watching = () => {
           let last_processed_block = current_block
           process_new_block(safe_number)
           process_past_logs(last_processed_block + 1, safe_number)
+          prune_database(last_processed_block)
         }
       }
     )
   }, 10000)
 }
 
-let process_logs = (_, response) => {
-  console.log(`Processing ${response.result.length} event${response.result.length == 1 ? '' : 's'}`)
+let prune_database = until_b_number => {
+  console.log(`Pruning database until ${until_b_number}`)
+  let blocks_ref = admin.database().ref('blocks')
+  blocks_ref.orderByKey().endAt(until_b_number.toString()).once('value').then(snapshot => {
+    let updates = {}
+    snapshot.forEach(child => {
+      updates[child.key] = null
+    })
+    blocks_ref.update(updates)
+  })
+}
+
+let process_logs = (b_number, logs) => {
+  console.log(`Processing ${logs.length} event${logs.length == 1 ? '' : 's'}`)
   let txs = {}
-  response.result.forEach(l => {
+  logs.forEach(l => {
     let formatted = logs_formatter(l)
     LogUtils.to_sorted_event(txs, formatted)
     if (formatted.event === 'PixelPainted') {
@@ -182,10 +186,8 @@ let process_logs = (_, response) => {
       update_buffer(formatted)
     }
   })
-  Object.entries(txs).forEach(([tx_hash, tx_info]) => {
-    pusher.trigger('main', 'mined_tx', tx_info)
-    console.log(`Tx pushed: ${tx_hash}`)
-  })
+  console.log(`Storing block ${ b_number }`)
+  admin.database().ref(`blocks/${b_number}`).set(logs.length ? txs : 0)
   update_cache()
 }
 
@@ -198,7 +200,7 @@ let process_past_logs = (start, end) => {
       toBlock: `0x${ end.toString(16) }`,
       address: instance.address
     }]
-  }, process_logs)
+  }, (_, response) => process_logs(end, response.result))
 }
 
 let reset_cache = (g_block, b_number) => {
