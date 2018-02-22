@@ -45,7 +45,7 @@ class Tool extends PureComponent {
   render() {
     return (
       <OverlayTrigger placement="top" overlay={this.tooltip}>
-        <Button bsStyle="primary" active={this.selected()} onClick={this.select} >
+        <Button bsStyle="primary" active={this.selected()} onClick={this.select} disabled={this.props.disabled}>
           <i className={this.icon_class()} />
         </Button>
       </OverlayTrigger>
@@ -55,8 +55,9 @@ class Tool extends PureComponent {
 
 class ToolSelector extends PureComponent {
   tools = () => {
-    return this.props.tools.map(t => React.createElement(Tool, { key: t, current_tool: this.props.current_tool, shortcuts: this.props.shortcuts, id: t, on_tool_selected: this.props.on_tool_selected }))
+    return this.props.tools.map(t => React.createElement(Tool, { key: t, disabled: this.props.disabled_tools.includes(t), current_tool: this.props.current_tool, shortcuts: this.props.shortcuts, id: t, on_tool_selected: this.props.on_tool_selected }))
   }
+
   render() {
     return (
       <div className="tools-container">

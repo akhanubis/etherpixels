@@ -12,7 +12,7 @@ class Draft extends PureComponent {
     this.max_length = 20
     this.update_callback = () => {
       this.compute_prices()
-      this.props.on_update(this.state.preview, this.state.pixels)
+      this.props.on_update(this.state.preview, this.state.pixels, !this.prev_pixels.length, !this.next_pixels.length)
     }
     
     this.prev_pixels = []
@@ -195,7 +195,7 @@ class Draft extends PureComponent {
 
   toggle_preview = () => {
     let new_state = !this.state.preview
-    this.update_with_callback({ preview: new_state })
+    this.setState({ preview: new_state }, this.props.on_preview_update.bind(null, new_state, this.state.pixels))
   }
 
   gas_value = () => new BigNumber(this.props.gas_price).mul(this.state.gas)

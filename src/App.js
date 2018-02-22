@@ -68,17 +68,18 @@ class App extends PureComponent {
       pending_txs: [],
       settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
       current_tool: 'paint',
-      shortcuts: {
-        paint: 'a',
-        move: 's',
-        erase: 'd',
-        undo: ['Control', 'z'],
-        redo: ['Control', 'y'],
-        pick_color: 'f',
-        fullscreen: 'g',
-        reset_view: 'r'
-      },
+      disabled_tools: ['undo', 'redo'],
       loading_progress: 0
+    }
+    this.shortcuts = {
+      paint: 'a',
+      move: 's',
+      erase: 'd',
+      undo: ['Control', 'z'],
+      redo: ['Control', 'y'],
+      pick_color: 'f',
+      fullscreen: 'g',
+      reset_view: 'r'
     }
     this.bootstrap_steps = 3
     this.bootstraped = 0
@@ -233,6 +234,16 @@ class App extends PureComponent {
       let b_coords = WorldToCanvas.to_buffer(p.x, p.y, this.preview_buffer_ctx.canvas)
       this.preview_buffer_ctx.putImageData(p.image_data(), b_coords.x, b_coords.y)
     })
+  }
+
+  on_draft_update = (preview, pixels, undo_disabled, redo_disabled) => {
+    this.update_preview_buffer(preview, pixels)
+    let disabled_tools = []
+    if (undo_disabled)
+      disabled_tools.push('undo')
+    if (redo_disabled)
+      disabled_tools.push('redo')
+    this.setState({ disabled_tools: disabled_tools })
   }
 
   update_preview_buffer = (preview_draft, draft_pixels) => {
@@ -688,7 +699,7 @@ class App extends PureComponent {
   }
 
   check_for_shortcuts = () => {
-    Object.entries(this.state.shortcuts).forEach(([tool, key]) => {
+    Object.entries(this.shortcuts).forEach(([tool, key]) => {
       key = Array.from(key)
       if (key.every(k => this.state.keys_down[k])) {
         this.select_tool(tool)
@@ -772,9 +783,9 @@ class App extends PureComponent {
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'reset_view']} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.state.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
-                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_update={this.update_preview_buffer} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
+                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_preview_update={this.update_preview_buffer} on_update={this.on_draft_update} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
               </Col>
             </CssHide>
