@@ -3,10 +3,11 @@ import Numeral from 'numeral'
 import axios from 'axios'
 
 class PriceFormatter {
-  static init(unit, humanized_units) {
+  static init(unit, humanized_units, with_usd) {
     BigNumber.config({ EXPONENTIAL_AT: [-20, 20] })
     this.set_unit(unit)
     this.set_humanized(humanized_units)
+    this.set_with_usd(with_usd)
     this.unit_exps = {
       ether:  new BigNumber(10).pow(-18),
       finney:  new BigNumber(10).pow(-15),
@@ -58,6 +59,10 @@ class PriceFormatter {
     this.humanized = !!humanized
   }
 
+  static set_with_usd(with_usd) {
+    this.with_usd = with_usd
+  }
+
   static _format(wei_value, unit, with_usd) {
     wei_value = new BigNumber(wei_value)
     let eth_value = this.humanized ? Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') : wei_value.mul(this.unit_exp(unit)).toString()
@@ -69,11 +74,11 @@ class PriceFormatter {
   }
 
   static format(wei_value) {
-    return this._format(wei_value, this.unit, true)
+    return this._format(wei_value, this.unit, this.with_usd)
   }
 
   static format_to_unit(wei_value, unit) {
-    return this._format(wei_value, unit, true)
+    return this._format(wei_value, unit, this.with_usd)
   }
 
   static format_crypto_only(wei_value) {

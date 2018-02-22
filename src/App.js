@@ -46,15 +46,23 @@ class App extends PureComponent {
   constructor(props) {
     super(props)
 
-    let stored_settings = localStorage.getItem('settings')
     this.default_settings = {
       unit: 'gwei',
       humanized_units: true,
       gas_price: 1000000000 /* 1 gwei */,
       custom_colors: [],
       default_price_increase: 20,
-      zoom_at_pointer: true
+      zoom_at_pointer: true,
+      with_usd: true
     }
+    let parsed_settings = null
+    try {
+      parsed_settings = JSON.parse(localStorage.getItem('settings') || {})
+    }
+    catch(_) {
+      parsed_settings = {}
+    }
+
     this.state = {
       canvas_size: {},
       web3: null,
@@ -65,7 +73,7 @@ class App extends PureComponent {
       x: 0,
       y: 0,
       pending_txs: [],
-      settings: stored_settings ? { ...this.default_settings, ...JSON.parse(stored_settings) } : this.default_settings,
+      settings: { ...this.default_settings, ...parsed_settings },
       current_tool: 'paint',
       disabled_tools: ['undo', 'redo'],
       loading_progress: 0
@@ -90,7 +98,7 @@ class App extends PureComponent {
       x: -9999,
       y: -9999
     }
-    PriceFormatter.init(this.state.settings.unit, this.state.settings.humanized_units)
+    PriceFormatter.init(this.state.settings.unit, this.state.settings.humanized_units, this.state.settings.with_usd)
   }
 
   set_state_with_promise = (...args) => {

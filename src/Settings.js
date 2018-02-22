@@ -65,6 +65,12 @@ class Settings extends PureComponent {
     this.props.on_update({ zoom_at_pointer: v })
   }
 
+  change_with_usd = v => {
+    v = !v
+    PriceFormatter.set_with_usd(v)
+    this.props.on_update({ with_usd: v })
+  }
+
   style = () => {
     let right = this.props.expand ? 0 : - this.props.panel_width
     return { right: right, width: this.props.panel_width }
@@ -136,6 +142,15 @@ class Settings extends PureComponent {
               thumbStyle={{borderRadius: 2}}
               trackStyle={{borderRadius: 2}}
               onToggle={this.change_zoom_at_pointer}
+            />
+          </FormGroup>
+          <FormGroup controlId="with_usd">
+            <ControlLabel>Show values in USD</ControlLabel>
+            <Switch
+              value={this.props.settings.with_usd}
+              thumbStyle={{borderRadius: 2}}
+              trackStyle={{borderRadius: 2}}
+              onToggle={this.change_with_usd}
             />
           </FormGroup>
         </Form>
