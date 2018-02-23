@@ -23,6 +23,7 @@ const canvasContract = require('truffle-contract')(CanvasContract)
 const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
 const free_pixel_buffer_entry = '0000000000000000000000000000000000000000000000000000048c27395000' /* empty address and 5000000000000 starting price */
 const new_pixel_image_data = CanvasUtils.semitrans_image_data(Canvas.ImageData)
+const new_pixel_price_data = CanvasUtils.new_price_data(Canvas.ImageData)
 
 const admin = require('firebase-admin')
 admin.initializeApp({
@@ -34,22 +35,14 @@ admin.initializeApp({
   databaseURL: `https://${process.env.FIREBASE_APP_NAME}.firebaseio.com`,
   storageBucket: `${process.env.FIREBASE_APP_NAME}.appspot.com`
 })
-let bucket_ref = admin.storage().bucket()
-
-let canvas = null
-let canvas_dimension = null
-let pixel_buffer_ctx = null
-let address_buffer = Buffer.alloc(0)
-let last_cache_block = null
-let current_block = null
-let max_index = null
-let instance = null
-let provider = null
-let logs_formatter = null
-
+const bucket_ref = admin.storage().bucket()
 const pixels_file_name = 'pixels.png'
+const prices_file_name = 'prices.png'
 const buffer_file_name = 'addresses.buf'
 const init_file_name = 'init.json'
+
+let canvas_dimension, pixel_buffer_ctx, prices_ctx, last_cache_block, current_block, max_index, instance, provider, logs_formatter
+let address_buffer = Buffer.alloc(0)
 
 let init_provider = () => {
   if (process.env.NODE_ENV === 'development') {
@@ -77,7 +70,8 @@ let wrap_upload = (filename, content) => {
 
 let update_cache = () => {
   console.log("Updating cache...")
-  wrap_upload(pixels_file_name, canvas.toBuffer())
+  wrap_upload(pixels_file_name, pixel_buffer_ctx.canvas.toBuffer())
+  wrap_upload(prices_file_name, prices_ctx.canvas.toBuffer())
   wrap_upload(init_file_name, JSON.stringify({ contract_address: instance.address, last_cache_block: current_block }))
   wrap_upload(buffer_file_name, zlib.deflateRawSync(address_buffer))
 }
@@ -94,8 +88,10 @@ let update_pixel = log => {
   let world_coords = ContractToWorld.index_to_coords(log.args.i.toNumber())
   let canvas_coords = WorldToCanvas.to_buffer(world_coords.x, world_coords.y, { width: canvas_dimension, height: canvas_dimension })
   let pixel_array = new Uint8ClampedArray(ColorUtils.bytes3ToIntArray(log.args.new_color))
-  let image_data = new Canvas.ImageData(pixel_array, 1, 1)
-  pixel_buffer_ctx.putImageData(image_data, canvas_coords.x, canvas_coords.y)
+  let pixel_image_data = new Canvas.ImageData(pixel_array, 1, 1)
+  pixel_buffer_ctx.putImageData(pixel_image_data, canvas_coords.x, canvas_coords.y)
+  let price_image_data = new Canvas.ImageData(ColorUtils.priceAsColor(log.args.price), 1, 1)
+  prices_ctx.putImageData(price_image_data, canvas_coords.x, canvas_coords.y)
 }
 
 let update_buffer = log => {
@@ -114,16 +110,16 @@ let store_new_index = b_number => {
   return old_index
 }
 
-let resize_canvas = old_i => {
+let resize_canvas = (ctx, new_image_data, old_i) => {
   console.log(`Resizing canvas to: ${canvas_dimension}x${canvas_dimension}...`)
-  canvas = new Canvas(canvas_dimension, canvas_dimension) /* pixel_buffer_ctx keeps a temp reference to old canvas */
-  pixel_buffer_ctx = CanvasUtils.resize_canvas(
-    pixel_buffer_ctx,
-    canvas,
+  let new_canvas = new Canvas(canvas_dimension, canvas_dimension) /* ctx keeps a temp reference to old canvas */
+  return CanvasUtils.resize_canvas(
+    ctx,
+    new_canvas,
     { width: canvas_dimension, height: canvas_dimension },
     old_i,
     max_index,
-    new_pixel_image_data
+    new_image_data
   ).ctx
 }
 
@@ -135,7 +131,8 @@ let resize_buffer = old_i => {
 
 let resize_assets = old_i => {
   console.log(`Resizing assets: ${old_i} => ${max_index}...`)
-  resize_canvas(old_i)
+  pixel_buffer_ctx = resize_canvas(pixel_buffer_ctx, new_pixel_image_data, old_i)
+  prices_ctx = resize_canvas(prices_ctx, new_pixel_price_data, old_i)
   resize_buffer(old_i)
 }
 
@@ -206,15 +203,20 @@ let reset_cache = (g_block, b_number) => {
   start_watching()
 }
 
-let continue_cache = (b_number, pixels_data, buffer_data) => {
+let continue_cache = (b_number, buffer_data, pixels_data, prices_data) => {
   console.log('Using stored cache...')
   /* init the canvas with the last cached image */
   let img = new Canvas.Image()
   img.src = "data:image/png;base64," + Buffer.from(pixels_data).toString('base64')
   console.log(`Last cache dimensions: ${img.width}x${img.height}`)
-  canvas = new Canvas(img.width, img.height)
-  pixel_buffer_ctx = canvas.getContext('2d')
+  let temp_canvas = new Canvas(img.width, img.height)
+  pixel_buffer_ctx = temp_canvas.getContext('2d')
   pixel_buffer_ctx.drawImage(img, 0, 0)
+  /* init the prices canvas with the last cached image */
+  img.src = "data:image/png;base64," + Buffer.from(prices_data).toString('base64')
+  temp_canvas = new Canvas(img.width, img.height)
+  prices_ctx = temp_canvas.getContext('2d')
+  prices_ctx.drawImage(img, 0, 0)
   /* init the buffer with the last cached buffer */
   address_buffer = zlib.inflateRawSync(buffer_data)
   max_index = ContractToWorld.max_index(last_cache_block) /* temp set mat_index to old_index to set old_index to the right value */
@@ -252,17 +254,19 @@ canvasContract.deployed().then(contract_instance => {
       Promise.all([
         bucket_ref.file(init_file_name).download(),
         bucket_ref.file(buffer_file_name).download(),
-        bucket_ref.file(pixels_file_name).download()
-      ]).then(([init_data, buffer_data, pixels_data]) => {
+        bucket_ref.file(pixels_file_name).download(),
+        bucket_ref.file(prices_file_name).download()
+      ]).then(([init_data, buffer_data, pixels_data, prices_data]) => {
         init_data = init_data[0]
         buffer_data = buffer_data[0]
         pixels_data = pixels_data[0]
+        prices_data = prices_data[0]
         let json_data = JSON.parse(init_data.toString())
         last_cache_block = json_data.last_cache_block
         console.log(`Last block cached: ${ last_cache_block }`)
         let cache_address = json_data.contract_address
         if (cache_address === instance.address)
-          continue_cache(b_number, pixels_data, buffer_data)
+          continue_cache(b_number, buffer_data, pixels_data, prices_data)
         else {
           console.log('Last cache files point to older contract version, resetting cache...')
           reset_cache(g_block, b_number)
