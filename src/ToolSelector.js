@@ -18,6 +18,7 @@ class Tool extends PureComponent {
     redo: 'Redo',
     pick_color: 'Pick color',
     fullscreen: 'Fullscreen',
+    price_view: 'Price graph',
     reset_view: 'Reset view'
   }
 
@@ -29,6 +30,7 @@ class Tool extends PureComponent {
     redo: 'redo-alt',
     pick_color: 'eye-dropper',
     fullscreen: 'expand-arrows-alt',
+    price_view: 'dollar-sign',
     reset_view: 'image'
   }
 

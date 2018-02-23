@@ -197,6 +197,7 @@ let process_past_logs = (start, end) => {
 
 let reset_cache = (g_block, b_number) => {
   console.log("Resetting cache...")
+  admin.database().ref('blocks').set(null)
   max_index = -1
   last_cache_block = g_block
   process_new_block(b_number)

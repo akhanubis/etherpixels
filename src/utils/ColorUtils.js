@@ -60,8 +60,14 @@ var ColorUtils = (() => {
   }
 
   var priceAsColor = price => {
-    let intensity = price / 1000000000000000 /* clamp at 0.001 eth */
-    return new Uint8ClampedArray([255 * intensity, 255 * (1 - intensity), 0, 255])
+    /*
+    i = 0   => 0, 255, 0 green
+    i = 0.5 => 255, 255, 0 yellow
+    i = 1   => 255, 0, 0 red
+    clamped at 0.0001 eth for now...
+    */
+    let intensity = price / 100000000000000
+    return new Uint8ClampedArray([510 * intensity, 510 * (1 - intensity), 0, 255])
   }
   
   return {

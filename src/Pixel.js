@@ -47,6 +47,10 @@ class Pixel {
     return new ImageData(pixel_array, 1, 1)
   }
 
+  price_image_data() {
+    return new ImageData(ColorUtils.priceAsColor(this.price), 1, 1)
+  }
+
   rgba_color() {
     return ColorUtils.hexToRgb(this.color)
   }

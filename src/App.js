@@ -79,16 +79,17 @@ class App extends PureComponent {
       loading_progress: 0
     }
     this.shortcuts = {
-      paint: 'a',
-      move: 's',
-      erase: 'd',
+      paint: 'p',
+      move: 'm',
+      erase: 'e',
       undo: ['Control', 'z'],
       redo: ['Control', 'y'],
-      pick_color: 'f',
-      fullscreen: 'g',
-      reset_view: 'r'
+      pick_color: 'c',
+      fullscreen: 'f',
+      reset_view: 'r',
+      price_view: 'i'
     }
-    this.bootstrap_steps = 3
+    this.bootstrap_steps = 5
     this.bootstraped = 0
     this.max_event_logs_size = 20
     this.right_panel_width = 300
@@ -118,12 +119,12 @@ class App extends PureComponent {
 
   update_palette_height = new_height => this.setState({ current_palette_height: new_height })
 
-  update_progress = () => this.setState(prev_state => ({ loading_progress: prev_state.loading_progress + 20}))
+  update_progress = amount => this.setState(prev_state => ({ loading_progress: prev_state.loading_progress + amount }))
 
   bootstraping = () => this.bootstraped < this.bootstrap_steps
 
   try_bootstrap = () => {
-    this.update_progress()
+    this.update_progress(12)
     this.bootstraped++
     if (this.bootstraping())
       return
@@ -141,7 +142,7 @@ class App extends PureComponent {
       this.start_watching()
       this.minimap_canvas.resize()
       this.zoom_canvas.resize()
-      this.update_progress()
+      this.update_progress(20)
     })
   }
 
@@ -167,15 +168,28 @@ class App extends PureComponent {
   }
 
   load_cache_image = () => {
-    Promise.all([firebase.storage().ref('init.json').getDownloadURL(), firebase.storage().ref('pixels.png').getDownloadURL()]).then(([init_url, pixels_url]) => {
+    Promise.all([firebase.storage().ref('init.json').getDownloadURL(), firebase.storage().ref('pixels.png').getDownloadURL(), firebase.storage().ref('prices.png').getDownloadURL()]).then(([init_url, pixels_url, prices_url]) => {
       axios.get(init_url + this.timestamp()).then(response => {
         if (this.state.contract_instance.address === response.data.contract_address) {
           this.last_cache_block = response.data.last_cache_block
+          let new_max_index = ContractToWorld.max_index(this.last_cache_block)
+          let dimension = ContractToWorld.canvas_dimension(new_max_index)
+          this.create_buffer_canvas(dimension)
+          this.set_state_with_promise({ canvas_size: { width: dimension, height: dimension } })
+          .then(this.on_new_block_state.bind(this, this.last_cache_block, new_max_index))
+          .then(this.try_bootstrap)
+
           let img = new Image()
           img.crossOrigin = ''
           img.src = pixels_url + this.timestamp()
           img.style.display = 'none'
-          img.onload = this.load_buffer_data.bind(this, img)
+          img.onload = this.load_buffer_data.bind(this, img, this.pixel_buffer_ctx)
+
+          let img2 = new Image()
+          img2.crossOrigin = ''
+          img2.src = prices_url + this.timestamp()
+          img2.style.display = 'none'
+          img2.onload = this.load_buffer_data.bind(this, img2, this.prices_buffer_ctx)
         }
       })
     })
@@ -193,15 +207,10 @@ class App extends PureComponent {
     }
   }
 
-  load_buffer_data = img => {
-    let new_max_index = ContractToWorld.max_index(this.last_cache_block)
-    let dimension = ContractToWorld.canvas_dimension(new_max_index)
-    this.create_buffer_canvas(dimension)
-    if (img)
-      this.pixel_buffer_ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
-    this.set_state_with_promise({ canvas_size: { width: dimension, height: dimension } })
-    .then(this.on_new_block_state.bind(this, this.last_cache_block, new_max_index))
-    .then(this.try_bootstrap)
+  load_buffer_data = (img, ctx) => {
+    let dimension = ctx.canvas.width
+    ctx.drawImage(img, 0.5 * (dimension - img.width), 0.5 * (dimension - img.height))
+    this.try_bootstrap()
   }
 
   reset_view = () => {
@@ -212,6 +221,7 @@ class App extends PureComponent {
 
   create_buffer_canvas = dimension => {
     this.pixel_buffer_ctx = CanvasUtils.new_canvas(dimension)
+    this.prices_buffer_ctx = CanvasUtils.new_canvas(dimension)
     this.preview_buffer_ctx = CanvasUtils.new_canvas(dimension, true)
     this.empty_canvas_ctx = CanvasUtils.new_canvas(dimension, true)
   }
@@ -229,8 +239,12 @@ class App extends PureComponent {
     let destination_size = this.destination_size()
     this.main_canvas.resize()
     this.main_canvas.clear()
-    this.redraw_ctx(this.pixel_buffer_ctx, destination_top_left, destination_size)
-    this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
+    if (this.state.price_view)
+      this.redraw_ctx(this.prices_buffer_ctx, destination_top_left, destination_size)
+    else {
+      this.redraw_ctx(this.pixel_buffer_ctx, destination_top_left, destination_size)
+      this.redraw_ctx(this.preview_buffer_ctx, destination_top_left, destination_size)
+    }
     this.update_zoom()
     this.update_minimap()
     this.outline_hovering_pixel()
@@ -345,6 +359,7 @@ class App extends PureComponent {
       if (p.painted) {
         let buffer_coords = WorldToCanvas.to_buffer(p.x, p.y, this.state.canvas_size)
         this.pixel_buffer_ctx.putImageData(p.image_data(), buffer_coords.x, buffer_coords.y)
+        this.prices_buffer_ctx.putImageData(p.price_image_data(), buffer_coords.x, buffer_coords.y)
         this.address_buffer.update_pixel(p)
       }
       return p
@@ -385,8 +400,12 @@ class App extends PureComponent {
                          7, 7,
                          0, 0,
                          this.zoom_canvas.canvas.width, this.zoom_canvas.canvas.height]
-    this.zoom_canvas.drawImage(this.pixel_buffer_ctx.canvas, ...draw_settings)
-    this.zoom_canvas.drawImage(this.preview_buffer_ctx.canvas, ...draw_settings)
+    if (this.state.price_view)
+      this.zoom_canvas.drawImage(this.prices_buffer_ctx.canvas, ...draw_settings)
+    else {
+      this.zoom_canvas.drawImage(this.pixel_buffer_ctx.canvas, ...draw_settings)
+      this.zoom_canvas.drawImage(this.preview_buffer_ctx.canvas, ...draw_settings)
+    }
   }
   
   update_hovering_pixel = () => {
@@ -508,7 +527,7 @@ class App extends PureComponent {
 
   update_minimap = () => {
     this.minimap_canvas.clear()
-    this.minimap_canvas.drawImage(this.pixel_buffer_ctx.canvas,
+    this.minimap_canvas.drawImage((this.state.price_view ? this.prices_buffer_ctx : this.pixel_buffer_ctx).canvas,
                       0, 0,
                       this.state.canvas_size.width, this.state.canvas_size.height,
                       0, 0,
@@ -579,6 +598,15 @@ class App extends PureComponent {
     this.empty_canvas_ctx = this.resize_secondary_buffer(this.empty_canvas_ctx, new_size.width)
     this.empty_canvas_data = this.empty_canvas_ctx.getImageData(0, 0, new_size.width, new_size.height)
     let result = CanvasUtils.resize_canvas(
+      this.prices_buffer_ctx,
+      document.createElement('canvas'),
+      new_size,
+      old_max_index,
+      new_max_index,
+      CanvasUtils.new_price_data(ImageData)
+    )
+    this.prices_buffer_ctx = result.ctx
+    result = CanvasUtils.resize_canvas(
       this.pixel_buffer_ctx,
       document.createElement('canvas'),
       new_size,
@@ -613,7 +641,7 @@ class App extends PureComponent {
         let n = NameUtils.name(this.state.account)
         this.setState({ name: n === this.state.account ? '' : n })
       })
-      .then(this.update_progress)
+      .then(this.update_progress.bind(this, 20))
 
       this.logrocket_app_id = EnvironmentManager.get('REACT_APP_LOGROCKET_APP_ID')
       if (this.logrocket_app_id)
@@ -741,6 +769,9 @@ class App extends PureComponent {
       this.undo()
     else if (tool === 'redo')
       this.redo()
+    else if (tool === 'price_view') {
+      this.setState(prev_state => ({ price_view: !prev_state.price_view }), this.redraw)
+    }
     else
       this.setState({ current_tool: tool })
   }
@@ -791,7 +822,7 @@ class App extends PureComponent {
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'price_view', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
                   <Draft ref={d => this.draft = d } on_send={this.send_tx} on_preview_update={this.update_preview_buffer} on_update={this.on_draft_update} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
