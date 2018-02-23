@@ -147,19 +147,14 @@ let start_watching = () => {
   process_past_logs(last_cache_block, current_block)
   
   setInterval(() => {
-    provider.sendAsync({
-      method: 'eth_blockNumber',
-      params: []
-      }, (_, res) => {
-        let safe_number = parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED
-        if (safe_number > current_block) {
-          let last_processed_block = current_block
-          process_new_block(safe_number)
-          process_past_logs(last_processed_block + 1, safe_number)
-          prune_database(last_processed_block)
-        }
+    fetch_current_block().then(new_block => {
+      if (new_block > current_block) {
+        let last_processed_block = current_block
+        process_new_block(new_block)
+        process_past_logs(last_processed_block + 1, new_block)
+        prune_database(last_processed_block)
       }
-    )
+    })
   }, 10000)
 }
 
@@ -228,27 +223,18 @@ let continue_cache = (b_number, pixels_data, buffer_data) => {
   start_watching()
 }
 
-let fetch_pixels = (g_block, b_number) => {
-  console.log(`Reading ${pixels_file_name}...`)
-  bucket_ref.file(pixels_file_name).download((error, pixels_data) => {
-    if (error) {
-      console.log('Last pixels file not found')
-      reset_cache(g_block, b_number)
-    }
-    else
-      fetch_buffer(g_block, b_number, pixels_data)
-  })
-}
-
-let fetch_buffer = (g_block, b_number, pixels_data) => {
-  console.log(`Reading ${buffer_file_name}...`)
-  bucket_ref.file(buffer_file_name).download((error, buffer_data) => {
-    if (error) {
-      console.log('Last buffer file not found')
-      reset_cache(g_block, b_number)
-    }
-    else
-      continue_cache(b_number, pixels_data, buffer_data)
+let fetch_current_block = () => {
+  return new Promise((resolve, reject) => {
+    provider.sendAsync({
+      method: 'eth_blockNumber',
+      params: []
+      }, (err, res) => {
+        if (err)
+          reject(err)
+        else
+          resolve(parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED)
+      }
+    )
   })
 }
 
@@ -261,31 +247,30 @@ canvasContract.deployed().then(contract_instance => {
   instance.HalvingInfo.call().then(halving_info => {
     let g_block = halving_info[0].toNumber()
     ContractToWorld.init(halving_info)
-    console.log(`Halving array: ${ halving_info }\nFetching init.json...`)
-    bucket_ref.file(init_file_name).download((error, data) => {
-      if (error)
-        console.log('File init.json not found')
-      else {
-        let json_data = JSON.parse(data.toString())
+    console.log(`Halving array: ${ halving_info }\nFetching initial data...`)
+    fetch_current_block().then(b_number => {
+      Promise.all([
+        bucket_ref.file(init_file_name).download(),
+        bucket_ref.file(buffer_file_name).download(),
+        bucket_ref.file(pixels_file_name).download()
+      ]).then(([init_data, buffer_data, pixels_data]) => {
+        init_data = init_data[0]
+        buffer_data = buffer_data[0]
+        pixels_data = pixels_data[0]
+        let json_data = JSON.parse(init_data.toString())
         last_cache_block = json_data.last_cache_block
         console.log(`Last block cached: ${ last_cache_block }`)
         let cache_address = json_data.contract_address
-        matching_contract = cache_address === instance.address
-      }
-      console.log('Fetching current block...')
-      provider.sendAsync({
-        method: 'eth_blockNumber',
-        params: []
-        }, (_, res) => {
-          let safe_number = parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED
-          if (matching_contract)
-            fetch_pixels(g_block, safe_number)
-          else {
-            console.log('Last cache files point to older contract version, resetting cache...')
-            reset_cache(g_block, safe_number)
-          }
+        if (cache_address === instance.address)
+          continue_cache(b_number, pixels_data, buffer_data)
+        else {
+          console.log('Last cache files point to older contract version, resetting cache...')
+          reset_cache(g_block, b_number)
         }
-      )
+      }).catch(err => {
+        console.log(err)
+        reset_cache(g_block, b_number)
+      })
     })
   })
 })
