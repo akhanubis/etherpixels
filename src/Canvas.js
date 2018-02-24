@@ -34,11 +34,9 @@ class Canvas extends PureComponent {
       WheelUtils.events.forEach(e => this.canvas.removeEventListener(e, this.props.on_mouse_wheel))
   }
   
-  set_clear_pattern(clear_image) {
-    this.clear_pattern = this.ctx.createPattern(clear_image, 'repeat')
-  }
+  set_clear_pattern = clear_image => this.clear_pattern = this.ctx.createPattern(clear_image, 'repeat')
 
-  resize(callback) {
+  resize = callback => {
     let old_smoothing = this.ctx.imageSmoothingEnabled
     let new_size = {
       width: this.canvas.clientWidth,
@@ -56,7 +54,7 @@ class Canvas extends PureComponent {
     }
   }
 
-  clear() {
+  clear = () => {
     if (this.clear_pattern) {
       this.ctx.fillStyle = this.clear_pattern
       this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight)
@@ -65,15 +63,7 @@ class Canvas extends PureComponent {
       CanvasUtils.clear(this.ctx, 'white')
   }
 
-  drawImage(...args) {
-    return this.ctx.drawImage(...args)
-  }
-
-  getImageData(...args) {
-    return this.ctx.getImageData(...args)
-  }
-
-  outline(x, y, width, height, soft_outline) {
+  outline = (x, y, width, height, soft_outline) => {
     let center_x = x + 0.5 * width
     let center_y = y + 0.5 * height
     let gradient = this.ctx.createRadialGradient(center_x, center_y, width, center_x, center_y, 0)
@@ -87,26 +77,12 @@ class Canvas extends PureComponent {
     this.ctx.strokeRect(x, y, width, height)
   }
   
-  putImageData(...args) {
-    this.ctx.putImageData(...args)
-  }
+  drawImage = (...args) => this.ctx.drawImage(...args)
 
-  transform(...args) {
-    this.ctx.transform(...args)
-  }
+  getImageData = (...args) => this.ctx.getImageData(...args)
 
-  set_transform(...args) {
-    this.ctx.setTransform(...args)
-  }
+  putImageData = (...args) => this.ctx.putImageData(...args)
 
-  save() {
-    this.ctx.save()
-  }
-
-  restore() {
-    this.ctx.restore()
-  }
-  
   render() {
     return (
       <canvas ref={(c) => {this.canvas = c}}></canvas>

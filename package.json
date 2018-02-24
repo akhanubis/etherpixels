@@ -69,6 +69,7 @@
     "react-dom": "^16.0.0",
     "react-helmet": "^5.2.0",
     "react-motion": "^0.5.2",
+    "react-rangeslider": "^2.2.0",
     "react-s-alert": "^1.4.1",
     "react-toggle-button": "^2.2.0",
     "truffle-hdwallet-provider": "0.0.3"

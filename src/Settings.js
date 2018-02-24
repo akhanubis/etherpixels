@@ -3,7 +3,9 @@ import PriceFormatter from './utils/PriceFormatter'
 import { Form, FormControl, FormGroup, ControlLabel, HelpBlock, InputGroup, Button, ButtonToolbar, ToggleButton, ToggleButtonGroup } from 'react-bootstrap'
 import Switch from 'react-toggle-button'
 import BigNumber from 'bignumber.js'
+import Slider from 'react-rangeslider'
 import './Settings.css'
+import 'react-rangeslider/lib/index.css'
 
 class Settings extends PureComponent {
   constructor(props) {
@@ -11,10 +13,13 @@ class Settings extends PureComponent {
     this.max_name_length = 45
     this.max_price_increase = 100
     this.min_price_increase = 10
+    this.max_translation_speed = 200
+    this.min_translation_speed = 1
     this.state = {
       name: '',
       gas_price: new BigNumber(props.settings.gas_price).mul(PriceFormatter.unit_exps.gwei).toNumber(),
-      default_price_increase: props.settings.default_price_increase
+      default_price_increase: props.settings.default_price_increase,
+      translation_speed: parseInt(props.settings.translation_speed, 10)
     }
   }
 
@@ -45,10 +50,9 @@ class Settings extends PureComponent {
     this.props.on_update({ humanized_units: v })
   }
 
-  change_gas_price = e => {
-    let gwei_gas = e.target.value === '' ? 1 : e.target.value
-    this.setState({ gas_price: e.target.value })
-    this.props.on_update({ gas_price: new BigNumber(gwei_gas).div(PriceFormatter.unit_exps.gwei).toNumber() })
+  change_gas_price = v => {
+    this.setState({ gas_price: v })
+    this.props.on_update({ gas_price: new BigNumber(v).div(PriceFormatter.unit_exps.gwei).toNumber() })
   }
 
   valid_default_price_increase = () => this.state.default_price_increase <= this.max_price_increase && this.state.default_price_increase >= this.min_price_increase
@@ -57,6 +61,12 @@ class Settings extends PureComponent {
     this.setState({ default_price_increase: e.target.value }, () => {
       if (this.valid_default_price_increase())
         this.props.on_update({ default_price_increase: this.state.default_price_increase })
+    })
+  }
+
+  change_translation_speed = v => {
+    this.setState({ translation_speed: v }, () => {
+      this.props.on_update({ translation_speed: this.state.translation_speed })
     })
   }
 
@@ -114,11 +124,13 @@ class Settings extends PureComponent {
           </FormGroup>
           <FormGroup controlId="gas_price">
             <ControlLabel>Gas price in Gwei</ControlLabel>
-            <FormControl
-              type="number"
+            <Slider
               value={this.state.gas_price}
               min={1}
-              placeholder={1}
+              max={100}
+              labels={{1: 1, 50: 50, 100: 100}}
+              step={1}
+              orientation="horizontal"
               onChange={this.change_gas_price}
             />
             <HelpBlock>Tx fee calculations will be done using this gas price</HelpBlock>
@@ -134,6 +146,18 @@ class Settings extends PureComponent {
               onChange={this.change_default_price_increase}
             />
             <FormControl.Feedback/>
+          </FormGroup>
+          <FormGroup controlId="translation_speed">
+            <ControlLabel>Panning speed when using arrow keys</ControlLabel>
+            <Slider
+              value={this.state.translation_speed}
+              min={this.min_translation_speed}
+              max={this.max_translation_speed}
+              labels={{1: 1, 100: 100, 200: 200}}
+              step={1}
+              orientation="horizontal"
+              onChange={this.change_translation_speed}
+            />
           </FormGroup>
           <FormGroup controlId="zoom_at_pointer">
             <ControlLabel>Zoom into/out of cursor position</ControlLabel>

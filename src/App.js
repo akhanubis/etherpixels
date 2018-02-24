@@ -53,7 +53,8 @@ class App extends PureComponent {
       custom_colors: [],
       default_price_increase: 20,
       zoom_at_pointer: true,
-      with_usd: true
+      with_usd: true,
+      translation_speed: 10
     }
     let parsed_settings = null
     try {
@@ -88,6 +89,24 @@ class App extends PureComponent {
       fullscreen: 'f',
       reset_view: 'r',
       price_view: 'i'
+    }
+    this.arrow_keys = {
+      ArrowLeft: {
+        x: -1,
+        y: 0
+      },
+      ArrowRight: {
+        x: 1,
+        y: 0
+      },
+      ArrowDown: {
+        x: 0,
+        y: 1
+      },
+      ArrowUp: {
+        x: 0,
+        y: -1
+      }
     }
     this.bootstrap_steps = 5
     this.bootstraped = 0
@@ -735,6 +754,7 @@ class App extends PureComponent {
   }
 
   check_for_shortcuts = () => {
+    this.translate_canvas()
     Object.entries(this.shortcuts).forEach(([tool, key]) => {
       key = Array.from(key)
       if (key.every(k => this.state.keys_down[k])) {
@@ -742,6 +762,23 @@ class App extends PureComponent {
         return false
       }
     })
+  }
+
+  translate_canvas = () => {
+    let translation = { x: 0, y: 0 }
+    Object.entries(this.arrow_keys).forEach(([key, direction]) => {
+      if (this.state.keys_down[key]) {
+        translation.x += direction.x
+        translation.y += direction.y
+      }
+    })
+    if (translation.x || translation.y) {
+      this.point_at_center.x += translation.x * this.state.settings.translation_speed / this.current_wheel_zoom
+      this.point_at_center.y += translation.y * this.state.settings.translation_speed / this.current_wheel_zoom
+      this.update_pixel_at_pointer()
+      this.update_hovering_pixel()
+      this.redraw()
+    }
   }
 
   toggle_events = () => {
