@@ -6,8 +6,13 @@ import './LoadingPanel.css'
 class LoadingPanel extends PureComponent {
   constructor(props) {
     super(props)
+    let loading_phrases = [
+      'Spending ether on pointless dapps fills you with determination...',
+      'Knowing your portfolio might one day be worth millions... It fills you with determination.'
+    ]
     this.state = {
-      finished: false
+      finished: false,
+      phrase: loading_phrases[Math.floor(Math.random() * loading_phrases.length)]
     }
   }
 
@@ -37,7 +42,7 @@ class LoadingPanel extends PureComponent {
           if (interpolatedStyles[0])
             return (
               <div className="loading-bar-container" style={interpolatedStyles[0].style}>
-                <div className="loading-bar-label">Loading...</div>
+                <div className="loading-bar-label">{this.state.phrase}</div>
                 <div className="loading-bar">
                   <ProgressBar active now={interpolatedStyles[0].data} label={`${interpolatedStyles[0].data}%`} />
                 </div>
