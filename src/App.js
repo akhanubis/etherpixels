@@ -31,6 +31,7 @@ import LoadingPanel from './LoadingPanel'
 import Settings from './Settings'
 import CssHide from './CssHide'
 import LogRocket from 'logrocket'
+import PriceReference from './PriceReference'
 import EnvironmentManager from './utils/EnvironmentManager'
 import BigNumber from 'bignumber.js'
 import * as firebase from 'firebase/app'
@@ -885,6 +886,7 @@ class App extends PureComponent {
                       </Button>
                     </div>
                   </CssHide>
+                  <PriceReference show={this.state.price_view} fullscreen={this.state.fullscreen}/>
                 </div>
                 <CssHide hide={this.state.fullscreen}>
                   <EventLogPanel event_logs={this.state.event_logs} settings_expanded={this.state.settings.show_settings} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />

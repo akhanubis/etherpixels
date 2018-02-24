@@ -1,0 +1,46 @@
+.price-view-reference {
+  z-index: 2;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin-left: 2px;
+  margin-bottom: 2px;
+}
+
+.price-view-reference.fullscreen {
+  left: 50px;
+}
+
+.price-view-reference {
+  background-color: #F5F5F5;
+  border-radius: 2px;
+  border: 1px solid #000000;
+  padding: 5px;
+}
+
+.price-view-reference-gradient {
+  width: 100%;
+  height: 10px;
+  background: linear-gradient(to right, #00FF00, #FFFF00, #FF0000);
+}
+
+.price-view-reference-labels .container-fluid {
+  font-size: 0.75em;
+  padding: 0;
+}
+
+.price-view-reference-labels .container-fluid .col-md-4 {
+  padding: 0;
+}
+
+.price-view-reference-labels .label-0 {
+  text-align: left;
+}
+
+.price-view-reference-labels .label-1 {
+  text-align: center;
+}
+
+.price-view-reference-labels .label-2 {
+  text-align: right;
+}

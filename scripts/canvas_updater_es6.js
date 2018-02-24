@@ -137,6 +137,7 @@ let resize_assets = old_i => {
 }
 
 let start_watching = () => {
+  
   let events_filter = instance.allEvents()
   events_filter.stopWatching()
   logs_formatter = events_filter.formatter
@@ -145,12 +146,14 @@ let start_watching = () => {
   
   setInterval(() => {
     fetch_current_block().then(new_block => {
+      
       if (new_block > current_block) {
         let last_processed_block = current_block
         process_new_block(new_block)
         process_past_logs(last_processed_block + 1, new_block)
         prune_database(last_processed_block)
       }
+      
     })
   }, 10000)
 }
@@ -168,6 +171,7 @@ let prune_database = until_b_number => {
 }
 
 let process_logs = (b_number, logs) => {
+  logs = logs || []
   console.log(`Processing ${logs.length} event${logs.length == 1 ? '' : 's'}`)
   let txs = {}
   logs.forEach(l => {
@@ -234,7 +238,7 @@ let fetch_current_block = () => {
       }, (err, res) => {
         if (err)
           reject(err)
-        else
+        else 
           resolve(parseInt(res.result, 16) - process.env.CONFIRMATIONS_NEEDED)
       }
     )
