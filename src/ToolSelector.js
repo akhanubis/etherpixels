@@ -8,7 +8,7 @@ class Tool extends PureComponent {
     this.props.on_tool_selected(this.props.id)
   }
 
-  selected = () => this.props.current_tool === this.props.id
+  selected = () => this.props.id === 'price_view' ? this.props.price_graph_selected : this.props.current_tool === this.props.id
 
   static labels = {
     paint: 'Paint',
@@ -57,7 +57,7 @@ class Tool extends PureComponent {
 
 class ToolSelector extends PureComponent {
   tools = () => {
-    return this.props.tools.map(t => React.createElement(Tool, { key: t, disabled: this.props.disabled_tools.includes(t), current_tool: this.props.current_tool, shortcuts: this.props.shortcuts, id: t, on_tool_selected: this.props.on_tool_selected }))
+    return this.props.tools.map(t => React.createElement(Tool, { key: t, disabled: this.props.disabled_tools.includes(t), price_graph_selected: this.props.price_graph_selected, current_tool: this.props.current_tool, shortcuts: this.props.shortcuts, id: t, on_tool_selected: this.props.on_tool_selected }))
   }
 
   render() {

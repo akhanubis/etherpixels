@@ -859,7 +859,7 @@ class App extends PureComponent {
                 <div className='palette-container' style={{height: this.state.current_palette_height}}>
                   <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
-                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'price_view', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} />
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'price_view', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} price_graph_selected={this.state.price_view} />
                 <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
                   <Draft ref={d => this.draft = d } on_send={this.send_tx} on_preview_update={this.update_preview_buffer} on_update={this.on_draft_update} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
                 </PendingTxList>
