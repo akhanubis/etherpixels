@@ -119,7 +119,12 @@ class App extends PureComponent {
       x: -9999,
       y: -9999
     }
-    PriceFormatter.init(this.state.settings.unit, this.state.settings.humanized_units, this.state.settings.with_usd)
+    PriceFormatter.init({
+      unit: this.state.settings.unit,
+      humanized_units: this.state.settings.humanized_units,
+      with_usd: this.state.settings.with_usd
+    })
+    PriceFormatter.subscribe(this)
   }
 
   set_state_with_promise = (...args) => {

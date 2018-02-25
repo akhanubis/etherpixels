@@ -23,6 +23,7 @@ class PixelBatchItem extends PureComponent {
       this.state = {
         price: props.pixel.price
       }
+    PriceFormatter.subscribe(this)
   }
 
   componentWillUpdate(next_props) {

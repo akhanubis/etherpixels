@@ -39,16 +39,14 @@ class Settings extends PureComponent {
 
   valid_name = () => this.state.name.length < this.max_name_length
 
-  change_unit = new_unit => {
-    PriceFormatter.set_unit(new_unit)
-    this.props.on_update({ unit: new_unit })
+  change_price_option = new_option => {
+    PriceFormatter.set_options(new_option)
+    this.props.on_update(new_option)
   }
 
-  change_humanized_units = v => {
-    v = !v
-    PriceFormatter.set_humanized(v)
-    this.props.on_update({ humanized_units: v })
-  }
+  change_unit = new_unit => this.change_price_option({ unit: new_unit })
+
+  change_humanized_units = v => this.change_price_option({ humanized_units: !v })
 
   change_gas_price = v => {
     this.setState({ gas_price: v })
@@ -75,11 +73,7 @@ class Settings extends PureComponent {
     this.props.on_update({ zoom_at_pointer: v })
   }
 
-  change_with_usd = v => {
-    v = !v
-    PriceFormatter.set_with_usd(v)
-    this.props.on_update({ with_usd: v })
-  }
+  change_with_usd = v => this.change_price_option({ with_usd: !v })
 
   style = () => {
     let right = this.props.expand ? 0 : - this.props.panel_width

@@ -4,12 +4,7 @@ import Tips from './Tips'
 import './Footer.css'
 
 class Footer extends PureComponent {
-
-  code_tooltip = (
-    <Tooltip id="code_tooltip">
-      Contract code
-    </Tooltip>
-  )
+  tooltip = label => <Tooltip id={label.replace(' ', '')}>{label}</Tooltip>
 
   render() {
     return (
@@ -18,17 +13,21 @@ class Footer extends PureComponent {
           <Tips />
         </Nav>
         <Nav className="footer-icons" pullRight>
-          <NavItem>
-            <i className="fas fa-info"></i>
-          </NavItem>
-          <OverlayTrigger placement="top" overlay={this.code_tooltip}>
+          <OverlayTrigger placement="top" overlay={this.tooltip('About')}>
+            <NavItem>
+              <i className="fas fa-info"></i>
+            </NavItem>
+          </OverlayTrigger>
+          <OverlayTrigger placement="top" overlay={this.tooltip('Contract code')}>
             <NavItem>
               <i className="fas fa-code"></i>
             </NavItem>
           </OverlayTrigger>
-          <NavItem>
-            <i className="fab fa-reddit-alien"></i>
-          </NavItem>
+          <OverlayTrigger placement="top" overlay={this.tooltip('Reddit')}>
+            <NavItem>
+              <i className="fab fa-reddit-alien"></i>
+            </NavItem>
+          </OverlayTrigger>
         </Nav>
       </Navbar>
     )

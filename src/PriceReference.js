@@ -6,6 +6,11 @@ import { Grid, Col } from 'react-bootstrap'
 import './PriceReference.css'
 
 class PriceReference extends PureComponent {
+  constructor(props) {
+    super(props)
+    PriceFormatter.subscribe(this)
+  }
+  
   static_content =  () =>  {
     return (
       <div>

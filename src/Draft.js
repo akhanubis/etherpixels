@@ -25,6 +25,7 @@ class Draft extends PureComponent {
       gas_query_id: 0,
       calculating_gas: false
     }
+    PriceFormatter.subscribe(this)
   }
 
   componentWillUpdate(next_props, next_state) {

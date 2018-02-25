@@ -3,39 +3,45 @@ import Numeral from 'numeral'
 import axios from 'axios'
 
 class PriceFormatter {
-  static init(unit, humanized_units, with_usd) {
+  static init(options) {
     BigNumber.config({ EXPONENTIAL_AT: [-20, 20] })
-    this.set_unit(unit)
-    this.set_humanized(humanized_units)
-    this.set_with_usd(with_usd)
+    this.subscribers = []
+    this.state_nullifier = 0
+    this.set_options(options)
     this.unit_exps = {
-      ether:  new BigNumber(10).pow(-18),
+      ether:   new BigNumber(10).pow(-18),
       finney:  new BigNumber(10).pow(-15),
-      szabo:  new BigNumber(10).pow(-12),
-      gwei: new BigNumber(10).pow(-9),
+      szabo:   new BigNumber(10).pow(-12),
+      gwei:    new BigNumber(10).pow(-9),
       shannon: new BigNumber(10).pow(-9),
-      mwei: new BigNumber(10).pow(-6),
-      kwei: new BigNumber(10).pow(-3),
-      wei: new BigNumber(10).pow(0)
+      mwei:    new BigNumber(10).pow(-6),
+      kwei:    new BigNumber(10).pow(-3),
+      wei:     new BigNumber(10).pow(0)
     }
     this.unit_labels = {
-      ether:  'ETH',
+      ether:   'ETH',
       finney:  'Finney',
-      szabo:  'Szabo',
-      gwei: 'Gwei',
+      szabo:   'Szabo',
+      gwei:    'Gwei',
       shannon: 'Shannon',
-      mwei: 'Mwei',
-      kwei: 'Kwei',
-      wei: 'wei'
+      mwei:    'Mwei',
+      kwei:    'Kwei',
+      wei:     'wei'
     }
     this.usd_price = new BigNumber(0)
     setInterval(this.fetch_usd_price.bind(this), 150000)
     this.fetch_usd_price()
   }
 
+  static subscribe(react_component) {
+    this.subscribers.push(react_component)
+  }
+
   static fetch_usd_price() {
     axios.get('https://api.coinmarketcap.com/v1/ticker/ethereum/').then(response => {
       this.usd_price = new BigNumber(response.data[0].price_usd)
+      if (this.with_usd)
+        this.set_options({})
     })
   }
 
@@ -51,21 +57,15 @@ class PriceFormatter {
     return this.unit_labels[unit]
   }
 
-  static set_unit(new_unit) {
-    this.unit = new_unit
-  }
-
-  static set_humanized(humanized) {
-    this.humanized = !!humanized
-  }
-
-  static set_with_usd(with_usd) {
-    this.with_usd = with_usd
+  static set_options(new_options) {
+    Object.entries(new_options).forEach(([k, v]) => this[k] = v)
+    this.state_nullifier++
+    this.subscribers.forEach(s => s.setState({ price_state: this.state_nullifier}))
   }
 
   static _format(wei_value, unit, with_usd) {
     wei_value = new BigNumber(wei_value)
-    let eth_value = this.humanized ? Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') : wei_value.mul(this.unit_exp(unit)).toString()
+    let eth_value = this.humanized_units ? Numeral(wei_value.mul(this.unit_exp(unit))).format('0.0a') : wei_value.mul(this.unit_exp(unit)).toString()
     return `${ eth_value } ${ this.unit_label(unit) }${ with_usd ? ` ($${ this.format_usd_price(wei_value).toFixed(2) })` : ''}`
   }
 
