@@ -30,7 +30,7 @@ class Palette extends PureComponent {
   update_current_custom_color = new_color => this.setState({ current_custom_color: new_color})
 
   save_custom_color = () => {
-    let color_to_add = this.state.current_custom_color || { hex: ColorUtils.rgbToHex(this.props.current_color), rgb: { ...this.props.current_color, a: 1 }} /* custom color is nil if the user didn't trigger a change */
+    let color_to_add = this.state.current_custom_color || { hex: ColorUtils.rgbaToHex(this.props.current_color), rgb: { ...this.props.current_color, a: 1 }} /* custom color is nil if the user didn't trigger a change */
     this.props.on_custom_color_save(color_to_add.hex)
     this.props.on_color_update(color_to_add)
   }

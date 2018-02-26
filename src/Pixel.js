@@ -19,7 +19,7 @@ class Pixel {
     let p = new this(
       coords.x,
       coords.y,
-      ColorUtils.bytes3ToHex(event.color),
+      ColorUtils.bytes3ToRgba(event.color),
       owner,
       event.price,
       null,
@@ -43,7 +43,7 @@ class Pixel {
   }
 
   image_data() {
-    var pixel_array = new Uint8ClampedArray(ColorUtils.hexToIntArray(this.color))
+    var pixel_array = new Uint8ClampedArray(ColorUtils.rgbaToIntArray(this.color))
     return new ImageData(pixel_array, 1, 1)
   }
 
@@ -51,16 +51,12 @@ class Pixel {
     return new ImageData(ColorUtils.priceAsColor(this.price), 1, 1)
   }
 
-  rgba_color() {
-    return ColorUtils.hexToRgb(this.color)
-  }
-
   contract_index() {
     return new WorldToContract(this.x, this.y).get_index()
   }
 
   bytes3_color() {
-    return ColorUtils.hexToBytes3(this.color)
+    return ColorUtils.rgbaToBytes3(this.color)
   }
 
   is_inside_canvas(max_index) {

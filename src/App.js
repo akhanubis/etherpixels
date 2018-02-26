@@ -460,7 +460,7 @@ class App extends PureComponent {
     }
   }
 
-  pixel_to_paint = () => this.pixel_at_pointer.change_color(ColorUtils.rgbToHex(this.state.current_color))
+  pixel_to_paint = () => this.pixel_at_pointer.change_color(this.state.current_color)
 
   main_canvas_mouse_down = e => {
     e.preventDefault()
@@ -531,7 +531,7 @@ class App extends PureComponent {
 
   pick_color = () => {
     let data = this.main_canvas.getImageData(this.mouse_position.x, this.mouse_position.y, 1, 1).data
-    this.setState({ current_color: ColorUtils.intArrayToRgb(data) })
+    this.setState({ current_color: ColorUtils.intArrayToRgba(data) })
     this.save_custom_color(ColorUtils.intArrayToHex(data))
   }
 
@@ -709,18 +709,19 @@ class App extends PureComponent {
   color_at = (x, y) => {
     let buffer_coords = WorldToCanvas.to_buffer(x, y, this.state.canvas_size)
     let color_data = this.pixel_buffer_ctx.getImageData(buffer_coords.x, buffer_coords.y, 1, 1).data
-    color_data[3] = 255
-    return ColorUtils.intArrayToHex(color_data)
+    if (color_data[3] !== 255)
+      color_data[3] = 0
+    return ColorUtils.intArrayToRgba(color_data)
   }
 
   notify_mined_tx = tx_info => {
     let tx_short_hash = tx_info.hash.substr(0, 7)
     if (tx_info.pixels.every(p => p.painted))
-      Alert.success(`Tx #${tx_short_hash}... has been fully painted`)
+      Alert.success(`Tx ${tx_short_hash}... has been fully painted`)
     else if (tx_info.pixels.some(p => p.painted))
-      Alert.warning(`Tx #${tx_short_hash}... has been partially painted`)
+      Alert.warning(`Tx ${tx_short_hash}... has been partially painted`)
     else
-      Alert.error(`Tx #${tx_short_hash}... has not been painted`)
+      Alert.error(`Tx ${tx_short_hash}... has not been painted`)
   }
 
   send_tx = (tx_payload, pixels, callback) => {
