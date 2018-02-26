@@ -8,7 +8,8 @@ class LoadingPanel extends PureComponent {
     super(props)
     let loading_phrases = [
       'Spending ether on pointless dapps fills you with determination...',
-      'Knowing your portfolio might one day be worth millions... It fills you with determination.'
+      'Knowing your portfolio might one day be worth millions... It fills you with determination.',
+      'Hey Red, we are not gonna get away with this, are we?'
     ]
     this.state = {
       finished: false,
