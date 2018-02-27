@@ -850,8 +850,6 @@ class App extends PureComponent {
     return ([
       <div className="App" key="1" style={this.loading_style()}>
         <Helmet>
-          <meta charSet="utf-8" />
-          <title>Pavlito clabo un clabito</title>
           <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
         </Helmet>
         <CssHide hide={this.state.fullscreen}>
