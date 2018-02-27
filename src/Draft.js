@@ -210,6 +210,21 @@ class Draft extends PureComponent {
 
   total = () => `Total: ${this.state.calculating_gas ? 'calculating...' : PriceFormatter.format(this.gas_value().add(this.amount_to_send()))}`
 
+  draft_footer = () => (
+    <div className="draft-footer">
+      <div className="draft-gas">
+        {this.gas_info()}
+      </div>
+      <div className="draft-total">
+        {this.total()}
+      </div>
+      <div className="draft-buttons">
+        <Button bsStyle="primary" onClick={this.clear}>Clear</Button>
+        <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas || this.state.will_fail}>Paint</Button>
+      </div>
+    </div>
+  )
+
   render() {
     return (
       <PixelBatch
@@ -228,18 +243,7 @@ class Draft extends PureComponent {
         default_price_increase={this.props.default_price_increase}
         account={this.props.account}
       >
-        <div className="draft-footer">
-          <div className="draft-gas">
-            {this.gas_info()}
-          </div>
-          <div className="draft-total">
-            {this.total()}
-          </div>
-          <div className="draft-buttons">
-            <Button bsStyle="primary" onClick={this.clear}>Clear</Button>
-            <Button bsStyle="primary" onClick={this.paint} disabled={this.state.calculating_gas || this.state.will_fail}>Paint</Button>
-          </div>
-        </div>
+        {this.state.pixels.length ? this.draft_footer() : <div>Fills empty in here... draw something!</div>}
       </PixelBatch>
     )
   }

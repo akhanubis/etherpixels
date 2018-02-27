@@ -96,7 +96,7 @@ class PixelBatch extends PureComponent {
       )
     }
     else
-      return null
+      return this.props.children
   }
 }
 
