@@ -9,7 +9,7 @@ class Topbar extends PureComponent {
       <Navbar fixedTop>
         <Navbar.Header>
           <Navbar.Brand>
-            ETHPaint
+            Etherpixels
           </Navbar.Brand>
         </Navbar.Header>
         <Nav pullRight>
