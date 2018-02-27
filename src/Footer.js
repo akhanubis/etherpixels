@@ -6,7 +6,7 @@ import './Footer.css'
 class Footer extends PureComponent {
   tooltip = label => <Tooltip id={label.replace(' ', '')}>{label}</Tooltip>
 
-  contract_link = () => this.props.contract_instance ? `https://${ location.href.includes('ropsten') ? 'ropsten.' : '' }etherscan.io/address/${ this.props.contract_instance.address }#code` : '#'
+  contract_link = () => this.props.contract_instance ? `https://${ this.props.network_id === '1' ? '' : 'ropsten.' }etherscan.io/address/${ this.props.contract_instance.address }#code` : '#'
 
   render() {
     return (

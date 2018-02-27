@@ -661,6 +661,7 @@ class App extends PureComponent {
         this.setState({ coming_soon: true })
         return
       }
+      this.setState({ network_id: network_id })
       EnvironmentManager.init(network_id)
       firebase.initializeApp({
         apiKey: EnvironmentManager.get('REACT_APP_FIREBASE_API_KEY'),
@@ -865,7 +866,7 @@ class App extends PureComponent {
           </Helmet>
           <CssHide hide={this.state.fullscreen}>
             <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
-            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance}/>
+            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance} network_id={this.state.network_id}/>
           </CssHide>
           <main className={this.state.fullscreen ? 'fullscreen' : ''}>
             <Grid fluid={true} className='main-container'>
