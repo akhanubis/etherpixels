@@ -66,10 +66,10 @@ contract Etherpixels is usingOwnership, usingCanvasBoundaries {
   event PixelPainted(uint i, address new_owner, address old_owner, uint price, bytes3 new_color);
   event PixelUnavailable(uint i, address new_owner, uint price, bytes3 new_color);
   
-	function Paint(uint _index, bytes3 _color) public payable {
+  function Paint(uint _index, bytes3 _color) public payable {
     require(_index <= max_index());
     paint_pixel(_index, _color, msg.value);
-	}
+  }
 
   function BatchPaint(uint8 _batch_size, uint[] _index, bytes3[] _color, uint[] _paid) public payable {
     uint remaining = msg.value;
@@ -111,5 +111,5 @@ contract Etherpixels is usingOwnership, usingCanvasBoundaries {
           old_owner.send(_paid * 98 / 100); /* not using transfer to avoid old_owner locking pixel by buying it from a contract that reverts when receiving funds */
       }
     }
-	}
+  }
 }
