@@ -1,4 +1,4 @@
-import CanvasContract from "../build/contracts/Canvas.json"
+import EtherpixelsContract from "../build/contracts/Etherpixels.json"
 import ColorUtils from "./utils/ColorUtils.js"
 import ContractToWorld from "./utils/ContractToWorld.js"
 import WorldToCanvas from "./utils/WorldToCanvas.js"
@@ -18,7 +18,7 @@ const ProviderEngine = require('web3-provider-engine')
 const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js')
 const RpcSubprovider = require('web3-provider-engine/subproviders/rpc.js')
 
-const canvasContract = require('truffle-contract')(CanvasContract)
+const canvasContract = require('truffle-contract')(EtherpixelsContract)
 
 const buffer_entry_size = 32 /* 20 bytes for address, 12 bytes for locked_until */
 const free_pixel_buffer_entry = '0000000000000000000000000000000000000000000000000000048c27395000' /* empty address and 5000000000000 starting price */

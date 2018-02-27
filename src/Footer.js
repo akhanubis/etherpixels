@@ -6,6 +6,8 @@ import './Footer.css'
 class Footer extends PureComponent {
   tooltip = label => <Tooltip id={label.replace(' ', '')}>{label}</Tooltip>
 
+  contract_link = () => this.props.contract_instance ? `https://${ location.href.includes('ropsten') ? 'ropsten.' : '' }etherscan.io/address/${ this.props.contract_instance.address }#code` : '#'
+
   render() {
     return (
       <Navbar fixedBottom>
@@ -19,7 +21,7 @@ class Footer extends PureComponent {
             </NavItem>
           </OverlayTrigger>
           <OverlayTrigger placement="top" overlay={this.tooltip('Contract code')}>
-            <NavItem>
+            <NavItem href={this.contract_link()} target="_blank">
               <i className="fas fa-code"></i>
             </NavItem>
           </OverlayTrigger>

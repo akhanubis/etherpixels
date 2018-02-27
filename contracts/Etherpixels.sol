@@ -52,7 +52,7 @@ contract usingCanvasBoundaries {
   }
 }
 
-contract Canvas is usingOwnership, usingCanvasBoundaries {
+contract Etherpixels is usingOwnership, usingCanvasBoundaries {
   uint private starting_price = 5000000000000; /* 5000 gwei */
 
   /* packed to 32 bytes */

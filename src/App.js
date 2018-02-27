@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react'
-import CanvasContract from '../build/contracts/Canvas.json'
+import EtherpixelsContract from '../build/contracts/Etherpixels.json'
 import getWeb3 from './utils/getWeb3'
 import {Helmet} from "react-helmet"
 import { Col, Grid, Button } from 'react-bootstrap'
@@ -678,7 +678,7 @@ class App extends PureComponent {
       if (this.logrocket_app_id)
         LogRocket.init(this.logrocket_app_id)
 
-      const canvas_contract = contract(CanvasContract)
+      const canvas_contract = contract(EtherpixelsContract)
       canvas_contract.setProvider(this.state.web3.currentProvider)
       canvas_contract.deployed().then(instance => {
         this.setState({ contract_instance: instance })
@@ -865,7 +865,7 @@ class App extends PureComponent {
           </Helmet>
           <CssHide hide={this.state.fullscreen}>
             <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
-            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel}/>
+            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance}/>
           </CssHide>
           <main className={this.state.fullscreen ? 'fullscreen' : ''}>
             <Grid fluid={true} className='main-container'>

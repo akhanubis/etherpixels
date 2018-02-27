@@ -1,5 +1,5 @@
-var Canvas = artifacts.require("./Canvas.sol");
+var Etherpixels = artifacts.require("./Etherpixels.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(Canvas);
+  deployer.deploy(Etherpixels);
 };
