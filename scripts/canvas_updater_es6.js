@@ -137,7 +137,6 @@ let resize_assets = old_i => {
 }
 
 let start_watching = () => {
-  
   let events_filter = instance.allEvents()
   events_filter.stopWatching()
   logs_formatter = events_filter.formatter
@@ -146,12 +145,18 @@ let start_watching = () => {
   
   setInterval(() => {
     fetch_current_block().then(new_block => {
-      
       if (new_block > current_block) {
         let last_processed_block = current_block
-        process_new_block(new_block)
-        process_past_logs(last_processed_block + 1, new_block)
-        prune_database(last_processed_block)
+        try {
+          process_new_block(new_block)
+          process_past_logs(last_processed_block + 1, new_block)
+          prune_database(last_processed_block)
+        }
+        catch(e) {
+          console.log('Error while processing new block:')
+          console.log(e)
+          current_block = last_processed_block
+        }
       }
       
     })
