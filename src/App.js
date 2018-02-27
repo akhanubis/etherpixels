@@ -224,7 +224,7 @@ class App extends PureComponent {
 
   load_clear_image = () => {
     let clear_image = new Image()
-    clear_image.src = 'pattern.png'
+    clear_image.src = 'assets/pattern.png'
     clear_image.style.display = 'none'
     clear_image.onload = () => {
       this.main_canvas.set_clear_pattern(clear_image)
