@@ -19,7 +19,7 @@ class Topbar extends PureComponent {
           <NavItem className='account-status'>
             <AccountStatus account={this.props.account} />
           </NavItem>
-          <NavItem className="settings-icon" onClick={this.props.toggle_settings}>
+          <NavItem className="settings-icon" onClick={this.props.toggle_settings} active={this.props.current_panel === 'settings'}>
             <i className="fas fa-cog" />
           </NavItem>
         </Nav>

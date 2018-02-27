@@ -1,3 +1,7 @@
 .footer-icons {
   font-size: 18px;
 }
+
+.footer-icons.nav>li>a:focus:not(:hover) {
+  color: #777 !important;
+}

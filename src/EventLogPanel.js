@@ -13,17 +13,19 @@ class EventLogPanel extends PureComponent {
     this.hover_distance = 10
   }
   
+  expand = () => this.props.current_panel === 'events'
+
   tab_style = () => {
-    let right = this.props.panel_width
-    if (!this.props.expand)
+    let right = 0
+    if (!this.expand())
       right = this.state.events_tab_hovered  && !this.hover_disabled? 0 : - this.hover_distance
-    if (this.props.settings_expanded)
+    if (this.props.current_panel)
       right += this.props.panel_width
     return { right: right }
   }
 
   inner_style = () => {
-    let right = this.props.expand ? 0 : - this.props.panel_width
+    let right = this.expand() ? 0 : - this.props.panel_width
     return { right: right, width: this.props.panel_width }
   }
 
@@ -73,7 +75,7 @@ class EventLogPanel extends PureComponent {
     return (
       <div>
         <div className="slideout" onClick={this.click_tab} onMouseEnter={this.start_hover_events_tab} onMouseLeave={this.stop_hover_events_tab} style={this.tab_style()}>
-          <div className="slideout-tab-text">{this.props.expand ? 'Close' : 'Events'}</div>
+          <div className="slideout-tab-text">{this.expand() ? 'Close' : 'Events'}</div>
         </div>
         <div className="slideout-inner" style={this.inner_style()}>
           <div className="events-container">

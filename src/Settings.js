@@ -75,8 +75,10 @@ class Settings extends PureComponent {
 
   change_with_usd = v => this.change_price_option({ with_usd: !v })
 
+  expand = () => this.props.current_panel === 'settings'
+
   style = () => {
-    let right = this.props.expand ? 0 : - this.props.panel_width
+    let right = this.expand() ? 0 : - this.props.panel_width
     return { right: right, width: this.props.panel_width }
   }
 

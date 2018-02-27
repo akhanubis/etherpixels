@@ -29,6 +29,7 @@ import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
 import LoadingPanel from './LoadingPanel'
 import Settings from './Settings'
+import About from './About'
 import CssHide from './CssHide'
 import LogRocket from 'logrocket'
 import PriceReference from './PriceReference'
@@ -788,13 +789,16 @@ class App extends PureComponent {
     }
   }
 
-  toggle_events = () => {
-    this.update_settings({ show_events: !this.state.settings.show_events, show_settings: false })
+  expand_panel = panel => {
+    console.log(panel)
+    if (panel === this.state.settings.current_panel)
+      panel = null
+    this.update_settings({ current_panel: panel })
   }
 
   toggle_settings = e => {
     e.preventDefault()
-    this.update_settings({ show_events: false, show_settings: !this.state.settings.show_settings })
+    this.expand_panel('settings')
   }
 
   resize_viewport = (new_size) => {
@@ -804,7 +808,7 @@ class App extends PureComponent {
   select_tool = (tool) => {
     this.holding_click = false
     if (tool === 'fullscreen') {
-      this.update_settings({ show_events: false, show_settings: false })
+      this.update_settings({ current_panel: null })
       this.setState(prev_state => ({ fullscreen: !prev_state.fullscreen }))
     }
     else if (tool === 'reset_view')
@@ -833,7 +837,7 @@ class App extends PureComponent {
     this.setState({ fullscreen: false })
   }
 
-  canvas_container_style = () => ({ marginRight: this.state.settings.show_events || this.state.settings.show_settings ? this.right_panel_width : 0 })
+  canvas_container_style = () => ({ marginRight: this.state.settings.current_panel ? this.right_panel_width : 0 })
 
   loading_style = () => {
     let blur = `blur(${-0.1 * this.state.loading_progress + 10}px)`
@@ -853,8 +857,8 @@ class App extends PureComponent {
           <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
         </Helmet>
         <CssHide hide={this.state.fullscreen}>
-          <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} />
-          <Footer />
+          <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
+          <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel}/>
         </CssHide>
         <main className={this.state.fullscreen ? 'fullscreen' : ''}>
           <Grid fluid={true} className='main-container'>
@@ -893,10 +897,13 @@ class App extends PureComponent {
                   <PriceReference show={this.state.price_view} fullscreen={this.state.fullscreen}/>
                 </div>
                 <CssHide hide={this.state.fullscreen}>
-                  <EventLogPanel event_logs={this.state.event_logs} settings_expanded={this.state.settings.show_settings} on_clear={this.clear_logs} on_tab_click={this.toggle_events} expand={this.state.settings.show_events} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
+                  <EventLogPanel current_panel={this.state.settings.current_panel} event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.expand_panel.bind(this, 'events')} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
                 </CssHide>
                 <CssHide hide={this.state.fullscreen}>
-                  <Settings expand={this.state.settings.show_settings} panel_width={this.right_panel_width} account={this.state.account} settings={this.state.settings} on_update={this.update_settings} on_name_update={this.update_name} name={this.state.name} />
+                  <Settings current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width} account={this.state.account} settings={this.state.settings} on_update={this.update_settings} on_name_update={this.update_name} name={this.state.name} />
+                </CssHide>
+                <CssHide hide={this.state.fullscreen}>
+                  <About current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width}/>
                 </CssHide>
               </div>
             </Col>
