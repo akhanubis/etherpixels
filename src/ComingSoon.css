@@ -12,3 +12,7 @@
   background-color: rgba(255,255,255,1);
   text-align: center;
 }
+
+.coming-soon-container img {
+  margin: 10px;
+}
