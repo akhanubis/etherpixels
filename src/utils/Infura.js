@@ -14,9 +14,7 @@ var Infura = (() => {
       eth_syncing: true,
     }))
     provider.addProvider(new RpcSubprovider({
-      //TEMP
-      //rpcUrl: `https://${location.href.includes('ropsten') ? 'ropsten' : 'mainnet'}.infura.io/${process.env.REACT_APP_INFURA_API_KEY}`
-      rpcUrl: `https://ropsten.infura.io/${process.env.REACT_APP_INFURA_API_KEY}`
+      rpcUrl: `https://${location.href.includes('ropsten') ? 'ropsten' : 'mainnet'}.infura.io/${process.env.REACT_APP_INFURA_API_KEY}`
     }))
     provider.on('error', err => console.error(err.stack))
     provider.start()
