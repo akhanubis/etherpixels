@@ -80,10 +80,10 @@ class EventLogPanel extends PureComponent {
         <div className="right-panel slideout-inner" style={this.inner_style()}>
           <div className="events-container">
             <h4>
-              <span>Latest events</span>
+              <span>Latest txs</span>
               <div className='clear' onClick={this.props.on_clear}>clear</div>
-              {filter_html}
             </h4>
+            {filter_html}
             <EventLog txs={this.filtered_logs()} current_block={this.props.current_block} />
           </div>
         </div>
