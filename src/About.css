@@ -1,0 +1,26 @@
+.firebase-image {
+  position: absolute;
+  bottom: 25px;
+}
+
+.about-panel-inner {
+  font-size: 1.5em;
+}
+
+.built-using {
+  margin-left: 15px;
+}
+
+.built-using-name {
+  display: inline-block;
+}
+
+.built-using-icon {
+  display: inline-block;
+  width: 35px;
+  text-align: center;
+}
+
+.about-panel-title {
+  margin-bottom: 30px;
+}
