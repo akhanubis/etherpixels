@@ -51,6 +51,9 @@ class About extends PureComponent {
               <div className="built-using-name">Ethereum</div>
             </div>
           </div>
+          <p>
+            Current version: 0.1.0
+          </p>
           <img src="assets/builtfirebase.png" width="250px" className="firebase-image"/>
         </div>
       </div>
