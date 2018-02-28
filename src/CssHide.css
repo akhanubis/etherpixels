@@ -1,3 +1,8 @@
-.css-hide {
+.css-hide-hidden {
   display: none;
+}
+
+.css-hide-shown {
+  height: 100%;
+  display: inline;
 }

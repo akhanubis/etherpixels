@@ -18,20 +18,3 @@
   -moz-border-radius: 5px 0 0 5px;
   border-radius: 5px 0 0 5px;
 }
-    
-.slideout-inner {
-  cursor: auto;
-  position: fixed;
-  top: 54px;
-  background: #aaaaaa;
-  height: 100%;
-  padding: 25px;
-  -webkit-transition-duration: 0.3s;
-  -moz-transition-duration: 0.3s;
-  -o-transition-duration: 0.3s;
-  transition-duration: 0.3s;
-  text-align: left;
-  -webkit-border-radius: 0 0 0 5px;
-  -moz-border-radius: 0 0 0 5px;
-  border-radius: 0 0 0 5px;
-}

@@ -66,3 +66,20 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
 .canvas-outer-container {
   background: #aaaaaa;
 }
+
+.right-panel {
+  overflow-y: auto;
+  position: fixed;
+  top: 54px;
+  background: #aaaaaa;
+  height: calc(100% - 105px); /* topbar + footer */
+  padding: 25px 25px 0 25px;
+  -webkit-transition-duration: 0.3s;
+  -moz-transition-duration: 0.3s;
+  -o-transition-duration: 0.3s;
+  transition-duration: 0.3s;
+  text-align: left;
+  -webkit-border-radius: 0 0 0 5px;
+  -moz-border-radius: 0 0 0 5px;
+  border-radius: 0 0 0 5px;
+}

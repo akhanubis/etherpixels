@@ -84,7 +84,7 @@ class Settings extends PureComponent {
 
   render() {
     return (
-      <div className="settings-panel" style={this.style()}>
+      <div className="right-panel settings-panel" style={this.style()}>
         <Form>
           <FormGroup className="name-control" controlId="name" validationState={this.valid_name() ? 'success' : 'error'}>
             <ControlLabel>Nickname</ControlLabel>

@@ -23,6 +23,10 @@
   overflow-x: hidden;
 }
 
+.pending-txs-title {
+  height: 20px;
+}
+
 .tx-panel-container {
   width: 100%;
 }

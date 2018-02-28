@@ -77,7 +77,7 @@ class EventLogPanel extends PureComponent {
         <div className="slideout" onClick={this.click_tab} onMouseEnter={this.start_hover_events_tab} onMouseLeave={this.stop_hover_events_tab} style={this.tab_style()}>
           <div className="slideout-tab-text">{this.expand() ? 'Close' : 'Events'}</div>
         </div>
-        <div className="slideout-inner" style={this.inner_style()}>
+        <div className="right-panel slideout-inner" style={this.inner_style()}>
           <div className="events-container">
             <h4>
               <span>Latest events</span>
