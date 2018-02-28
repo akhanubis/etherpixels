@@ -1,5 +1,6 @@
 .slideout-tab-text {
-  transform: rotate(-90deg) translate(-40px, 0px);
+  width: 100px;
+  transform: rotate(-90deg) translate(-40px, -30px);
 }
 
 .slideout {
