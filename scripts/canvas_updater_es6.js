@@ -65,7 +65,10 @@ let init_provider = () => {
 let wrap_upload = (filename, content) => {
   bucket_ref.file(filename).save(content)
   .then(() => { console.log(`${filename} uploaded`) })
-  .catch(() => { console.log(`${filename} upload failed`) })
+  .catch(e => {
+    console.log(`${filename} upload failed`)
+    console.log(e)
+  })
 }
 
 let update_cache = () => {
