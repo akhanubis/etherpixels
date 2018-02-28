@@ -11,11 +11,18 @@ class Tips extends PureComponent {
   }
 
   tips = [
-    "Tip: 1 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    "Tip: 2 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    "Tip: 3 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    "Tip: 4 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
-    "Tip: 5 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua",
+    "Tip: Its cheaper to paint pixels in bulk",
+    "Tip: It costs less gas to paint pixels already painted by someone else",
+    "Tip: You only have to pay for gas usage when changing the colors to pixels you already own",
+    "Tip: You can move around the canvas by holding the mouse wheel or pressing the arrow keys",
+    "Tip: You can zoom in and out by scrolling the mouse wheel",
+    "Tip: You can control how prices in ether and USD are displayed in the settings panel",
+    "Tip: You can see the shortcut key for each tool by hovering over it",
+    "The canvas growth slows down over time",
+    "After ~3 days have passed since contract deployment, the canvas size will be 257x257px",
+    "After ~2 weeks have passed since contract deployment, the canvas size will be 513x513px",
+    "After ~4 months have passed since contract deployment, the canvas size will be 1281x1281px",
+    "The canvas final size will be 2049x2049px",
   ]
 
   componentDidMount = () => this.interval = setInterval(this.next_tip, 60000)

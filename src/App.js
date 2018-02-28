@@ -196,7 +196,7 @@ class App extends PureComponent {
 
   load_cache_image = () => {
     Promise.all([firebase.storage().ref('init.json').getDownloadURL(), firebase.storage().ref('pixels.png').getDownloadURL(), firebase.storage().ref('prices.png').getDownloadURL()]).then(([init_url, pixels_url, prices_url]) => {
-      pixels_url = pixels_url + this.timestamp()
+      pixels_url += + this.timestamp()
       this.setState({ pixels_url: pixels_url })
       axios.get(init_url + this.timestamp()).then(response => {
         if (this.state.contract_instance.address === response.data.contract_address) {
