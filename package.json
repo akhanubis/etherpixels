@@ -78,7 +78,7 @@
     "start": "set ENV_PATH=.build_env&&node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
-    "full_build": "npm run build_canvas_updater && npm run build",
+    "full_build": "npm run build_canvas_updater && npm run build && del /S build_webpack\\*.map",
     "local_deploy": "set REACT_APP_INFURA_NETWORK=unused&&set ENV_PATH=.build_env&& npm run full_build && firebase use local && firebase deploy && firebase use ropsten",
     "ropsten_deploy": "set REACT_APP_INFURA_NETWORK=ropsten&&set ENV_PATH=.build_env&& npm run full_build && firebase use ropsten && firebase deploy",
     "mainnet_deploy": "set REACT_APP_INFURA_NETWORK=mainnet&&set ENV_PATH=.build_env&& npm run full_build && firebase use mainnet && firebase deploy && firebase use ropsten",
