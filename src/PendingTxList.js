@@ -18,7 +18,7 @@ class PendingTxList extends PureComponent {
   }
 
   custom_height = () => {
-    return { height: `calc(100% - ${this.props.palette_height}px - 40px - 90px - 20px)` }
+    return { height: `calc(100% - ${this.props.palette_height}px - 75px - 90px - 20px)` }
   }
 
   /* end of exit anim */

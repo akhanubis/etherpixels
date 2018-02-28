@@ -1,3 +1,8 @@
+.right-panel.about-panel {
+    background-color:#fff;
+    border-left:1px solid #999;
+}
+
 .firebase-image {
   position: absolute;
   bottom: 25px;

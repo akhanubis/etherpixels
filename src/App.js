@@ -42,6 +42,7 @@ import 'firebase/storage'
 
 import './css/bootstrap.min.css'
 import './App.css'
+import './custom_styles.css'
 import 'react-s-alert/dist/s-alert-default.css'
 import 'react-s-alert/dist/s-alert-css-effects/slide.css'
 
@@ -873,7 +874,7 @@ class App extends PureComponent {
           <main className={this.state.fullscreen ? 'fullscreen' : ''}>
             <Grid fluid={true} className='main-container'>
               <CssHide hide={this.state.fullscreen}>
-                <Col md={3} className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
+                <Col className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
                   <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
                   <div className='palette-container' style={{height: this.state.current_palette_height}}>
                     <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
@@ -884,7 +885,7 @@ class App extends PureComponent {
                   </PendingTxList>
                 </Col>
               </CssHide>
-              <Col md={this.state.fullscreen ? 12 : 9} className='canvas-col'>
+              <Col className={`canvas-col ${this.state.fullscreen ? 'fullscreen' : ''}`}>
                 <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
                   <div className="canvas-container" style={this.canvas_container_style()}>
                     <div className='zoom-canvas'>

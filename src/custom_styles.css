@@ -1,0 +1,262 @@
+/* ===================================
+   CUSTOM STYLES
+   =================================== */
+
+
+/* General styling
+   =================================== */
+
+body {
+    color:#777;    
+}
+
+nav {
+    padding-left:15px;
+}
+
+.side-col {
+    padding-top:20px;
+}
+
+.custom-colors-badges .badge, span.badge {
+    border-radius:3px!important;
+    margin-left:7px;
+}
+
+
+/* Color picker
+   =================================== */
+
+.block-info {
+    padding-left: 0px;
+}
+
+.block-info > .col-md-4 {
+    padding-left:0px;
+}
+
+.block-info > .col-md-4 > div:nth-child(1) {
+    font-size:12px;
+}
+
+.block-info > .col-md-4 > div:nth-child(2) {
+    color:#2196f3;
+    font-weight:bold;
+    font-size: 16px;
+    padding-top:3px;
+}
+
+
+
+/* Color picker
+   =================================== */
+
+.color-picker-container {
+    border:none;
+}
+
+.color-picker-container > .container-fluid {
+    padding:0;
+}
+
+.color-picker-container > .container-fluid > .col-md-12 {
+    padding: 0;
+}
+
+.circle-picker {
+    padding-bottom:25px;
+}
+
+.circle-picker > span > div span {
+    box-shadow: 0px 0px 0px 10px inset!important;
+}
+
+
+/* Tools
+   =================================== */
+
+.tools-container {
+    height:auto;
+}
+
+.tools-title {
+    display:block;
+}
+
+.tools-container > .btn-toolbar > button {
+    margin-bottom:5px;
+    width:40px;
+}
+
+
+/* Batch
+   =================================== */
+
+.panel-title > .container-fluid {
+    padding:0;
+}
+
+.batch-title-buttons {
+    width:auto;
+}
+
+.panel-body {
+    padding:0;
+}
+
+.batch-inner-container {
+    padding:18px 14px;
+}
+
+.batch-pixel-info {
+    padding-bottom:8px;
+}
+
+.right-text {
+    font-size:13px;
+    position:relative;
+    top:-5px;
+}
+
+.price-selector {
+    padding:0px;
+}
+
+.price-selector > input[type="number"] {
+    border:none;
+    box-shadow:none;
+    border-bottom:2px solid lightgray;
+    border-radius:0px;
+    font-size:15px;
+}
+
+.price-selector > input[type="number"]:focus {
+    border-bottom:2px solid #2196f3;
+    color:#2196f3;
+}
+
+.price-selector > .input-group-addon {
+    border:none;
+    background:none;
+}
+
+.draft-footer {
+    background-color: #f5f5f5;
+}
+
+.draft-gas, .draft-total {
+    padding:0px 14px;
+    font-size: 15px;
+    color:#2196f3;
+}
+
+.draft-gas {
+    padding-top:10px;
+}
+
+.draft-buttons {
+    margin-top:12px;
+    background: #2196f3;
+}
+
+.draft-buttons > button {
+    background:none;
+    border:none;
+    text-transform: uppercase;
+    transition: 0.2s ease-in-out;
+}
+
+.draft-buttons > button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius:0px;
+}
+
+
+/* Artwork
+   =================================== */
+
+.hover-info {
+    margin:10px;
+    border:1px solid #999;
+    border-radius:4px;
+}
+
+.pixel-status > span.text-muted {
+    position:relative;
+    top:-1px;
+}
+
+
+/* Right Panel
+   =================================== */
+
+.right-panel.slideout-inner {
+    background-color:#fff;
+    border-left: 4px solid #2196f3;
+}
+
+.slideout {
+    background:#2196f3;
+    color:#fff;
+    text-transform: uppercase;
+    padding-left:3px;
+}
+
+.slideout-tab-text {
+    position:relative;
+    left:-4px;
+}
+
+.events-container h4 > span {
+    
+}
+
+.events-container h4 > .clear {
+    padding-top:3px;
+    font-weight:normal;
+    text-transform:uppercase;
+    font-size:14px;
+    text-decoration:none;
+    color:#2196f3;
+}
+
+.events-container h4 > .form-group {
+    margin-top:40px;
+}
+
+
+/* Right Panel
+   =================================== */
+
+.settings-icon.active > a > svg {
+    color:#2196f3;
+}
+
+.right-panel.settings-panel {
+    background-color:#fff;
+    border-left:1px solid #999;
+}
+
+.control-label[for="name"], .control-label[for="default_price_increase"] {
+    color:#2196f3;
+}
+
+.right-panel.settings-panel input#name, .right-panel.settings-panel input#default_price_increase {
+    border-color:#2196f3;
+}
+
+.right-panel.settings-panel input#name:focus, .right-panel.settings-panel input#default_price_increase:focus {
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 6px #2196f3;
+}
+
+.rangeslider-horizontal .rangeslider__fill {
+    background-color:#2196f3;
+}
+
+.rangeslider {
+    margin-bottom:50px;
+}
+
+.form-control-feedback.glyphicon.glyphicon-ok {
+    color:#2196f3;
+}

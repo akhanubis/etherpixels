@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+
+body {
+  font-family: 'Roboto', Arial, sans-serif
+};
+
 button:disabled,
 button[disabled] {
   border: 1px solid #999999;
@@ -25,6 +31,12 @@ button[disabled] {
 
 .canvas-col {
   padding: 0;
+  width: calc(100% - 430px);
+  float: left;
+}
+
+.canvas-col.fullscreen {
+  width: 100%;
 }
 
 main {
@@ -36,10 +48,18 @@ main {
 main.fullscreen {
   padding-top: 0;
   padding-bottom: 0;
+  overflow-y: hidden;
 }
 
 html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor {
   height: 100%;
+}
+
+.side-col {
+  width: 430px;
+  float: left;
+  padding-left: 15px;
+  padding-right: 15px;
 }
 
 .canvas-container {
@@ -64,14 +84,14 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
 }
 
 .canvas-outer-container {
-  background: #aaaaaa;
+  background: #ffffff;
 }
 
 .right-panel {
   overflow-y: auto;
   position: fixed;
   top: 54px;
-  background: #aaaaaa;
+  background: #ffffff;
   height: calc(100% - 105px); /* topbar + footer */
   padding: 25px 25px 0 25px;
   -webkit-transition-duration: 0.3s;

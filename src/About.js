@@ -54,7 +54,7 @@ class About extends PureComponent {
           <p>
             Current version: 0.1.0
           </p>
-          <img src="assets/builtfirebase.png" width="250px" className="firebase-image"/>
+          <img src="assets/builtfirebase.png" width="250px" className="firebase-image" alt="built with firebase"/>
         </div>
       </div>
     )
