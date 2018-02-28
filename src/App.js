@@ -196,6 +196,8 @@ class App extends PureComponent {
 
   load_cache_image = () => {
     Promise.all([firebase.storage().ref('init.json').getDownloadURL(), firebase.storage().ref('pixels.png').getDownloadURL(), firebase.storage().ref('prices.png').getDownloadURL()]).then(([init_url, pixels_url, prices_url]) => {
+      pixels_url = pixels_url + this.timestamp()
+      this.setState({ pixels_url: pixels_url })
       axios.get(init_url + this.timestamp()).then(response => {
         if (this.state.contract_instance.address === response.data.contract_address) {
           this.last_cache_block = response.data.last_cache_block
@@ -208,7 +210,7 @@ class App extends PureComponent {
 
           let img = new Image()
           img.crossOrigin = ''
-          img.src = pixels_url + this.timestamp()
+          img.src = pixels_url
           img.style.display = 'none'
           img.onload = this.load_buffer_data.bind(this, img, this.pixel_buffer_ctx)
 
@@ -866,7 +868,7 @@ class App extends PureComponent {
           </Helmet>
           <CssHide hide={this.state.fullscreen}>
             <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
-            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance} network_id={this.state.network_id}/>
+            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance} network_id={this.state.network_id} pixels_url={this.state.pixels_url}/>
           </CssHide>
           <main className={this.state.fullscreen ? 'fullscreen' : ''}>
             <Grid fluid={true} className='main-container'>

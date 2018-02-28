@@ -15,6 +15,11 @@ class Footer extends PureComponent {
           <Tips />
         </Nav>
         <Nav className="footer-icons" pullRight>
+          <OverlayTrigger placement="top" overlay={this.tooltip('Download canvas')}>
+            <NavItem href={this.props.pixels_url}>
+              <i className="fas fa-download"></i>
+            </NavItem>
+          </OverlayTrigger>
           <OverlayTrigger placement="top" overlay={this.tooltip('About')}>
             <NavItem onClick={this.props.on_about_click} active={this.props.current_panel === 'about'}>
               <i className="fas fa-info"></i>
