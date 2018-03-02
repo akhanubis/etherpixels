@@ -42,7 +42,7 @@ nav {
 .block-info > .col-md-4 > div:nth-child(2) {
     color:#2196f3;
     font-weight:bold;
-    font-size: 20px;
+    font-size: 16px;
     padding-top:3px;
 }
 
@@ -259,4 +259,48 @@ nav {
 
 .form-control-feedback.glyphicon.glyphicon-ok {
     color:#2196f3;
+}
+
+
+/* 2018_03_01
+   =================================== */
+.side-col {
+    width:440px;
+}
+
+.pending-txs-title {
+    padding-bottom:30px;
+}
+
+.batch-pixel-info span:nth-child(4) {
+    padding-top:2px;
+    font-size:11px;
+}
+.batch-container {
+    border:none;
+}
+
+.right-panel .batch-pixel-info .right-text {
+    left:-93px;
+    margin-top:10px;
+}
+
+/* About Panel
+   =================================== */
+
+.about-panel {
+    font-size:10px;
+}
+
+.about-panel .about-panel-inner a {
+    color:#2196f3;
+}
+
+.about-panel-title {
+    font-size:18px;
+    color:#2196f3;
+}
+
+.built-using {
+    margin-bottom:15px;
 }

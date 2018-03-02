@@ -31,7 +31,7 @@ button[disabled] {
 
 .canvas-col {
   padding: 0;
-  width: calc(100% - 430px);
+  width: calc(100% - 440px);
   float: left;
 }
 
@@ -56,7 +56,6 @@ html, body, #root, .App, .main-container, .canvas-col, .side-col, .resize-sensor
 }
 
 .side-col {
-  width: 430px;
   float: left;
   padding-left: 15px;
   padding-right: 15px;
