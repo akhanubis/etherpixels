@@ -30,6 +30,11 @@ class Footer extends PureComponent {
               <i className="fas fa-code"></i>
             </NavItem>
           </OverlayTrigger>
+          <OverlayTrigger placement="top" overlay={this.tooltip('Github')}>
+            <NavItem href="https://github.com/akhanubis/etherpixels" target="_blank">
+              <i className="fab fa-github"></i>
+            </NavItem>
+          </OverlayTrigger>
           <OverlayTrigger placement="top" overlay={this.tooltip('Subreddit')}>
             <NavItem href="https://www.reddit.com/r/etherpixels" target="_blank">
               <i className="fab fa-reddit-alien"></i>
