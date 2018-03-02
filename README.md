@@ -7,8 +7,13 @@ Built using Javascript, nodejs, Solidity, Google Firebase (hosting, cloud functi
 Features:
 
 Limited pixels supply that grows over time
+
 Draw, pan, zoom, undo, redo, pick color, etc
+
 Paint up to 20 pixels per transaction
+
 Choose how much you want to pay for a pixel (from 110% to 200% of current price)
+
 Previous owner get 98% of the price paid by the new owner
+
 Set nickname/signature offchain by signing a message to prove ownership of address
