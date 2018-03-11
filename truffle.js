@@ -13,6 +13,12 @@ module.exports = {
       provider: new HDWalletProvider(process.env.ROPSTEN_SEED, "https://ropsten.infura.io/" + process.env.INFURA_API_KEY),
       network_id: 3,
       gas: 4000000 
+    },
+    mainnet: {
+      provider: new HDWalletProvider(process.env.ROPSTEN_SEED, "https://mainnet.infura.io/" + process.env.INFURA_API_KEY),
+      network_id: 1,
+      gas: 4000000,
+      gasPrice: 2000000000
     }
   },
   solc: {

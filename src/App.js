@@ -29,7 +29,6 @@ import Alert from 'react-s-alert'
 import NameUtils from './utils/NameUtils'
 import LoadingPanel from './LoadingPanel'
 import Settings from './Settings'
-import ComingSoon from './ComingSoon'
 import About from './About'
 import CssHide from './CssHide'
 import LogRocket from 'logrocket'
@@ -660,10 +659,6 @@ class App extends PureComponent {
     }
 
     this.state.web3.version.getNetwork((_, network_id) => {
-      if (network_id === '1') {
-        this.setState({ coming_soon: true })
-        return
-      }
       this.setState({ network_id: network_id })
       EnvironmentManager.init(network_id)
       firebase.initializeApp({
@@ -859,72 +854,69 @@ class App extends PureComponent {
   }
 
   render() {
-    if (this.state.coming_soon)
-      return <ComingSoon/>
-    else
-      return ([
-        <div className="App" key="1" style={this.loading_style()}>
-          <Helmet>
-            <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
-          </Helmet>
-          <CssHide hide={this.state.fullscreen}>
-            <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
-            <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance} network_id={this.state.network_id} pixels_url={this.state.pixels_url}/>
-          </CssHide>
-          <main className={this.state.fullscreen ? 'fullscreen' : ''}>
-            <Grid fluid={true} className='main-container'>
-              <CssHide hide={this.state.fullscreen}>
-                <Col className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
-                  <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
-                  <div className='palette-container' style={{height: this.state.current_palette_height}}>
-                    <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
-                  </div>
-                  <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'price_view', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} price_graph_selected={this.state.price_view} />
-                  <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
-                    <Draft ref={d => this.draft = d } on_send={this.send_tx} on_preview_update={this.update_preview_buffer} on_update={this.on_draft_update} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
-                  </PendingTxList>
-                </Col>
-              </CssHide>
-              <Col className={`canvas-col ${this.state.fullscreen ? 'fullscreen' : ''}`}>
-                <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
-                  <div className="canvas-container" style={this.canvas_container_style()}>
-                    <div className='zoom-canvas'>
-                      <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
-                    </div>
-                    <div className='minimap-canvas'>
-                      <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
-                    </div>
-                    <div className={`resize-sensor ${this.state.current_tool}`} ref={rs => this.canvas_resize_sensor = rs}>
-                      <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
-                    </div>
-                    <HoverInfo pixel={this.state.hovering_pixel} current_block={this.state.current_block} />
-                    <CssHide hide={!this.state.fullscreen}>
-                      <div className='exit-fullscreen-icon'>
-                        <Button bsStyle="primary" onClick={this.exit_fullscreen}>
-                          Exit
-                        </Button>
-                      </div>
-                    </CssHide>
-                    <PriceReference show={this.state.price_view} fullscreen={this.state.fullscreen}/>
-                  </div>
-                  <CssHide hide={this.state.fullscreen}>
-                    <EventLogPanel current_panel={this.state.settings.current_panel} event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.expand_panel.bind(this, 'events')} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
-                  </CssHide>
-                  <CssHide hide={this.state.fullscreen}>
-                    <Settings current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width} account={this.state.account} settings={this.state.settings} on_update={this.update_settings} on_name_update={this.update_name} name={this.state.name} />
-                  </CssHide>
-                  <CssHide hide={this.state.fullscreen}>
-                    <About current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width}/>
-                  </CssHide>
+    return ([
+      <div className="App" key="1" style={this.loading_style()}>
+        <Helmet>
+          <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js" />
+        </Helmet>
+        <CssHide hide={this.state.fullscreen}>
+          <Topbar name={this.state.account ? this.state.name : 'No account detected'} account={this.state.account} toggle_settings={this.toggle_settings} current_panel={this.state.settings.current_panel}/>
+          <Footer on_about_click={this.expand_panel.bind(this, 'about')} current_panel={this.state.settings.current_panel} contract_instance={this.state.contract_instance} network_id={this.state.network_id} pixels_url={this.state.pixels_url}/>
+        </CssHide>
+        <main className={this.state.fullscreen ? 'fullscreen' : ''}>
+          <Grid fluid={true} className='main-container'>
+            <CssHide hide={this.state.fullscreen}>
+              <Col className={`side-col ${this.state.fullscreen ? 'fullscreen-hide' : ''}`}>
+                <BlockInfo current={this.state.current_block} max_index={this.state.max_index} />
+                <div className='palette-container' style={{height: this.state.current_palette_height}}>
+                  <Palette current_color={this.state.current_color} custom_colors={this.state.settings.custom_colors} on_custom_color_save={this.save_custom_color} on_custom_color_remove={this.remove_custom_color} on_color_update={this.update_current_color} on_height_change={this.update_palette_height} />
                 </div>
+                <ToolSelector tools={['paint', 'move', 'erase', 'pick_color', 'undo', 'redo', 'fullscreen', 'price_view', 'reset_view']} disabled_tools={this.state.disabled_tools} on_tool_selected={this.select_tool} current_tool={this.state.current_tool} shortcuts={this.shortcuts} price_graph_selected={this.state.price_view} />
+                <PendingTxList ref={ptl => this.pending_tx_list = ptl} palette_height={this.state.current_palette_height} pending_txs={this.state.pending_txs} on_preview_change={this.toggle_preview_pending_tx}>
+                  <Draft ref={d => this.draft = d } on_send={this.send_tx} on_preview_update={this.update_preview_buffer} on_update={this.on_draft_update} contract_instance={this.state.contract_instance} account={this.state.account} default_price_increase={this.state.settings.default_price_increase} gas_price={this.state.settings.gas_price} />
+                </PendingTxList>
               </Col>
-            </Grid>
-            <Alert stack={{limit: 3}} position="top-right" offset={30} effect="slide" html={false} />
-          </main>
-          <KeyListener on_key_update={this.update_key} />
-        </div>,
-        <LoadingPanel key="2" progress={this.state.loading_progress} />
-      ])
+            </CssHide>
+            <Col className={`canvas-col ${this.state.fullscreen ? 'fullscreen' : ''}`}>
+              <div className='canvas-outer-container' ref={cc => this.canvas_container = cc}>
+                <div className="canvas-container" style={this.canvas_container_style()}>
+                  <div className='zoom-canvas'>
+                    <Canvas aliasing={false}  ref={c => this.zoom_canvas = c} />
+                  </div>
+                  <div className='minimap-canvas'>
+                    <Canvas on_mouse_up={this.release_minimap} on_mouse_move={this.move_on_minimap} on_mouse_down={this.hold_minimap} aliasing={false} ref={c => this.minimap_canvas = c} />
+                  </div>
+                  <div className={`resize-sensor ${this.state.current_tool}`} ref={rs => this.canvas_resize_sensor = rs}>
+                    <Canvas on_mouse_wheel={this.wheel_zoom} on_mouse_down={this.main_canvas_mouse_down} on_mouse_up={this.main_canvas_mouse_up} on_mouse_move={this.main_canvas_mouse_move} on_resize={this.resize_viewport} minimap_ref={this.minimap_canvas} zoom_ref={this.zoom_canvas} aliasing={false} ref={c => this.main_canvas = c} />
+                  </div>
+                  <HoverInfo pixel={this.state.hovering_pixel} current_block={this.state.current_block} />
+                  <CssHide hide={!this.state.fullscreen}>
+                    <div className='exit-fullscreen-icon'>
+                      <Button bsStyle="primary" onClick={this.exit_fullscreen}>
+                        Exit
+                      </Button>
+                    </div>
+                  </CssHide>
+                  <PriceReference show={this.state.price_view} fullscreen={this.state.fullscreen}/>
+                </div>
+                <CssHide hide={this.state.fullscreen}>
+                  <EventLogPanel current_panel={this.state.settings.current_panel} event_logs={this.state.event_logs} on_clear={this.clear_logs} on_tab_click={this.expand_panel.bind(this, 'events')} panel_width={this.right_panel_width} account={this.state.account} current_block={this.state.current_block} />
+                </CssHide>
+                <CssHide hide={this.state.fullscreen}>
+                  <Settings current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width} account={this.state.account} settings={this.state.settings} on_update={this.update_settings} on_name_update={this.update_name} name={this.state.name} />
+                </CssHide>
+                <CssHide hide={this.state.fullscreen}>
+                  <About current_panel={this.state.settings.current_panel} panel_width={this.right_panel_width}/>
+                </CssHide>
+              </div>
+            </Col>
+          </Grid>
+          <Alert stack={{limit: 3}} position="top-right" offset={30} effect="slide" html={false} />
+        </main>
+        <KeyListener on_key_update={this.update_key} />
+      </div>,
+      <LoadingPanel key="2" progress={this.state.loading_progress} />
+    ])
   }
 }
 

@@ -62,7 +62,6 @@ typings/
 .build_env
 .run*
 
-build/
 build_webpack/
 build_worker/
 build_scripts/
