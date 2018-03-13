@@ -1,6 +1,6 @@
 # https://etherpixels.co
 
-Live in mainnet and ropsten (just choose network with Metamask)
+Live in mainnet and ropsten (choose network with Metamask)
 
 Single page app that features an ever growing canvas where people can buy/paint and sell pixels. It is powered by a smart contract deployed to the Ethereum network and therefore trustless, decentralized and open source.
 
