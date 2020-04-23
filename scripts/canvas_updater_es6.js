@@ -55,7 +55,7 @@ let init_provider = () => {
     provider = new ProviderEngine()
     provider.addProvider(new FilterSubprovider())
     provider.addProvider(new RpcSubprovider({
-      rpcUrl: `https://${process.env.INFURA_NETWORK}.infura.io/${process.env.INFURA_API_KEY}`,
+      rpcUrl: `https://${process.env.INFURA_NETWORK}.infura.io/v3/${process.env.INFURA_API_KEY}`,
     }))
     provider.on('error', err => console.error(err.stack))
     provider.start()
@@ -82,7 +82,6 @@ let update_cache = () => {
 let process_new_block = b_number => {
   console.log('================================')
   console.log(`New block: ${b_number}`)
-  let old_dimension = canvas_dimension
   let old_index = store_new_index(b_number)
   resize_assets(old_index)
 }
@@ -115,7 +114,7 @@ let store_new_index = b_number => {
 
 let resize_canvas = (ctx, new_image_data, old_i) => {
   console.log(`Resizing canvas to: ${canvas_dimension}x${canvas_dimension}...`)
-  let new_canvas = new Canvas(canvas_dimension, canvas_dimension) /* ctx keeps a temp reference to old canvas */
+  let new_canvas = new Canvas.Canvas(canvas_dimension, canvas_dimension) /* ctx keeps a temp reference to old canvas */
   return CanvasUtils.resize_canvas(
     ctx,
     new_canvas,
@@ -180,7 +179,7 @@ let prune_database = until_b_number => {
 
 let process_logs = (b_number, logs) => {
   logs = logs || []
-  console.log(`Processing ${logs.length} event${logs.length == 1 ? '' : 's'}`)
+  console.log(`Processing ${logs.length} event${logs.length === 1 ? '' : 's'}`)
   let txs = {}
   logs.forEach(l => {
     let formatted = logs_formatter(l)
@@ -204,7 +203,11 @@ let process_past_logs = (start, end) => {
       toBlock: `0x${ end.toString(16) }`,
       address: instance.address
     }]
-  }, (_, response) => process_logs(end, response.result))
+  }, (error, response) => {
+    if (error)
+      throw(error)
+    process_logs(end, response.result)
+  })
 }
 
 let reset_cache = (g_block, b_number) => {
@@ -222,12 +225,12 @@ let continue_cache = (b_number, buffer_data, pixels_data, prices_data) => {
   let img = new Canvas.Image()
   img.src = "data:image/png;base64," + Buffer.from(pixels_data).toString('base64')
   console.log(`Last cache dimensions: ${img.width}x${img.height}`)
-  let temp_canvas = new Canvas(img.width, img.height)
+  let temp_canvas = new Canvas.Canvas(img.width, img.height)
   pixel_buffer_ctx = temp_canvas.getContext('2d')
   pixel_buffer_ctx.drawImage(img, 0, 0)
   /* init the prices canvas with the last cached image */
   img.src = "data:image/png;base64," + Buffer.from(prices_data).toString('base64')
-  temp_canvas = new Canvas(img.width, img.height)
+  temp_canvas = new Canvas.Canvas(img.width, img.height)
   prices_ctx = temp_canvas.getContext('2d')
   prices_ctx.drawImage(img, 0, 0)
   /* init the buffer with the last cached buffer */
@@ -256,7 +259,6 @@ let fetch_current_block = () => {
 init_provider()
 canvasContract.setProvider(provider)
 canvasContract.deployed().then(contract_instance => {
-  var matching_contract = false
   instance = contract_instance
   console.log(`Contract deployed\nFetching halving information...`)
   instance.HalvingInfo.call().then(halving_info => {
@@ -292,4 +294,4 @@ canvasContract.deployed().then(contract_instance => {
   })
 })
 
-setInterval(() => { let a = 0}, 99999999999)
+setInterval(() => { let a = 0}, 999999999)
