@@ -1,5 +1,7 @@
 # https://etherpixels.co
 
+Live in mainnet and ropsten (choose network with Metamask)
+
 Single page app that features an ever growing canvas where people can buy/paint and sell pixels. It is powered by a smart contract deployed to the Ethereum network and therefore trustless, decentralized and open source.
 
 Built using Javascript, nodejs, Solidity, Google Firebase (hosting, cloud functions, realtime database and storage) and Heroku.
