@@ -66,3 +66,4 @@ build_webpack/
 build_worker/
 build_scripts/
 dist/
+.firebase
