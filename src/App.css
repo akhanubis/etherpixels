@@ -1,7 +1,11 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto');
 
+html {
+  overflow: hidden;
+}
+
 body {
-  font-family: 'Roboto', Arial, sans-serif
+  font-family: 'Roboto', Arial, sans-serif;
 };
 
 button:disabled,
